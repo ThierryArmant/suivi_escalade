@@ -148,12 +148,10 @@
         const topoText = document.getElementById('topo-text');
         let stickers = [];
 
-        // Fonction d'initialisation du texte topo au chargement
         function updateTopoInfo(filename) {
             topoText.textContent = topoData[filename] || "Aucune information disponible";
         }
 
-        // Changement de secteur (met à jour l'image, le texte et nettoie l'écran)
         function changeSector() {
             const select = document.getElementById('sectorSelect');
             const selectedFile = select.value;
@@ -162,7 +160,6 @@
             clearStickers(); 
         }
 
-        // Placement d'un sticker au clic sur l'image
         function placeSticker(event) {
             const rect = img.getBoundingClientRect();
             const x = ((event.clientX - rect.left) / rect.width) * 100;
@@ -182,7 +179,6 @@
             stickers.push({ element: sticker, x: x, y: y, color: color });
         }
 
-        // Suppression du dernier sticker posé
         function undoSticker() {
             if (stickers.length > 0) {
                 const last = stickers.pop();
@@ -190,7 +186,6 @@
             }
         }
 
-        // Suppression de tous les stickers du secteur actif
         function clearStickers() {
             stickers.forEach(s => s.element.remove());
             stickers = [];
