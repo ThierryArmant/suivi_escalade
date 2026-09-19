@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mur d'Escalade - Outil EPS Universel</title>
+    <title>Mur d'Escalade - Application EPS</title>
     
-    <!-- Intégration de la bibliothèque pour lire les fichiers Excel (.xlsx) -->
+    <!-- Bibliothèque pour lire les fichiers Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -49,7 +49,7 @@
         button.delete-btn { background-color: #dc3545; }
         button.delete-btn:hover { background-color: #c82333; }
         
-        /* Modal / Panneau de Configuration */
+        /* Modal de Configuration */
         #config-modal {
             display: none;
             position: fixed;
@@ -204,13 +204,13 @@
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des murs (Max 6 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Sélectionnez de 1 à 6 photos maximum représentant vos différents secteurs de murs.</div>
+                <div class="help-text">Sélectionnez de 1 à 6 photos maximum représentant vos secteurs.</div>
             </div>
 
             <div class="form-group">
                 <label for="excelInput">2. Importer le fichier Excel des voies (.xlsx ou .csv) :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
-                <div class="help-text">Modèle attendu : Colonnes <b>Secteur</b> (ex: Secteur 1 ou nom de l'image), <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b> (Jaune, Bleu, Noir, Vert, Rouge, Violet). Plusieurs lignes acceptées par voie.</div>
+                <div class="help-text">Modèle : Colonnes <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b> (Jaune, Bleu, Noir, Vert, Rouge, Violet).</div>
             </div>
 
             <div style="text-align: right; margin-top: 20px;">
@@ -231,12 +231,11 @@
 
     <div>
         <div id="wall-container" onclick="placeSticker(event)">
-            <img id="wall-image" id="wall-preview" alt="Mur d'escalade">
+            <img id="wall-image" alt="Mur d'escalade">
         </div>
     </div>
 
     <script>
-        // Dictionnaire des couleurs textuelles vers les codes Hexa officiels
         const colorMap = {
             "jaune": "#FFD700",
             "bleu": "#00BFFF",
@@ -246,15 +245,10 @@
             "violet": "#9C27B0"
         };
 
-        // Données par défaut ou stockées en LocalStorage
-        let schoolData = JSON.parse(localStorage.getItem('giono_school_config')) || {
-            images: ["voies 1 2 3.jpg"], // Image par défaut de secours
-            topo: {
-                "voies 1 2 3.jpg": [
-                    { id: "v1_jaune", name: "Voie 1 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
-                    { id: "v1_bleu", name: "Voie 1 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
-                ]
-            }
+        // Chargement de la configuration enregistrée (ou valeurs par défaut)
+        let schoolConfig = JSON.parse(localStorage.getItem('eps_wall_config')) || {
+            images: [],
+            topo: {}
         };
 
         const container = document.getElementById('wall-container');
@@ -268,21 +262,23 @@
         let currentRouteColor = "#FFD700";
         let activeStickers = [];
 
-        // Initialisation de l'application au chargement
         function initApp() {
-            populateSectors();
-            if (schoolData.images.length > 0) {
-                img.src = schoolData.images[0];
-                updateTopoInfo(schoolData.images[0]);
+            // Si aucune image n'est configurée, on met une image par défaut de secours
+            if (!schoolConfig.images || schoolConfig.images.length === 0) {
+                schoolConfig.images = ["voies 1 2 3.jpg"];
             }
+
+            populateSectors();
+            img.src = schoolConfig.images[0];
+            updateTopoInfo(schoolConfig.images[0]);
         }
 
         function populateSectors() {
             sectorSelect.innerHTML = "";
-            schoolData.images.forEach((imgSrc, index) => {
+            schoolConfig.images.forEach((imgSrc, index) => {
                 const opt = document.createElement('option');
                 opt.value = imgSrc;
-                opt.textContent = `Secteur ${index + 1} (${imgSrc.substring(0, 20)})`;
+                opt.textContent = `Secteur ${index + 1}`;
                 sectorSelect.appendChild(opt);
             });
         }
@@ -296,7 +292,6 @@
             initApp();
         }
 
-        // Gestion de l'upload des images (Max 6)
         function handleImagesUpload(input) {
             if (input.files.length > 6) {
                 alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
@@ -304,25 +299,18 @@
                 return;
             }
 
-            let loadedImages = [];
-            let filesProcessed = 0;
-
-            Array.from(input.files).forEach((file, index) => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    loadedImages[index] = e.target.result; // Sauvegarde en base64
-                    filesProcessed++;
-                    if (filesProcessed === input.files.length) {
-                        schoolData.images = loadedImages;
-                        localStorage.setItem('giono_school_config', JSON.stringify(schoolData));
-                        alert(`✅ ${loadedImages.length} image(s) chargée(s) avec succès !`);
-                    }
-                };
-                reader.readAsDataURL(file);
+            let newImages = [];
+            Array.from(input.files).forEach((file) => {
+                // Utilisation d'object URLs pour fluidifier l'affichage instantané
+                const url = URL.createObjectURL(file);
+                newImages.push(url);
             });
+
+            schoolConfig.images = newImages;
+            localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+            alert(`✅ ${newImages.length} image(s) prise(s) en compte avec succès !`);
         }
 
-        // Gestion de l'upload du fichier Excel avec prise en compte des multi-difficultés
         function handleExcelUpload(input) {
             const file = input.files[0];
             if (!file) return;
@@ -335,27 +323,21 @@
                 const worksheet = workbook.Sheets[firstSheetName];
                 const rows = XLSX.utils.sheet_to_json(worksheet);
 
-                // Reconstruction du topo structuré par secteur
                 let newTopo = {};
 
                 rows.forEach((row, idx) => {
-                    // On attend des colonnes : Secteur (ou index/nom), Voie, Cotation, Couleur
-                    let sectorKey = row.Secteur || row.secteur || schoolData.images[0];
-                    let voieName = row.Voie || row.voie || `Voie ${idx}`;
+                    let sectorIndex = parseInt(row.Secteur || row.secteur || 1) - 1;
+                    if (isNaN(sectorIndex) || sectorIndex < 0) sectorIndex = 0;
+                    
+                    let targetImage = schoolConfig.images[sectorIndex] || schoolConfig.images[0];
+
+                    let voieName = row.Voie || row.voie || `Voie ${idx + 1}`;
                     let cotation = row.Cotation || row.cotation || "4A";
                     let couleurInput = (row.Couleur || row.couleur || "Jaune").trim().toLowerCase();
                     
                     let hexColor = colorMap[couleurInput] || "#FFD700";
                     let textColor = (hexColor === "#FFD700") ? "#000" : "#fff";
-                    let routeId = `route_${idx}_${Math.random().toString(36.substring(2, 7))}`;
-
-                    // Mapping intelligent sur les images disponibles si le secteur texte ne correspond pas exactement
-                    let targetImage = schoolData.images[0];
-                    schoolData.images.forEach((img, imgIdx) => {
-                        if (sectorKey.toString().includes((imgIdx + 1).toString()) || sectorKey.toString().toLowerCase().includes(img.toLowerCase())) {
-                            targetImage = img;
-                        }
-                    });
+                    let routeId = `route_${sectorIndex}_${idx}`;
 
                     if (!newTopo[targetImage]) {
                         newTopo[targetImage] = [];
@@ -370,9 +352,9 @@
                     });
                 });
 
-                schoolData.topo = newTopo;
-                localStorage.setItem('giono_school_config', JSON.stringify(schoolData));
-                alert("✅ Fichier Excel importé et structuré avec succès !");
+                schoolConfig.topo = newTopo;
+                localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+                alert("✅ Fichier Excel importé avec succès !");
             };
             reader.readAsArrayBuffer(file);
         }
@@ -382,10 +364,10 @@
         }
 
         function updateTopoInfo(filename) {
-            const routes = schoolData.topo[filename] || [];
+            const routes = schoolConfig.topo[filename] || [];
             let html = "";
             if (routes.length === 0) {
-                html = "<span style='color: #666; font-style: italic;'>Aucune voie configurée pour ce secteur. Utilisez le bouton 'Configuration des voies'.</span>";
+                html = "<span style='color: #666; font-style: italic;'>Aucune voie configurée pour ce secteur. Cliquez sur 'Configuration des voies'.</span>";
             } else {
                 routes.forEach(r => {
                     html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
@@ -405,7 +387,7 @@
 
             activeBanner.style.background = color;
             activeBanner.style.color = (color === "#FFD700") ? "#000" : "#fff";
-            activeBanner.textContent = `🎯 Voie active : ${name} (Clique sur le mur pour placer/modifier les pastilles)`;
+            activeBanner.textContent = `🎯 Voie active : ${name} (Clique sur le mur pour placer les pastilles)`;
 
             loadRouteStickers(id);
         }
@@ -413,7 +395,7 @@
         function loadRouteStickers(routeId) {
             clearStickersDOM();
             activeStickers = [];
-            const savedData = localStorage.getItem(`giono_route_${routeId}`);
+            const savedData = localStorage.getItem(`eps_route_${routeId}`);
             if (savedData) {
                 const points = JSON.parse(savedData);
                 points.forEach(p => createStickerElement(p.x, p.y, p.color));
@@ -470,7 +452,7 @@
                 return;
             }
             const pointsToSave = activeStickers.map(s => ({ x: s.x, y: s.y, color: s.color }));
-            localStorage.setItem(`giono_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
             alert("✅ Tracé enregistré avec succès !");
         }
 
@@ -480,7 +462,7 @@
                 return;
             }
             if (confirm("Voulez-vous vraiment supprimer le tracé enregistré pour cette voie ?")) {
-                localStorage.removeItem(`giono_route_${currentRouteId}`);
+                localStorage.removeItem(`eps_route_${currentRouteId}`);
                 clearStickersDOM();
                 activeStickers = [];
                 alert("🗑️ Tracé supprimé !");
@@ -499,7 +481,6 @@
             activeStickers = [];
         }
 
-        // Lancement initial
         initApp();
     </script>
 
