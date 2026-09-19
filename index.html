@@ -180,7 +180,7 @@
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
     <div class="controls">
-        <label for="routeSelect">Sélectionner une Voie / un Bloc :</label>
+        <label for="routeSelect">Sélectionner une Voie :</label>
         <select id="routeSelect" onchange="changeRoute()">
             <option value="">-- Choisir une voie --</option>
         </select>
@@ -209,13 +209,13 @@
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des secteurs (Max 6 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6).</div>
+                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum).</div>
             </div>
 
             <div class="form-group">
                 <label>2. Modèle de tableau Excel :</label>
                 <button class="template-btn" onclick="downloadExcelTemplate()">📥 Télécharger le modèle Excel type</button>
-                <div class="help-text">Colonnes simples sans fusions : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>.</div>
+                <div class="help-text">Colonnes simples : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>.</div>
             </div>
 
             <div class="form-group">
@@ -251,7 +251,7 @@
 
         let schoolConfig = JSON.parse(localStorage.getItem('eps_wall_config')) || {
             images: [],
-            routes: [], // Liste plate de toutes les voies
+            routes: [],
             customRoutes: []
         };
 
@@ -268,22 +268,18 @@
         let activeMarkers = [];
 
         function initApp() {
-            if (!schoolConfig.images || schoolConfig.images.length === 0) {
-                schoolConfig.images = ["voies 1 2 3.jpg"];
-            }
             populateRouteDropdown();
-            if (schoolConfig.routes.length > 0) {
-                img.src = schoolConfig.routes[0].imageSrc;
-            } else {
+            if (schoolConfig.images && schoolConfig.images.length > 0) {
                 img.src = schoolConfig.images[0];
+            } else {
+                img.src = ""; // Vide si aucune image
+                activeBanner.textContent = "⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.";
             }
         }
 
-        // Remplit le menu déroulant unique avec toutes les voies et blocs
         function populateRouteDropdown() {
             routeSelect.innerHTML = '<option value="">-- Choisir une voie ou un bloc --</option>';
 
-            // Voies officielles
             if (schoolConfig.routes && schoolConfig.routes.length > 0) {
                 let optGroup = document.createElement('optgroup');
                 optGroup.label = "Voies officielles (Excel)";
@@ -297,7 +293,6 @@
                 routeSelect.appendChild(optGroup);
             }
 
-            // Blocs personnalisés / élèves
             if (schoolConfig.customRoutes && schoolConfig.customRoutes.length > 0) {
                 let optGroupCustom = document.createElement('optgroup');
                 optGroupCustom.label = "Blocs personnalisés / Élèves";
@@ -336,7 +331,7 @@
                 id: routeId,
                 name: customName,
                 color: "#fd7e14",
-                imageSrc: img.src // Utilise l'image actuellement affichée
+                imageSrc: img.src
             };
 
             schoolConfig.customRoutes.push(newRoute);
@@ -362,25 +357,43 @@
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
+        // Encodage Base64 permanent des images pour le stockage LocalStorage
         function handleImagesUpload(input) {
             if (input.files.length > 6) {
                 alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
                 input.value = "";
                 return;
             }
-            let newImages = [];
-            Array.from(input.files).forEach((file) => {
-                newImages.push(URL.createObjectURL(file));
+
+            let loadedImages = [];
+            let filesProcessed = 0;
+            const files = Array.from(input.files);
+
+            files.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadedImages[index] = e.target.result; // Format Base64 permanent
+                    filesProcessed++;
+                    if (filesProcessed === files.length) {
+                        schoolConfig.images = loadedImages;
+                        localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+                        alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) avec succès !`);
+                        initApp();
+                    }
+                };
+                reader.readAsDataURL(file);
             });
-            schoolConfig.images = newImages;
-            localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
-            alert(`✅ ${newImages.length} photo(s) de secteurs prise(s) en compte !`);
         }
 
-        // Import Excel linéaire sans cellules fusionnées (chaque ligne a ses données)
         function handleExcelUpload(input) {
             const file = input.files[0];
             if (!file) return;
+
+            if (!schoolConfig.images || schoolConfig.images.length === 0) {
+                alert("❌ Veuillez d'abord importer les photos des secteurs avant le fichier Excel !");
+                input.value = "";
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -399,7 +412,6 @@
                     
                     let hexColor = colorMap[couleurInput] || "#FFD700";
 
-                    // Répartition intelligente des 16 secteurs sur les photos chargées (ex: 6 photos max)
                     let numImages = schoolConfig.images.length;
                     let photoIndex = Math.min(Math.floor((secteurNum - 1) * numImages / 16), numImages - 1);
                     let targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0];
@@ -427,7 +439,6 @@
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
-        // Changement de voie depuis le menu déroulant unique
         function changeRoute() {
             const selectedId = routeSelect.value;
             if (!selectedId) {
