@@ -152,10 +152,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            cursor: pointer;
             transition: background 0.15s;
         }
         .custom-item span {
-            cursor: pointer;
             flex: 1;
             text-align: left;
             white-space: nowrap;
@@ -273,7 +273,7 @@
             font-size: 0.73rem;
         }
 
-        /* Zone Technique (Vert pale couleur nature) */
+        /* Zone Technique */
         .technical-zone {
             background: #f0fdf4;
             padding: 12px;
@@ -895,7 +895,7 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                // Le clic s'applique désormais à toute la boîte de l'élément
+                // Rendre toute la boîte cliquable
                 item.onclick = () => selectCustomRoute(r.id);
 
                 const textSpan = document.createElement('span');
@@ -939,13 +939,37 @@
             });
         }
 
+        function openConfigModal() {
+            document.getElementById('config-modal').style.display = 'flex';
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').style.display = 'none';
+            initApp();
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
+            document.getElementById(`tool-${tool}`).classList.add('active-tool');
+        }
+
         async function createCustomRoute(type) {
             let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
             const customName = prompt(`Nom du ${labelType} (ex: ${type === 'individualise' ? 'Lucas, Sarah...' : 'Atelier Rétablissement, Bloc Jaune...'}) :`);
             if (!customName || customName.trim() === "") return;
 
-            // Sécurisation de l'image de fond active
-            const activeImageSrc = (img.src && img.src.startsWith('data:image')) ? img.src : (schoolConfig.images[0] || "");
+            let activeImageSrc = "";
+            if (img.src && img.src !== window.location.href && img.src !== "") {
+                activeImageSrc = img.src;
+            } else if (schoolConfig.images && schoolConfig.images.length > 0) {
+                activeImageSrc = schoolConfig.images[0];
+            }
+
+            if (!activeImageSrc) {
+                alert("⚠️ Attention : Aucune photo de mur n'est chargée. Veuillez d'abord importer une photo dans 'Configuration'.");
+                return;
+            }
 
             const routeId = `custom_${Date.now()}`;
             const newRoute = {
@@ -971,8 +995,9 @@
 
             currentRouteId = found.id;
             currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
-            img.src = found.imageSrc || schoolConfig.images[0] || "";
-
+            
+            const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
+            
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
             if (magicBtn) magicBtn.classList.remove('active-magic');
@@ -986,7 +1011,19 @@
             activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
 
             renderCustomLists();
-            loadRouteMarkers(currentRouteId);
+
+            // Chargement sécurisé de l'image avant d'afficher les pastilles
+            if (targetImgSrc) {
+                img.onload = function() {
+                    loadRouteMarkers(currentRouteId);
+                    img.onload = null; // Évite de boucler
+                };
+                img.src = targetImgSrc;
+                // Sécurité si l'image est déjà en cache
+                if (img.complete) {
+                    loadRouteMarkers(currentRouteId);
+                }
+            }
         }
 
         // --- FILTRE MAGIQUE ---
@@ -1383,7 +1420,18 @@
             if (foundRoute) {
                 currentRouteId = foundRoute.id;
                 currentRouteColor = foundRoute.hexColor;
-                img.src = foundRoute.imageSrc || schoolConfig.images[0] || "";
+                
+                let targetSrc = foundRoute.imageSrc || schoolConfig.images[0] || "";
+                if (targetSrc) {
+                    img.onload = function() {
+                        loadRouteMarkers(currentRouteId);
+                        img.onload = null;
+                    };
+                    img.src = targetSrc;
+                    if (img.complete) {
+                        loadRouteMarkers(currentRouteId);
+                    }
+                }
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
@@ -1392,8 +1440,6 @@
                 activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
-
-            loadRouteMarkers(currentRouteId);
         }
 
         function loadRouteMarkers(routeId) {
