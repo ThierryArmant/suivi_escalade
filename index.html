@@ -41,8 +41,22 @@
             cursor: pointer;
         }
         button:hover { background-color: #0056b3; }
+        button.save-btn { background-color: #28a745; }
+        button.save-btn:hover { background-color: #218838; }
         
-        /* Panneau d'affichage du topo */
+        /* Panneau d'état de la voie active */
+        #active-route-banner {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 0 auto 15px auto;
+            max-width: 650px;
+            font-weight: bold;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Panneau d'affichage du topo interactif */
         #topo-panel {
             background: #e9ecef;
             padding: 12px 15px;
@@ -54,9 +68,15 @@
         }
         #topo-panel strong {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 4px;
             color: #007bff;
             font-size: 1rem;
+        }
+        .topo-hint {
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 10px;
+            font-style: italic;
         }
         
         /* Conteneur des cartes de voies */
@@ -82,13 +102,24 @@
             gap: 8px;
         }
 
-        /* Pastilles colorées pour chaque cotation */
+        /* Pastilles interactives dans le topo */
         .grade-badge {
-            padding: 4px 10px;
+            padding: 5px 10px;
             border-radius: 4px;
             font-size: 0.9rem;
             font-weight: bold;
-            border: 1px solid rgba(0,0,0,0.15);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .grade-badge:hover {
+            transform: scale(1.08);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            filter: brightness(0.95);
+        }
+        .grade-badge.active {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
         }
 
         #wall-container {
@@ -138,22 +169,23 @@
             <option value="voies 13 14 15 16.jpg">Voies 13 à 16</option>
         </select>
 
-        <!-- Choix de la couleur des pastilles -->
-        <label for="colorPicker">Couleur :</label>
-        <select id="colorPicker">
-            <option value="#FFD700">Jaune</option>
-            <option value="#00BFFF">Bleu</option>
-            <option value="#FF4500">Rouge</option>
-            <option value="#32CD32">Vert</option>
-        </select>
+        <!-- Sélecteur de couleur de secours -->
+        <input type="hidden" id="colorPicker" value="#FFD700">
 
-        <button onclick="undoSticker()">Annuler</button>
-        <button onclick="clearStickers()">Tout effacer</button>
+        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer le tracé</button>
+        <button onclick="undoSticker()">Annuler dernier point</button>
+        <button onclick="clearStickers()">Effacer l'écran</button>
     </div>
 
-    <!-- Panneau dynamique des cotations avec codes couleurs exacts -->
+    <!-- Bannière indiquant la voie active en cours de visualisation/modification -->
+    <div id="active-route-banner">
+        ⚠️ Aucune voie sélectionnée. Clique sur une cotation ci-dessous pour afficher ou tracer une voie.
+    </div>
+
+    <!-- Panneau dynamique des cotations interactif -->
     <div id="topo-panel">
         <strong>Cotations du secteur :</strong>
+        <div class="topo-hint">💡 Clique sur une cotation pour charger son tracé ou en créer un nouveau sur le mur !</div>
         <div id="topo-content">Chargement...</div>
     </div>
 
@@ -167,68 +199,128 @@
     <!-- SECTION 3 : CODE JAVASCRIPT (Logique & Clics)-->
     <!-- ========================================== -->
     <script>
-        // Base de données complète calquée sur ton tableau officiel
+        // Base de données avec identifiants uniques par voie/couleur
         const topoData = {
-            "voies 1 2 3.jpg": `
-                <div class="route-card"><span>Voie 1 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4B</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-                <div class="route-card"><span>Voie 2 :</span><span class="grade-badge" style="background:#212121; color:#fff;">6B</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C</span></div>
-                <div class="route-card"><span>Voie 3 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4A</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-            `,
-            "voies 4 5 6.jpg": `
-                <div class="route-card"><span>Voie 4 :</span><span class="grade-badge" style="background:#212121; color:#fff;">6B</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C</span></div>
-                <div class="route-card"><span>Voie 5 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4B</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">6B+</span></div>
-                <div class="route-card"><span>Voie 6 :</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5A</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-            `,
-            "voies 7 8 9.jpg": `
-                <div class="route-card"><span>Voie 7 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4B</span></div>
-                <div class="route-card"><span>Voie 8 :</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-                <div class="route-card"><span>Voie 9 :</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">7A</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span></div>
-            `,
-            "voies 9 10 11.jpg": `
-                <div class="route-card"><span>Voie 9 :</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">7A</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span></div>
-                <div class="route-card"><span>Voie 10 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4C+</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C+</span></div>
-                <div class="route-card"><span>Voie 11 :</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span><span class="grade-badge" style="background:#212121; color:#fff;">6B+</span></div>
-            `,
-            "voies 10 11 12 (13).jpg": `
-                <div class="route-card"><span>Voie 10 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4C+</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C+</span></div>
-                <div class="route-card"><span>Voie 11 :</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span><span class="grade-badge" style="background:#212121; color:#fff;">6B+</span></div>
-                <div class="route-card"><span>Voie 12 :</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">6C</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C</span></div>
-                <div class="route-card"><span>Voie 13 :</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">6C</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-            `,
-            "voies 13 14 15 16.jpg": `
-                <div class="route-card"><span>Voie 13 :</span><span class="grade-badge" style="background:#9C27B0; color:#fff;">6C</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B+</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A</span></div>
-                <div class="route-card"><span>Voie 14 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4C</span></div>
-                <div class="route-card"><span>Voie 15 :</span><span class="grade-badge" style="background:#F44336; color:#fff;">5C</span><span class="grade-badge" style="background:#212121; color:#fff;">6A+</span></div>
-                <div class="route-card"><span>Voie 16 :</span><span class="grade-badge" style="background:#FFEB3B; color:#000;">4B</span><span class="grade-badge" style="background:#4CAF50; color:#fff;">5B</span><span class="grade-badge" style="background:#03A9F4; color:#fff;">6A+</span></div>
-            `
+            "voies 1 2 3.jpg": [
+                { id: "v1_jaune", name: "Voie 1 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
+                { id: "v1_bleu", name: "Voie 1 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
+                { id: "v2_noir", name: "Voie 2 (6B - Noir)", color: "#212121", text: "6B (Noir)", textColor: "#fff" },
+                { id: "v2_vert", name: "Voie 2 (5B - Vert)", color: "#32CD32", text: "5B (Vert)", textColor: "#fff" },
+                { id: "v2_rouge", name: "Voie 2 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
+                { id: "v3_jaune", name: "Voie 3 (4A - Jaune)", color: "#FFD700", text: "4A (Jaune)", textColor: "#000" },
+                { id: "v3_bleu", name: "Voie 3 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
+            ],
+            "voies 4 5 6.jpg": [
+                { id: "v4_noir", name: "Voie 4 (6B - Noir)", color: "#212121", text: "6B (Noir)", textColor: "#fff" },
+                { id: "v4_vert", name: "Voie 4 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v4_rouge", name: "Voie 4 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
+                { id: "v5_jaune", name: "Voie 5 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
+                { id: "v5_violet", name: "Voie 5 (6B+ - Violet)", color: "#9C27B0", text: "6B+ (Violet)", textColor: "#fff" },
+                { id: "v6_vert", name: "Voie 6 (5A - Vert)", color: "#32CD32", text: "5A (Vert)", textColor: "#fff" },
+                { id: "v6_bleu", name: "Voie 6 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
+            ],
+            "voies 7 8 9.jpg": [
+                { id: "v7_jaune", name: "Voie 7 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
+                { id: "v8_rouge", name: "Voie 8 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
+                { id: "v8_bleu", name: "Voie 8 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
+                { id: "v9_violet", name: "Voie 9 (7A - Violet)", color: "#9C27B0", text: "7A (Violet)", textColor: "#fff" },
+                { id: "v9_vert", name: "Voie 9 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" }
+            ],
+            "voies 9 10 11.jpg": [
+                { id: "v9_violet", name: "Voie 9 (7A - Violet)", color: "#9C27B0", text: "7A (Violet)", textColor: "#fff" },
+                { id: "v9_vert", name: "Voie 9 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v10_jaune", name: "Voie 10 (4C+ - Jaune)", color: "#FFD700", text: "4C+ (Jaune)", textColor: "#000" },
+                { id: "v10_rouge", name: "Voie 10 (5C+ - Rouge)", color: "#FF4500", text: "5C+ (Rouge)", textColor: "#fff" },
+                { id: "v11_vert", name: "Voie 11 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v11_bleu", name: "Voie 11 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
+                { id: "v11_noir", name: "Voie 11 (6B+ - Noir)", color: "#212121", text: "6B+ (Noir)", textColor: "#fff" }
+            ],
+            "voies 10 11 12 (13).jpg": [
+                { id: "v10_jaune", name: "Voie 10 (4C+ - Jaune)", color: "#FFD700", text: "4C+ (Jaune)", textColor: "#000" },
+                { id: "v10_rouge", name: "Voie 10 (5C+ - Rouge)", color: "#FF4500", text: "5C+ (Rouge)", textColor: "#fff" },
+                { id: "v11_vert", name: "Voie 11 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v11_bleu", name: "Voie 11 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
+                { id: "v11_noir", name: "Voie 11 (6B+ - Noir)", color: "#212121", text: "6B+ (Noir)", textColor: "#fff" },
+                { id: "v12_violet", name: "Voie 12 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
+                { id: "v12_rouge", name: "Voie 12 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
+                { id: "v13_violet", name: "Voie 13 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
+                { id: "v13_vert", name: "Voie 13 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v13_bleu", name: "Voie 13 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
+            ],
+            "voies 13 14 15 16.jpg": [
+                { id: "v13_violet", name: "Voie 13 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
+                { id: "v13_vert", name: "Voie 13 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
+                { id: "v13_bleu", name: "Voie 13 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
+                { id: "v14_jaune", name: "Voie 14 (4C - Jaune)", color: "#FFD700", text: "4C (Jaune)", textColor: "#000" },
+                { id: "v15_rouge", name: "Voie 15 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
+                { id: "v15_noir", name: "Voie 15 (6A+ - Noir)", color: "#212121", text: "6A+ (Noir)", textColor: "#fff" },
+                { id: "v16_jaune", name: "Voie 16 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
+                { id: "v16_vert", name: "Voie 16 (5B - Vert)", color: "#32CD32", text: "5B (Vert)", textColor: "#fff" },
+                { id: "v16_bleu", name: "Voie 16 (6A+ - Bleu)", color: "#00BFFF", text: "6A+ (Bleu)", textColor: "#fff" }
+            ]
         };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
         const topoContent = document.getElementById('topo-content');
-        let stickers = [];
+        const activeBanner = document.getElementById('active-route-banner');
+        const colorPicker = document.getElementById('colorPicker');
 
+        let currentRouteId = null;
+        let currentRouteColor = "#FFD700";
+        let activeStickers = []; // Stocke les éléments visuels affichés
+
+        // Chargement du panneau topo pour le secteur actuel
         function updateTopoInfo(filename) {
-            topoContent.innerHTML = topoData[filename] || "Aucune information disponible";
+            const routes = topoData[filename] || [];
+            let html = "";
+            
+            // Regrouper par voie approximative ou afficher par ligne de badge
+            routes.forEach(r => {
+                html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
+            });
+
+            topoContent.innerHTML = `<div class="route-card" style="gap: 12px; flex-wrap: wrap;">${html}</div>`;
         }
 
-        function changeSector() {
-            const select = document.getElementById('sectorSelect');
-            const selectedFile = select.value;
-            img.src = selectedFile;
-            updateTopoInfo(selectedFile);
-            clearStickers(); 
+        // Sélectionner une voie pour l'afficher ou la modifier
+        function selectRoute(id, name, color) {
+            // Retirer la classe active de tous les badges
+            document.querySelectorAll('.grade-badge').forEach(b => b.classList.remove('active'));
+            
+            // Activer le badge cliqué
+            const badge = document.getElementById(`badge-${id}`);
+            if(badge) badge.classList.add('active');
+
+            currentRouteId = id;
+            currentRouteColor = color;
+            colorPicker.value = color;
+
+            activeBanner.style.background = color;
+            // Assurer un texte lisible sur la bannière selon la couleur
+            activeBanner.style.color = (color === "#FFD700") ? "#000" : "#fff";
+            activeBanner.textContent = `🎯 Voie active : ${name} (Clique sur le mur pour placer/modifier les pastilles)`;
+
+            // Charger les pastilles enregistrées pour cette voie
+            loadRouteStickers(id);
         }
 
-        function placeSticker(event) {
-            const rect = img.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / rect.width) * 100;
-            const y = ((event.clientY - rect.top) / rect.height) * 100;
+        // Afficher les pastilles enregistrées dans le localStorage
+        function loadRouteStickers(routeId) {
+            clearStickersDOM();
+            activeStickers = [];
 
-            if (x < 0 || x > 100 || y < 0 || y > 100) return;
+            const savedData = localStorage.getItem(`giono_route_${routeId}`);
+            if (savedData) {
+                const points = JSON.parse(savedData);
+                points.forEach(p => {
+                    createStickerElement(p.x, p.y, p.color);
+                });
+            }
+        }
 
-            const color = document.getElementById('colorPicker').value;
-
+        // Créer et afficher visuellement une pastille sur l'image
+        function createStickerElement(x, y, color) {
             const sticker = document.createElement('div');
             sticker.className = 'sticker';
             sticker.style.left = x + '%';
@@ -236,22 +328,74 @@
             sticker.style.backgroundColor = color;
 
             container.appendChild(sticker);
-            stickers.push({ element: sticker, x: x, y: y, color: color });
+            activeStickers.push({ element: sticker, x: x, y: y, color: color });
         }
 
+        // Nettoyer uniquement le DOM visuel
+        function clearStickersDOM() {
+            activeStickers.forEach(s => s.element.remove());
+        }
+
+        // Changement de secteur
+        function changeSector() {
+            const select = document.getElementById('sectorSelect');
+            const selectedFile = select.value;
+            img.src = selectedFile;
+            
+            currentRouteId = null;
+            activeBanner.style.background = "#d4edda";
+            activeBanner.style.color = "#155724";
+            activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Clique sur une cotation ci-dessous pour afficher ou tracer une voie.";
+            
+            clearStickersDOM();
+            activeStickers = [];
+            updateTopoInfo(selectedFile);
+        }
+
+        // Clic sur le mur pour ajouter une pastille à la voie active
+        function placeSticker(event) {
+            if (!currentRouteId) {
+                alert("Veuillez d'abord cliquer sur une cotation dans le topo ci-dessous pour sélectionner la voie à tracer !");
+                return;
+            }
+
+            const rect = img.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+            if (x < 0 || x > 100 || y < 0 || y > 100) return;
+
+            createStickerElement(x, y, currentRouteColor);
+        }
+
+        // Sauvegarder les pastilles de la voie active dans la mémoire du navigateur
+        function saveCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+
+            const pointsToSave = activeStickers.map(s => ({ x: s.x, y: s.y, color: s.color }));
+            localStorage.setItem(`giono_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            
+            alert("✅ Tracé de la voie enregistré avec succès sur cet appareil !");
+        }
+
+        // Annuler la dernière pastille posée
         function undoSticker() {
-            if (stickers.length > 0) {
-                const last = stickers.pop();
+            if (activeStickers.length > 0) {
+                const last = activeStickers.pop();
                 last.element.remove();
             }
         }
 
+        // Tout effacer à l'écran pour cette voie
         function clearStickers() {
-            stickers.forEach(s => s.element.remove());
-            stickers = [];
+            clearStickersDOM();
+            activeStickers = [];
         }
 
-        // Initialisation au chargement
+        // Initialisation au chargement de la page
         updateTopoInfo("voies 1 2 3.jpg");
     </script>
 
