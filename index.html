@@ -53,44 +53,45 @@
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
 
-        /* Conteneur global de l'espace de travail */
+        /* Conteneur global de l'espace de travail à 3 colonnes (Gauche: Outils/Listes | Centre: Mur | Droite: Légende) */
         .workspace {
             display: flex;
             justify-content: center;
             align-items: flex-start;
-            gap: 20px;
-            flex-wrap: wrap;
-            max-width: 1150px;
+            gap: 15px;
+            flex-wrap: nowrap;
+            max-width: 1350px;
             margin: 0 auto;
         }
 
-        /* Palette de marquage verticale à gauche élargie */
+        /* Palette de gauche réduite et optimisée */
         .palette-bar {
             background: #fff;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            width: 210px;
+            gap: 8px;
+            width: 180px;
             text-align: left;
+            flex-shrink: 0;
         }
         .palette-bar span {
             font-weight: bold;
             color: #333;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             text-align: center;
         }
         .tool-btn {
             background: #f1f3f5;
             color: #333;
             border: 2px solid #ccc;
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             transition: all 0.2s;
             text-align: center;
             width: 100%;
@@ -115,20 +116,20 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
 
-        /* Styles des sections Bannières (Exercices bloc & individualisés) */
+        /* Sections bannières réduites à gauche */
         .sidebar-section {
             background: #f8f9fa;
             border: 1px solid #ced4da;
             border-radius: 6px;
-            padding: 8px;
+            padding: 6px;
         }
         .sidebar-section h3 {
-            font-size: 0.85rem;
-            margin: 0 0 6px 0;
+            font-size: 0.75rem;
+            margin: 0 0 4px 0;
             color: #495057;
             text-align: center;
             border-bottom: 2px solid #dee2e6;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
             text-transform: uppercase;
         }
         .sidebar-section h3.bloc-title { color: #d97706; border-color: #fde68a; }
@@ -137,23 +138,29 @@
         .custom-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            max-height: 120px;
+            gap: 3px;
+            max-height: 90px;
             overflow-y: auto;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .custom-item {
             background: #fff;
             border: 1px solid #cbd5e1;
-            padding: 5px 8px;
+            padding: 4px 6px;
             border-radius: 4px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .custom-item span {
             cursor: pointer;
+            flex: 1;
             text-align: left;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            transition: background 0.15s;
         }
         .custom-item:hover { background: #e2e8f0; }
         .custom-item.active-custom {
@@ -162,13 +169,21 @@
             border-color: #2b6cb0;
             font-weight: bold;
         }
+        .delete-custom-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.7rem;
+            padding: 0 2px;
+            margin-left: 3px;
+        }
         .add-custom-btn {
             background: #e2e8f0;
             color: #334155;
             border: 1px dashed #94a3b8;
             width: 100%;
-            padding: 5px;
-            font-size: 0.8rem;
+            padding: 4px;
+            font-size: 0.75rem;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
@@ -179,27 +194,86 @@
         .selection-panel {
             background: #e7f5ff;
             border: 2px solid #3182ce;
-            padding: 8px;
+            padding: 6px;
             border-radius: 6px;
             display: none;
         }
         .selection-panel h4 {
-            margin: 0 0 6px 0;
-            font-size: 0.85rem;
+            margin: 0 0 4px 0;
+            font-size: 0.8rem;
             color: #2b6cb0;
             text-align: center;
         }
         .control-row {
             display: flex;
-            gap: 4px;
-            margin-bottom: 4px;
+            gap: 3px;
+            margin-bottom: 3px;
             justify-content: center;
         }
         .control-row button {
-            padding: 5px 8px;
-            font-size: 0.8rem;
+            padding: 4px 6px;
+            font-size: 0.75rem;
             margin: 0;
             background: #3182ce;
+        }
+
+        /* Barre de légende de droite (Lexique technique) */
+        .legend-bar {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            width: 250px;
+            text-align: left;
+            flex-shrink: 0;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        .legend-bar h3 {
+            font-size: 0.95rem;
+            margin-top: 0;
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 6px;
+        }
+        .legend-banner {
+            background: #f8f9fa;
+            border: 1px solid #dcdde1;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        .legend-header {
+            padding: 8px 10px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #2f3640;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f1f2f6;
+        }
+        .legend-header:hover {
+            background: #dfe4ea;
+        }
+        .legend-body {
+            padding: 8px 10px;
+            font-size: 0.78rem;
+            color: #57606f;
+            background: #fff;
+            border-top: 1px solid #dcdde1;
+            display: none;
+            line-height: 1.3;
+        }
+        .legend-banner.active .legend-body {
+            display: block;
+        }
+        .legend-banner.active .legend-header {
+            background: #e8f4fd;
+            color: #0984e3;
         }
         
         /* Modal de Configuration */
@@ -294,7 +368,6 @@
             width: 24px;
             height: 24px;
         }
-        /* Nouveaux styles pour les étiquettes FFME / techniques */
         .marker.tech-tag {
             padding: 4px 8px;
             border-radius: 4px;
@@ -304,9 +377,9 @@
             white-space: nowrap;
             border: 1px solid rgba(255,255,255,0.8);
         }
-        .marker.tech-pme { background-color: #2b6cb0; }       /* PME */
-        .marker.tech-lolotte { background-color: #805ad5; }  /* Lolotte */
-        .marker.tech-drapeau { background-color: #dd6b20; }  /* Drapeau */
+        .marker.tech-pme { background-color: #2b6cb0; }
+        .marker.tech-lolotte { background-color: #805ad5; }
+        .marker.tech-drapeau { background-color: #dd6b20; }
     </style>
 </head>
 <body>
@@ -322,7 +395,7 @@
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
-        <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
+        <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
         <button onclick="undoSticker()">Annuler</button>
         <button onclick="clearStickers()">Effacer</button>
     </div>
@@ -331,9 +404,10 @@
         ⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.
     </div>
 
-    <!-- Espace de travail : Palette et bannières à gauche, Mur à droite -->
+    <!-- Espace de travail à 3 colonnes -->
     <div class="workspace">
-        <!-- Palette verticale et sections de gauche -->
+        
+        <!-- 1. COLONNE DE GAUCHE : Outils et bannières compactes -->
         <div class="palette-bar">
             <span>Outils & Balises :</span>
             <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
@@ -348,14 +422,14 @@
             <div class="sidebar-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
-                <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Ajouter bloc</button>
+                <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Bloc</button>
             </div>
 
             <!-- Bannière 2 : Exercices individualisés -->
             <div class="sidebar-section">
-                <h3 class="indiv-title">Exercices individualisés</h3>
+                <h3 class="indiv-title">Indiv. / Élèves</h3>
                 <div id="indiv-list" class="custom-list"></div>
-                <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Ajouter élève</button>
+                <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Élève</button>
             </div>
 
             <!-- Panneau de réglage dynamique si un marqueur est sélectionné -->
@@ -375,12 +449,58 @@
             </div>
         </div>
 
-        <!-- Conteneur de l'image du mur -->
+        <!-- 2. COLONNE CENTRALE : Photo du mur -->
         <div>
             <div id="wall-container" onclick="placeMarker(event)">
                 <img id="wall-image" alt="Mur d'escalade">
             </div>
         </div>
+
+        <!-- 3. COLONNE DE DROITE : Barre de légende technique FFME interactive -->
+        <div class="legend-bar">
+            <h3>📖 Lexique Technique</h3>
+            
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">📌 PME (Position de Moindre Effort)</div>
+                <div class="legend-body">Zone de repos idéale : bassin proche du mur, bras tendus, genoux fléchis pour se relâcher et délayer.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🦵 Lolotte (Genou rentré)</div>
+                <div class="legend-body">Rotation interne du genou pour ramener le bassin près de la paroi, baisser le centre de gravité et s'allonger.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🚩 Drapeau</div>
+                <div class="legend-body">Placement de jambe en opposition (sans appui) pour contrer un déséquilibre ou une « porte de grange ».</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🪨 Le Bac</div>
+                <div class="legend-body">Prise très confortable et creuse dans laquelle on peut passer toute la main sans effort.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">📏 La Réglette</div>
+                <div class="legend-body">Prise plate, étroite et horizontale qui sollicite fortement la force des doigts.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🤏 La Pince</div>
+                <div class="legend-body">Prise serrée en opposition, prise en tenaille entre le pouce d'un côté et les doigts de l'autre.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🔄 L'Inversée</div>
+                <div class="legend-body">Prise orientée vers le bas. On la tient en tirant vers soi et en plaçant les pieds haut.</div>
+            </div>
+
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🚀 Le Jeté (Dynamique)</div>
+                <div class="legend-body">Mouvement aérien avec élan et suspension pour attraper une prise lointaine hors de portée.</div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Modal de Configuration -->
@@ -481,6 +601,11 @@
         
         let isFilterActive = false;
 
+        // Fonction pour ouvrir/fermer les bannières de légende au clic
+        function toggleLegendBanner(element) {
+            element.classList.toggle('active');
+        }
+
         async function initApp() {
             try {
                 const savedConfig = await getFromDB("school_config");
@@ -541,9 +666,41 @@
             schoolConfig.customRoutes.forEach(r => {
                 const item = document.createElement('div');
                 item.className = 'custom-item';
-                item.textContent = r.name;
                 if (r.id === currentRouteId) item.classList.add('active-custom');
-                item.onclick = () => selectCustomRoute(r.id);
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = r.name;
+                textSpan.onclick = () => selectCustomRoute(r.id);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-custom-btn';
+                delBtn.textContent = '❌';
+                delBtn.title = 'Supprimer';
+                delBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
+                        schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
+                        localStorage.removeItem(`eps_route_${r.id}`);
+                        await saveConfig();
+
+                        if (currentRouteId === r.id) {
+                            currentRouteId = null;
+                            clearMarkersDOM();
+                            activeMarkers = [];
+                            selectMarker(null);
+                            if (schoolConfig.images && schoolConfig.images.length > 0) {
+                                img.src = schoolConfig.images[0];
+                            }
+                            activeBanner.style.background = "#d4edda";
+                            activeBanner.style.color = "#155724";
+                            activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
+                        }
+                        renderCustomLists();
+                    }
+                };
+
+                item.appendChild(textSpan);
+                item.appendChild(delBtn);
 
                 if (r.type === 'individualise') {
                     indivListContainer.appendChild(item);
@@ -588,7 +745,6 @@
 
             renderCustomLists();
             selectCustomRoute(routeId);
-            alert(`✅ ${type === 'individualise' ? 'Élève' : 'Bloc'} "${newRoute.name}" créé ! Tu peux tracer.`);
         }
 
         function selectCustomRoute(routeId) {
