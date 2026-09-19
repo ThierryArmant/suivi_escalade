@@ -895,7 +895,7 @@
                     img.src = schoolConfig.images[0];
                     activeBanner.style.background = "#d4edda";
                     activeBanner.style.color = "#155724";
-                    activeBanner.textContent = "✨ Version Démo chargée : Sélectionnez une voie ou un bloc pour commencer.";
+                    activeBanner.textContent = "✨ Version Démo chargée : Sélectionnez une voie ou un bloc à gauche/en haut.";
                 }
             }
         }
@@ -1031,6 +1031,9 @@
             currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
             
             const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
+            if (targetImgSrc) {
+                img.src = targetImgSrc;
+            }
             
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
@@ -1045,17 +1048,7 @@
             activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
 
             renderCustomLists();
-
-            if (targetImgSrc) {
-                img.onload = function() {
-                    loadRouteMarkers(currentRouteId);
-                    img.onload = null;
-                };
-                img.src = targetImgSrc;
-                if (img.complete) {
-                    loadRouteMarkers(currentRouteId);
-                }
-            }
+            loadRouteMarkers(currentRouteId); // Chargement immédiat des pastilles et balises
         }
 
         // --- FILTRE MAGIQUE ---
@@ -1455,14 +1448,7 @@
                 
                 let targetSrc = foundRoute.imageSrc || schoolConfig.images[0] || "";
                 if (targetSrc) {
-                    img.onload = function() {
-                        loadRouteMarkers(currentRouteId);
-                        img.onload = null;
-                    };
                     img.src = targetSrc;
-                    if (img.complete) {
-                        loadRouteMarkers(currentRouteId);
-                    }
                 }
                 
                 let bannerBg = foundRoute.hexColor;
@@ -1472,6 +1458,8 @@
                 activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
+
+            loadRouteMarkers(currentRouteId);
         }
 
         function loadRouteMarkers(routeId) {
