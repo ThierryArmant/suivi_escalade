@@ -138,15 +138,15 @@
         .custom-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            max-height: 100px;
+            gap: 3px;
+            max-height: 90px;
             overflow-y: auto;
             margin-bottom: 4px;
         }
         .custom-item {
             background: #fff;
             border: 1px solid #cbd5e1;
-            padding: 6px 8px;
+            padding: 4px 6px;
             border-radius: 4px;
             font-size: 0.75rem;
             display: flex;
@@ -472,7 +472,7 @@
     </div>
 
     <div id="active-route-banner">
-        ⚠️ Chargement de la version démo...
+        ⚠️ Chargement...
     </div>
 
     <!-- Espace de travail à 3 colonnes -->
@@ -754,21 +754,30 @@
     </div>
 
     <script>
-        const STORAGE_KEY = "EPS_Climbing_Config_V5";
+        const MASTER_KEY = "EPS_Climbing_Master_V1";
 
+        // Récupération universelle incluant toutes les anciennes versions de clés pour ne rien perdre
         function loadConfig() {
             try {
-                const data = localStorage.getItem(STORAGE_KEY);
-                return data ? JSON.parse(data) : null;
+                const keysToTry = [MASTER_KEY, "EPS_Climbing_Config_V5", "EPS_Climbing_Config_V4", "EPS_Climbing_Config_V3", "EPS_Climbing_Config_V2", "EPS_Climbing_Config"];
+                for (let k of keysToTry) {
+                    const data = localStorage.getItem(k);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        if (parsed && parsed.images && parsed.images.length > 0) {
+                            return parsed;
+                        }
+                    }
+                }
             } catch (e) {
                 console.error("Erreur lecture configuration", e);
-                return null;
             }
+            return null;
         }
 
         function saveConfig() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(schoolConfig));
+                localStorage.setItem(MASTER_KEY, JSON.stringify(schoolConfig));
             } catch (err) {
                 alert("❌ Erreur lors de l'enregistrement de la configuration.");
             }
@@ -906,16 +915,13 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                // Clic direct sur toute la boîte et le texte
-                const selectAction = () => selectCustomRoute(r.id);
-                item.onclick = selectAction;
-
-                const textSpan = document.createElement('span');
-                textSpan.textContent = r.name;
-                textSpan.onclick = (e) => {
+                item.onclick = (e) => {
                     e.stopPropagation();
                     selectCustomRoute(r.id);
                 };
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = r.name;
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
@@ -1440,69 +1446,6 @@
             }
 
             loadRouteMarkers(currentRouteId);
-        }
-
-        function loadRouteMarkers(routeId) {
-            clearMarkersDOM();
-            activeMarkers = [];
-            const savedData = localStorage.getItem(`eps_route_${routeId}`);
-            if (savedData) {
-                const points = JSON.parse(savedData);
-                activeMarkers = points.map(p => ({
-                    x: p.x,
-                    y: p.y,
-                    type: p.type || 'dot',
-                    color: p.color || currentRouteColor,
-                    rotation: p.rotation || 0,
-                    scale: p.scale || 1
-                }));
-            }
-            renderMarkers();
-        }
-
-        function saveCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            const pointsToSave = activeMarkers.map(m => ({ 
-                x: m.x, 
-                y: m.y, 
-                type: m.type, 
-                color: m.color,
-                rotation: m.rotation,
-                scale: m.scale
-            }));
-            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
-            alert("✅ Tracé enregistré avec succès !");
-        }
-
-        function deleteCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
-                localStorage.removeItem(`eps_route_${currentRouteId}`);
-                selectMarker(null);
-                activeMarkers = [];
-                renderMarkers();
-                alert("🗑️ Tracé supprimé !");
-            }
-        }
-
-        function undoSticker() {
-            if (activeMarkers.length > 0) {
-                activeMarkers.pop();
-                selectMarker(null);
-                renderMarkers();
-            }
-        }
-
-        function clearStickers() {
-            selectMarker(null);
-            activeMarkers = [];
-            renderMarkers();
         }
 
         // Lancement immédiat au chargement de la page
