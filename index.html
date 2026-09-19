@@ -50,8 +50,6 @@
         button.save-btn:hover { background-color: #218838; }
         button.delete-btn { background-color: #dc3545; }
         button.delete-btn:hover { background-color: #c82333; }
-        button.custom-btn { background-color: #fd7e14; }
-        button.custom-btn:hover { background-color: #e8590c; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
 
@@ -62,11 +60,11 @@
             align-items: flex-start;
             gap: 20px;
             flex-wrap: wrap;
-            max-width: 1100px;
+            max-width: 1150px;
             margin: 0 auto;
         }
 
-        /* Palette de marquage verticale à gauche */
+        /* Palette de marquage verticale à gauche élargie */
         .palette-bar {
             background: #fff;
             padding: 15px;
@@ -75,25 +73,24 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            width: 190px;
+            width: 210px;
             text-align: left;
         }
         .palette-bar span {
             font-weight: bold;
             color: #333;
             font-size: 0.95rem;
-            margin-bottom: 2px;
             text-align: center;
         }
         .tool-btn {
             background: #f1f3f5;
             color: #333;
             border: 2px solid #ccc;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.2s;
             text-align: center;
             width: 100%;
@@ -118,30 +115,89 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
 
+        /* Styles des sections Bannières (Exercices bloc & individualisés) */
+        .sidebar-section {
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .sidebar-section h3 {
+            font-size: 0.85rem;
+            margin: 0 0 6px 0;
+            color: #495057;
+            text-align: center;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .sidebar-section h3.bloc-title { color: #d97706; border-color: #fde68a; }
+        .sidebar-section h3.indiv-title { color: #0284c7; border-color: #bae6fd; }
+
+        .custom-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-bottom: 6px;
+        }
+        .custom-item {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background 0.15s;
+        }
+        .custom-item:hover { background: #e2e8f0; }
+        .custom-item.active-custom {
+            background: #3182ce;
+            color: white;
+            border-color: #2b6cb0;
+            font-weight: bold;
+        }
+        .add-custom-btn {
+            background: #e2e8f0;
+            color: #334155;
+            border: 1px dashed #94a3b8;
+            width: 100%;
+            padding: 5px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .add-custom-btn:hover { background: #cbd5e1; }
+
         /* Panneau de réglage dynamique de l'élément sélectionné */
         .selection-panel {
             background: #e7f5ff;
             border: 2px solid #3182ce;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
-            margin-top: 10px;
             display: none;
         }
         .selection-panel h4 {
-            margin: 0 0 8px 0;
-            font-size: 0.9rem;
+            margin: 0 0 6px 0;
+            font-size: 0.85rem;
             color: #2b6cb0;
             text-align: center;
         }
         .control-row {
             display: flex;
-            gap: 5px;
-            margin-bottom: 6px;
+            gap: 4px;
+            margin-bottom: 4px;
             justify-content: center;
         }
         .control-row button {
-            padding: 6px 10px;
-            font-size: 0.85rem;
+            padding: 5px 8px;
+            font-size: 0.8rem;
             margin: 0;
             background: #3182ce;
         }
@@ -238,6 +294,19 @@
             width: 24px;
             height: 24px;
         }
+        /* Nouveaux styles pour les étiquettes FFME / techniques */
+        .marker.tech-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            white-space: nowrap;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .marker.tech-pme { background-color: #2b6cb0; }       /* PME */
+        .marker.tech-lolotte { background-color: #805ad5; }  /* Lolotte */
+        .marker.tech-drapeau { background-color: #dd6b20; }  /* Drapeau */
     </style>
 </head>
 <body>
@@ -246,12 +315,11 @@
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
     <div class="controls">
-        <label for="routeSelect">Sélectionner une Voie :</label>
+        <label for="routeSelect">Sélectionner une Voie (Excel) :</label>
         <select id="routeSelect" onchange="changeRoute()">
-            <option value="">-- Choisir une voie --</option>
+            <option value="">-- Choisir une voie officielle --</option>
         </select>
 
-        <button class="custom-btn" onclick="createCustomRoute()">➕ Créer bloc élève</button>
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
@@ -263,29 +331,46 @@
         ⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.
     </div>
 
-    <!-- Espace de travail : Palette à gauche, Mur à droite -->
+    <!-- Espace de travail : Palette et bannières à gauche, Mur à droite -->
     <div class="workspace">
-        <!-- Palette de marquage verticale -->
+        <!-- Palette verticale et sections de gauche -->
         <div class="palette-bar">
-            <span>Outils :</span>
+            <span>Outils & Balises :</span>
             <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
             <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
             <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
+            <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME (Repos)</button>
+            <button class="tool-btn" id="tool-lolotte" onclick="setTool('lolotte')">🦵 Lolotte</button>
+            <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
             <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
+
+            <!-- Bannière 1 : Exercices bloc -->
+            <div class="sidebar-section">
+                <h3 class="bloc-title">Exercices bloc</h3>
+                <div id="bloc-list" class="custom-list"></div>
+                <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Ajouter bloc</button>
+            </div>
+
+            <!-- Bannière 2 : Exercices individualisés -->
+            <div class="sidebar-section">
+                <h3 class="indiv-title">Exercices individualisés</h3>
+                <div id="indiv-list" class="custom-list"></div>
+                <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Ajouter élève</button>
+            </div>
 
             <!-- Panneau de réglage dynamique si un marqueur est sélectionné -->
             <div id="selection-panel" class="selection-panel">
                 <h4>🎯 Élément actif</h4>
                 <div class="control-row">
-                    <button onclick="rotateSelected(-15)" title="Pivoter à gauche">↺</button>
-                    <button onclick="rotateSelected(15)" title="Pivoter à droite">↻</button>
+                    <button onclick="rotateSelected(-15)" title="Pivoter gauche">↺</button>
+                    <button onclick="rotateSelected(15)" title="Pivoter droite">↻</button>
                 </div>
                 <div class="control-row">
                     <button onclick="scaleSelected(1.25)" title="Agrandir">🔍+</button>
                     <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
                 </div>
                 <div class="control-row">
-                    <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Supprimer</button>
+                    <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Suppr.</button>
                 </div>
             </div>
         </div>
@@ -407,11 +492,15 @@
             }
 
             populateRouteDropdown();
+            renderCustomLists();
+
             if (schoolConfig.images && schoolConfig.images.length > 0) {
-                img.src = schoolConfig.images[0];
-                activeBanner.style.background = "#d4edda";
-                activeBanner.style.color = "#155724";
-                activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Choisis une voie dans le menu déroulant ci-dessus.";
+                if (!currentRouteId) {
+                    img.src = schoolConfig.images[0];
+                    activeBanner.style.background = "#d4edda";
+                    activeBanner.style.color = "#155724";
+                    activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Choisis une voie ou un bloc à gauche/en haut.";
+                }
             } else {
                 img.src = ""; 
                 activeBanner.style.background = "#fff3cd";
@@ -429,33 +518,39 @@
         }
 
         function populateRouteDropdown() {
-            routeSelect.innerHTML = '<option value="">-- Choisir une voie ou un bloc --</option>';
+            routeSelect.innerHTML = '<option value="">-- Choisir une voie officielle (Excel) --</option>';
 
             if (schoolConfig.routes && schoolConfig.routes.length > 0) {
-                let optGroup = document.createElement('optgroup');
-                optGroup.label = "Voies officielles (Excel)";
-                
                 schoolConfig.routes.forEach(r => {
                     const opt = document.createElement('option');
                     opt.value = r.id;
                     opt.textContent = `Voie ${r.voie} (${r.cotation} - ${ucFirst(r.couleur)}) [Secteur ${r.secteur}]`;
-                    optGroup.appendChild(opt);
+                    routeSelect.appendChild(opt);
                 });
-                routeSelect.appendChild(optGroup);
             }
+        }
 
-            if (schoolConfig.customRoutes && schoolConfig.customRoutes.length > 0) {
-                let optGroupCustom = document.createElement('optgroup');
-                optGroupCustom.label = "Blocs personnalisés / Élèves";
-                
-                schoolConfig.customRoutes.forEach(r => {
-                    const opt = document.createElement('option');
-                    opt.value = r.id;
-                    opt.textContent = `⭐ ${r.name}`;
-                    optGroupCustom.appendChild(opt);
-                });
-                routeSelect.appendChild(optGroupCustom);
-            }
+        function renderCustomLists() {
+            const blocListContainer = document.getElementById('bloc-list');
+            const indivListContainer = document.getElementById('indiv-list');
+            blocListContainer.innerHTML = '';
+            indivListContainer.innerHTML = '';
+
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+
+            schoolConfig.customRoutes.forEach(r => {
+                const item = document.createElement('div');
+                item.className = 'custom-item';
+                item.textContent = r.name;
+                if (r.id === currentRouteId) item.classList.add('active-custom');
+                item.onclick = () => selectCustomRoute(r.id);
+
+                if (r.type === 'individualise') {
+                    indivListContainer.appendChild(item);
+                } else {
+                    blocListContainer.appendChild(item);
+                }
+            });
         }
 
         function openConfigModal() {
@@ -473,10 +568,58 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
+        async function createCustomRoute(type) {
+            let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
+            const customName = prompt(`Nom du ${labelType} (ex: ${type === 'individualise' ? 'Lucas, Sarah...' : 'Atelier Rétablissement, Bloc Jaune...'}) :`);
+            if (!customName || customName.trim() === "") return;
+
+            const routeId = `custom_${Date.now()}`;
+            const newRoute = {
+                id: routeId,
+                name: customName.trim(),
+                type: type,
+                color: (type === 'individualise') ? "#0284c7" : "#d97706",
+                imageSrc: img.src || (schoolConfig.images[0] || "")
+            };
+
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+            schoolConfig.customRoutes.push(newRoute);
+            await saveConfig();
+
+            renderCustomLists();
+            selectCustomRoute(routeId);
+            alert(`✅ ${type === 'individualise' ? 'Élève' : 'Bloc'} "${newRoute.name}" créé ! Tu peux tracer.`);
+        }
+
+        function selectCustomRoute(routeId) {
+            routeSelect.value = ""; 
+            const found = schoolConfig.customRoutes.find(r => r.id === routeId);
+            if (!found) return;
+
+            currentRouteId = found.id;
+            currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
+            img.src = found.imageSrc || schoolConfig.images[0] || "";
+
+            isFilterActive = false;
+            const magicBtn = document.getElementById('magic-filter-btn');
+            if (magicBtn) magicBtn.classList.remove('active-magic');
+            selectMarker(null);
+
+            let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
+            let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
+
+            activeBanner.style.background = bannerBg;
+            activeBanner.style.color = bannerColor;
+            activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
+
+            renderCustomLists();
+            loadRouteMarkers(currentRouteId);
+        }
+
         // --- FILTRE MAGIQUE ---
         function toggleColorFilter() {
             if (!currentRouteId) {
-                alert("Veuillez d'abord sélectionner une voie dans le menu déroulant !");
+                alert("Veuillez d'abord sélectionner une voie ou un bloc !");
                 return;
             }
             isFilterActive = !isFilterActive;
@@ -504,7 +647,7 @@
 
         function getCurrentColorName() {
             let isCustom = currentRouteId && currentRouteId.startsWith("custom_");
-            if (isCustom) return "";
+            if (isCustom) return ""; 
             let found = schoolConfig.routes.find(r => r.id === currentRouteId);
             return found ? found.couleur.toLowerCase() : "";
         }
@@ -587,10 +730,10 @@
             imageObj.src = src;
         }
 
-        // --- GESTION DES MARQUEURS ET INTERACTIVITÉ ---
+        // --- GESTION DES MARQUEURS ---
         function placeMarker(event) {
             if (!currentRouteId) {
-                alert("Veuillez d'abord sélectionner une voie ou un bloc dans le menu déroulant en haut !");
+                alert("Veuillez d'abord sélectionner une voie ou un bloc (via Excel ou à gauche) !");
                 return;
             }
             if (event.target.classList.contains('marker')) return;
@@ -619,7 +762,14 @@
             clearMarkersDOM();
             activeMarkers.forEach((p, index) => {
                 const marker = document.createElement('div');
-                marker.className = `marker ${p.type}`;
+                
+                if (p.type === 'pme' || p.type === 'lolotte' || p.type === 'drapeau') {
+                    marker.className = `marker tech-tag tech-${p.type}`;
+                    marker.textContent = p.type.toUpperCase();
+                } else {
+                    marker.className = `marker ${p.type}`;
+                }
+
                 if (index === selectedMarkerIndex) marker.classList.add('selected');
 
                 marker.style.left = p.x + '%';
@@ -645,7 +795,6 @@
         }
 
         function clearMarkersDOM() {
-            // Nettoyage radical et direct de tous les marqueurs visuels dans le conteneur
             const existingMarkers = container.querySelectorAll('.marker');
             existingMarkers.forEach(el => el.remove());
         }
@@ -696,7 +845,6 @@
             window.addEventListener('pointerup', onUp);
         }
 
-        // --- TRANSFORMATION & SUPPRESSION VIA BOUTONS ---
         function rotateSelected(angleDelta) {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers[selectedMarkerIndex].rotation = (activeMarkers[selectedMarkerIndex].rotation || 0) + angleDelta;
@@ -721,28 +869,6 @@
         }
 
         // --- CHARGEMENT / SAUVEGARDE / EXCEL ---
-        async function createCustomRoute() {
-            const customName = prompt("Nom du bloc personnalisé (ex: Bloc de Lucas, Défi Vert...) :");
-            if (!customName || customName.trim() === "") return;
-
-            const routeId = `custom_${Date.now()}`;
-            const newRoute = {
-                id: routeId,
-                name: customName,
-                color: "#fd7e14",
-                imageSrc: img.src || (schoolConfig.images[0] || "")
-            };
-
-            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
-            schoolConfig.customRoutes.push(newRoute);
-            await saveConfig();
-
-            populateRouteDropdown();
-            routeSelect.value = routeId;
-            changeRoute();
-            alert(`✅ Bloc "${customName}" créé ! Tu peux tracer.`);
-        }
-
         function downloadExcelTemplate() {
             const templateData = [
                 { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
@@ -864,13 +990,14 @@
             const magicBtn = document.getElementById('magic-filter-btn');
             if (magicBtn) magicBtn.classList.remove('active-magic');
             selectMarker(null);
+            renderCustomLists(); 
 
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null;
                 activeBanner.style.background = "#d4edda";
                 activeBanner.style.color = "#155724";
-                activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Choisis une voie dans le menu déroulant.";
+                activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
                 clearMarkersDOM();
                 activeMarkers = [];
                 if (schoolConfig.images && schoolConfig.images.length > 0) {
@@ -879,33 +1006,18 @@
                 return;
             }
 
-            let foundRoute = null;
-            let isCustom = selectedId.startsWith("custom_");
-
-            if (isCustom) {
-                foundRoute = schoolConfig.customRoutes.find(r => r.id === selectedId);
-                if (foundRoute) {
-                    currentRouteId = foundRoute.id;
-                    currentRouteColor = "#fd7e14";
-                    img.src = foundRoute.imageSrc || schoolConfig.images[0] || "";
-                    activeBanner.style.background = "#fd7e14";
-                    activeBanner.style.color = "#fff";
-                    activeBanner.textContent = `🎯 Bloc Personnalisé : ${foundRoute.name}`;
-                }
-            } else {
-                foundRoute = schoolConfig.routes.find(r => r.id === selectedId);
-                if (foundRoute) {
-                    currentRouteId = foundRoute.id;
-                    currentRouteColor = foundRoute.hexColor;
-                    img.src = foundRoute.imageSrc || schoolConfig.images[0] || "";
-                    
-                    let bannerBg = foundRoute.hexColor;
-                    let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
-                    
-                    activeBanner.style.background = bannerBg;
-                    activeBanner.style.color = bannerText;
-                    activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
-                }
+            let foundRoute = schoolConfig.routes.find(r => r.id === selectedId);
+            if (foundRoute) {
+                currentRouteId = foundRoute.id;
+                currentRouteColor = foundRoute.hexColor;
+                img.src = foundRoute.imageSrc || schoolConfig.images[0] || "";
+                
+                let bannerBg = foundRoute.hexColor;
+                let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
+                
+                activeBanner.style.background = bannerBg;
+                activeBanner.style.color = bannerText;
+                activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
 
             loadRouteMarkers(currentRouteId);
