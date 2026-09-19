@@ -138,15 +138,15 @@
         .custom-list {
             display: flex;
             flex-direction: column;
-            gap: 3px;
-            max-height: 90px;
+            gap: 4px;
+            max-height: 100px;
             overflow-y: auto;
             margin-bottom: 4px;
         }
         .custom-item {
             background: #fff;
             border: 1px solid #cbd5e1;
-            padding: 4px 6px;
+            padding: 6px 8px;
             border-radius: 4px;
             font-size: 0.75rem;
             display: flex;
@@ -161,6 +161,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: pointer;
         }
         .custom-item:hover { background: #e2e8f0; }
         .custom-item.active-custom {
@@ -174,7 +175,7 @@
             border: none;
             cursor: pointer;
             font-size: 0.7rem;
-            padding: 0 2px;
+            padding: 2px 4px;
             margin-left: 3px;
         }
         .add-custom-btn {
@@ -753,7 +754,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = "EPS_Climbing_Config_V4";
+        const STORAGE_KEY = "EPS_Climbing_Config_V5";
 
         function loadConfig() {
             try {
@@ -905,10 +906,16 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                item.onclick = () => selectCustomRoute(r.id);
+                // Clic direct sur toute la boîte et le texte
+                const selectAction = () => selectCustomRoute(r.id);
+                item.onclick = selectAction;
 
                 const textSpan = document.createElement('span');
                 textSpan.textContent = r.name;
+                textSpan.onclick = (e) => {
+                    e.stopPropagation();
+                    selectCustomRoute(r.id);
+                };
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
@@ -1433,6 +1440,69 @@
             }
 
             loadRouteMarkers(currentRouteId);
+        }
+
+        function loadRouteMarkers(routeId) {
+            clearMarkersDOM();
+            activeMarkers = [];
+            const savedData = localStorage.getItem(`eps_route_${routeId}`);
+            if (savedData) {
+                const points = JSON.parse(savedData);
+                activeMarkers = points.map(p => ({
+                    x: p.x,
+                    y: p.y,
+                    type: p.type || 'dot',
+                    color: p.color || currentRouteColor,
+                    rotation: p.rotation || 0,
+                    scale: p.scale || 1
+                }));
+            }
+            renderMarkers();
+        }
+
+        function saveCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+            const pointsToSave = activeMarkers.map(m => ({ 
+                x: m.x, 
+                y: m.y, 
+                type: m.type, 
+                color: m.color,
+                rotation: m.rotation,
+                scale: m.scale
+            }));
+            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            alert("✅ Tracé enregistré avec succès !");
+        }
+
+        function deleteCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
+                localStorage.removeItem(`eps_route_${currentRouteId}`);
+                selectMarker(null);
+                activeMarkers = [];
+                renderMarkers();
+                alert("🗑️ Tracé supprimé !");
+            }
+        }
+
+        function undoSticker() {
+            if (activeMarkers.length > 0) {
+                activeMarkers.pop();
+                selectMarker(null);
+                renderMarkers();
+            }
+        }
+
+        function clearStickers() {
+            selectMarker(null);
+            activeMarkers = [];
+            renderMarkers();
         }
 
         // Lancement immédiat au chargement de la page
