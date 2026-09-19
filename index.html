@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mur d'Escalade Virtuel - EPS</title>
+    
+    <!-- ========================================== -->
+    <!-- SECTION 1 : STYLES CSS (Mise en page)      -->
+    <!-- ========================================== -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,7 +40,6 @@
         }
         button:hover { background-color: #0056b3; }
         
-        /* Conteneur de l'image et des pastilles */
         #wall-container {
             position: relative;
             display: inline-block;
@@ -50,9 +53,8 @@
             display: block;
             width: 100%;
             height: auto;
-            max-height: 80vh;
+            max-height: 75vh;
         }
-        /* Style des pastilles (stickers) */
         .sticker {
             position: absolute;
             width: 24px;
@@ -67,45 +69,68 @@
 </head>
 <body>
 
-    <h1>🧗 Créateur de Voies - Escalade EPS</h1>
+    <!-- ========================================== -->
+    <!-- SECTION 2 : INTERFACE HTML (Sélecteurs & Vue)-->
+    <!-- ========================================== -->
+    <h1>🧗 Créateur de Voies - Bloc Virtuel EPS</h1>
     
     <div class="controls">
-        <label for="colorPicker">Couleur de la voie :</label>
-        <select id="colorPicker">
-            <option value="#FFD700">Jaune (Niveau 1)</option>
-            <option value="#00BFFF">Bleu (Niveau 2)</option>
-            <option value="#FF4500">Rouge (Niveau 3)</option>
-            <option value="#32CD32">Vert (Niveau 4)</option>
+        <!-- Choix du secteur (relié aux fichiers du dépôt) -->
+        <label for="sectorSelect">Secteur :</label>
+        <select id="sectorSelect" onchange="changeSector()">
+            <option value="voies 1 2 3.jpg">Voies 1, 2, 3</option>
+            <option value="voies 4 5 6.jpg">Voies 4, 5, 6</option>
+            <option value="voies 7 8 9.jpg">Voies 7, 8, 9</option>
+            <option value="voies 9 10 11.jpg">Voies 9, 10, 11</option>
+            <option value="voies 10 11 12 (13).jpg">Voies 10 à 13</option>
+            <option value="voies 13 14 15 16.jpg">Voies 13 à 16</option>
         </select>
-        <button onclick="undoSticker()">Annuler le dernier</button>
+
+        <!-- Choix de la couleur des pastilles -->
+        <label for="colorPicker">Couleur :</label>
+        <select id="colorPicker">
+            <option value="#FFD700">Jaune</option>
+            <option value="#00BFFF">Bleu</option>
+            <option value="#FF4500">Rouge</option>
+            <option value="#32CD32">Vert</option>
+        </select>
+
+        <button onclick="undoSticker()">Annuler</button>
         <button onclick="clearStickers()">Tout effacer</button>
     </div>
 
     <div>
         <div id="wall-container" onclick="placeSticker(event)">
-            <!-- Remplace "mur.jpg" par le nom exact de ta photo de mur dans ton dépôt GitHub -->
-            <img id="wall-image" src="mur.jpg" alt="Mur d'escalade">
+            <!-- Image par défaut au chargement -->
+            <img id="wall-image" src="voies 1 2 3.jpg" alt="Mur d'escalade">
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- SECTION 3 : CODE JAVASCRIPT (Logique & Clics)-->
+    <!-- ========================================== -->
     <script>
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
         let stickers = [];
 
+        // Changement de secteur (met à jour l'image et nettoie l'écran)
+        function changeSector() {
+            const select = document.getElementById('sectorSelect');
+            img.src = select.value;
+            clearStickers(); 
+        }
+
+        // Placement d'un sticker au clic sur l'image
         function placeSticker(event) {
             const rect = img.getBoundingClientRect();
-            
-            // Calcul de la position relative en pourcentage (pour s'adapter à tous les écrans, mobile ou PC)
             const x = ((event.clientX - rect.left) / rect.width) * 100;
             const y = ((event.clientY - rect.top) / rect.height) * 100;
 
-            // Empêcher de placer si on clique en dehors de l'image réelle
             if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
             const color = document.getElementById('colorPicker').value;
 
-            // Création visuelle du sticker
             const sticker = document.createElement('div');
             sticker.className = 'sticker';
             sticker.style.left = x + '%';
@@ -116,6 +141,7 @@
             stickers.push({ element: sticker, x: x, y: y, color: color });
         }
 
+        // Suppression du dernier sticker posé
         function undoSticker() {
             if (stickers.length > 0) {
                 const last = stickers.pop();
@@ -123,6 +149,7 @@
             }
         }
 
+        // Suppression de tous les stickers du secteur actif
         function clearStickers() {
             stickers.forEach(s => s.element.remove());
             stickers = [];
