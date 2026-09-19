@@ -182,7 +182,7 @@
             color: #334155;
             border: 1px dashed #94a3b8;
             width: 100%;
-            padding: 4px;
+            padding: 6px;
             font-size: 0.75rem;
             border-radius: 4px;
             cursor: pointer;
@@ -753,44 +753,24 @@
     </div>
 
     <script>
-        const DB_NAME = "EPS_Climbing_DB";
-        const STORE_NAME = "configStore";
-        const DB_VERSION = 1;
+        const STORAGE_KEY = "EPS_Climbing_Config_V4";
 
-        function openDB() {
-            return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
-                request.onerror = () => reject(request.error);
-                request.onsuccess = () => resolve(request.result);
-                request.onupgradeneeded = (event) => {
-                    const db = event.target.result;
-                    if (!db.objectStoreNames.contains(STORE_NAME)) {
-                        db.createObjectStore(STORE_NAME);
-                    }
-                };
-            });
+        function loadConfig() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                console.error("Erreur lecture configuration", e);
+                return null;
+            }
         }
 
-        async function saveToDB(key, value) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME, "readwrite");
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.put(value, key);
-                request.onsuccess = () => resolve(true);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
-        async function getFromDB(key) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(STORE_NAME, "readonly");
-                const store = transaction.objectStore(STORE_NAME);
-                const request = store.get(key);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
+        function saveConfig() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(schoolConfig));
+            } catch (err) {
+                alert("❌ Erreur lors de l'enregistrement de la configuration.");
+            }
         }
 
         const colorMap = {
@@ -833,58 +813,57 @@
             }
         }
 
-        async function initApp() {
-            try {
-                const savedConfig = await getFromDB("school_config");
-                if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
-                    schoolConfig = savedConfig;
-                } else {
-                    // --- VERSION DÉMO INTÉGRÉE PAR DÉFAUT ---
-                    const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
-                        <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
-                            <defs>
-                                <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stop-color="#1e293b"/>
-                                    <stop offset="100%" stop-color="#0f172a"/>
-                                </linearGradient>
-                            </defs>
-                            <rect width="800" height="1100" fill="url(#bg)"/>
-                            <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
-                            <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
-                            
-                            <circle cx="200" cy="150" r="28" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                            <circle cx="220" cy="350" r="25" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                            <circle cx="180" cy="550" r="30" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                            
-                            <circle cx="500" cy="200" r="26" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
-                            <circle cx="480" cy="450" r="28" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
-                            <circle cx="530" cy="700" r="25" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+        function initApp() {
+            const savedConfig = loadConfig();
+            
+            if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
+                schoolConfig = savedConfig;
+                if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+                if (!schoolConfig.routes) schoolConfig.routes = [];
+            } else {
+                // --- VERSION DÉMO INTÉGRÉE PAR DÉFAUT ---
+                const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
+                        <defs>
+                            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#1e293b"/>
+                                <stop offset="100%" stop-color="#0f172a"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="800" height="1100" fill="url(#bg)"/>
+                        <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
+                        <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
+                        
+                        <circle cx="200" cy="150" r="28" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        <circle cx="220" cy="350" r="25" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        <circle cx="180" cy="550" r="30" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        
+                        <circle cx="500" cy="200" r="26" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+                        <circle cx="480" cy="450" r="28" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+                        <circle cx="530" cy="700" r="25" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
 
-                            <circle cx="350" cy="250" r="25" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
-                            <circle cx="370" cy="500" r="28" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
-                            <circle cx="330" cy="750" r="30" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+                        <circle cx="350" cy="250" r="25" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+                        <circle cx="370" cy="500" r="28" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+                        <circle cx="330" cy="750" r="30" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
 
-                            <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">VERSION DÉMO - MUR D'ESCALADE</text>
-                            <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Modifiable via le bouton 'Configuration' de votre établissement</text>
-                        </svg>
-                    `);
+                        <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">VERSION DÉMO - MUR D'ESCALADE</text>
+                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Modifiable via le bouton 'Configuration' de votre établissement</text>
+                    </svg>
+                `);
 
-                    schoolConfig = {
-                        images: [demoWallSvg],
-                        routes: [
-                            { id: "demo_1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoWallSvg },
-                            { id: "demo_2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: demoWallSvg },
-                            { id: "demo_3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: demoWallSvg }
-                        ],
-                        customRoutes: [
-                            { id: "custom_demo_bloc", name: "Atelier Rétablissement", type: "bloc", color: "#d97706", imageSrc: demoWallSvg },
-                            { id: "custom_demo_eleve", name: "Élève : Cassie", type: "individualise", color: "#0284c7", imageSrc: demoWallSvg }
-                        ]
-                    };
-                    await saveConfig();
-                }
-            } catch (e) {
-                console.error("Erreur chargement base de données locale", e);
+                schoolConfig = {
+                    images: [demoWallSvg],
+                    routes: [
+                        { id: "demo_1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoWallSvg },
+                        { id: "demo_2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: demoWallSvg },
+                        { id: "demo_3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: demoWallSvg }
+                    ],
+                    customRoutes: [
+                        { id: "custom_demo_bloc", name: "Atelier Rétablissement", type: "bloc", color: "#d97706", imageSrc: demoWallSvg },
+                        { id: "custom_demo_eleve", name: "Élève : Cassie", type: "individualise", color: "#0284c7", imageSrc: demoWallSvg }
+                    ]
+                };
+                saveConfig();
             }
 
             populateRouteDropdown();
@@ -892,19 +871,11 @@
 
             if (schoolConfig.images && schoolConfig.images.length > 0) {
                 if (!currentRouteId) {
-                    switchImageAndLoadMarkers(schoolConfig.images[0], null);
+                    img.src = schoolConfig.images[0];
                     activeBanner.style.background = "#d4edda";
                     activeBanner.style.color = "#155724";
-                    activeBanner.textContent = "✨ Version Démo chargée : Sélectionnez une voie ou un bloc à gauche.";
+                    activeBanner.textContent = "✨ Version Démo chargée : Cliquez sur un bloc ou un élève à gauche pour interagir.";
                 }
-            }
-        }
-
-        async function saveConfig() {
-            try {
-                await saveToDB("school_config", schoolConfig);
-            } catch (err) {
-                alert("❌ Erreur lors de l'enregistrement de la configuration.");
             }
         }
 
@@ -934,7 +905,6 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                // Rendre toute la boîte cliquable
                 item.onclick = () => selectCustomRoute(r.id);
 
                 const textSpan = document.createElement('span');
@@ -944,12 +914,12 @@
                 delBtn.className = 'delete-custom-btn';
                 delBtn.textContent = '❌';
                 delBtn.title = 'Supprimer';
-                delBtn.onclick = async (e) => {
+                delBtn.onclick = (e) => {
                     e.stopPropagation();
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
-                        await saveConfig();
+                        saveConfig();
 
                         if (currentRouteId === r.id) {
                             currentRouteId = null;
@@ -957,7 +927,7 @@
                             activeMarkers = [];
                             selectMarker(null);
                             if (schoolConfig.images && schoolConfig.images.length > 0) {
-                                switchImageAndLoadMarkers(schoolConfig.images[0], null);
+                                img.src = schoolConfig.images[0];
                             }
                             activeBanner.style.background = "#d4edda";
                             activeBanner.style.color = "#155724";
@@ -993,10 +963,13 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        async function createCustomRoute(type) {
+        function createCustomRoute(type) {
             let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
-            const customName = prompt(`Nom du ${labelType} (ex: ${type === 'individualise' ? 'Lucas, Sarah...' : 'Atelier Rétablissement, Bloc Jaune...'}) :`);
-            if (!customName || customName.trim() === "") return;
+            let defaultName = type === 'individualise' ? `Élève ${schoolConfig.customRoutes.filter(r=>r.type==='individualise').length + 1}` : `Bloc ${schoolConfig.customRoutes.filter(r=>r.type!=='individualise').length + 1}`;
+            
+            let customName = prompt(`Nom du ${labelType} :`, defaultName);
+            if (customName === null) return;
+            customName = customName.trim() === "" ? defaultName : customName.trim();
 
             let activeImageSrc = "";
             if (img.src && img.src !== window.location.href && img.src !== "") {
@@ -1008,7 +981,7 @@
             const routeId = `custom_${Date.now()}`;
             const newRoute = {
                 id: routeId,
-                name: customName.trim(),
+                name: customName,
                 type: type,
                 color: (type === 'individualise') ? "#0284c7" : "#d97706",
                 imageSrc: activeImageSrc
@@ -1016,37 +989,10 @@
 
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            await saveConfig();
+            saveConfig();
 
             renderCustomLists();
             selectCustomRoute(routeId);
-        }
-
-        // Fonction centralisée et robuste pour changer l'image et charger les marqueurs/balises une fois l'image prête
-        function switchImageAndLoadMarkers(imageSrc, routeId) {
-            clearMarkersDOM();
-            activeMarkers = [];
-
-            if (!imageSrc) {
-                if (routeId) loadRouteMarkers(routeId);
-                return;
-            }
-
-            img.onload = function() {
-                if (routeId) {
-                    loadRouteMarkers(routeId);
-                }
-                img.onload = null; // Nettoyage de l'événement
-            };
-
-            img.src = imageSrc;
-
-            // Sécurité au cas où l'image est déjà en cache
-            if (img.complete && img.naturalHeight !== 0) {
-                if (routeId) {
-                    loadRouteMarkers(routeId);
-                }
-            }
         }
 
         function selectCustomRoute(routeId) {
@@ -1058,6 +1004,9 @@
             currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
             
             const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
+            if (targetImgSrc) {
+                img.src = targetImgSrc;
+            }
             
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
@@ -1072,7 +1021,7 @@
             activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
 
             renderCustomLists();
-            switchImageAndLoadMarkers(targetImgSrc, currentRouteId);
+            loadRouteMarkers(currentRouteId);
         }
 
         // --- FILTRE MAGIQUE ---
@@ -1357,7 +1306,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imgObj = new Image();
-                    imgObj.onload = async function() {
+                    imgObj.onload = function() {
                         const canvas = document.createElement('canvas');
                         let width = imgObj.width;
                         let height = imgObj.height;
@@ -1380,7 +1329,7 @@
                         
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
-                            await saveConfig();
+                            saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
                         }
@@ -1402,7 +1351,7 @@
             }
 
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -1433,7 +1382,7 @@
                 });
 
                 schoolConfig.routes = parsedRoutes;
-                await saveConfig();
+                saveConfig();
                 alert("✅ Fichier Excel importé avec succès !");
                 initApp();
             };
@@ -1460,7 +1409,7 @@
                 clearMarkersDOM();
                 activeMarkers = [];
                 if (schoolConfig.images && schoolConfig.images.length > 0) {
-                    switchImageAndLoadMarkers(schoolConfig.images[0], null);
+                    img.src = schoolConfig.images[0];
                 }
                 return;
             }
@@ -1471,7 +1420,9 @@
                 currentRouteColor = foundRoute.hexColor;
                 
                 let targetSrc = foundRoute.imageSrc || schoolConfig.images[0] || "";
-                switchImageAndLoadMarkers(targetSrc, currentRouteId);
+                if (targetSrc) {
+                    img.src = targetSrc;
+                }
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
@@ -1480,73 +1431,12 @@
                 activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
+
+            loadRouteMarkers(currentRouteId);
         }
 
-        function loadRouteMarkers(routeId) {
-            clearMarkersDOM();
-            activeMarkers = [];
-            const savedData = localStorage.getItem(`eps_route_${routeId}`);
-            if (savedData) {
-                const points = JSON.parse(savedData);
-                activeMarkers = points.map(p => ({
-                    x: p.x,
-                    y: p.y,
-                    type: p.type || 'dot',
-                    color: p.color || currentRouteColor,
-                    rotation: p.rotation || 0,
-                    scale: p.scale || 1
-                }));
-            }
-            renderMarkers();
-        }
-
-        function saveCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            const pointsToSave = activeMarkers.map(m => ({ 
-                x: m.x, 
-                y: m.y, 
-                type: m.type, 
-                color: m.color,
-                rotation: m.rotation,
-                scale: m.scale
-            }));
-            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
-            alert("✅ Tracé enregistré avec succès !");
-        }
-
-        function deleteCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
-                localStorage.removeItem(`eps_route_${currentRouteId}`);
-                selectMarker(null);
-                activeMarkers = [];
-                renderMarkers();
-                alert("🗑️ Tracé supprimé !");
-            }
-        }
-
-        function undoSticker() {
-            if (activeMarkers.length > 0) {
-                activeMarkers.pop();
-                selectMarker(null);
-                renderMarkers();
-            }
-        }
-
-        function clearStickers() {
-            selectMarker(null);
-            activeMarkers = [];
-            renderMarkers();
-        }
-
+        // Lancement immédiat au chargement de la page
         initApp();
     </script>
-
 </body>
 </html>
