@@ -118,7 +118,7 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
 
-        /* Panneau de réglage de l'élément sélectionné */
+        /* Panneau de réglage dynamique de l'élément sélectionné */
         .selection-panel {
             background: #e7f5ff;
             border: 2px solid #3182ce;
@@ -144,25 +144,6 @@
             font-size: 0.85rem;
             margin: 0;
             background: #3182ce;
-        }
-
-        /* Zone de corbeille / suppression */
-        #trash-zone {
-            background: #fff5f5;
-            border: 2px dashed #fc8181;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-            color: #c53030;
-            font-weight: bold;
-            font-size: 0.85rem;
-            margin-top: 10px;
-            display: none;
-            transition: background 0.2s;
-        }
-        #trash-zone.drag-over {
-            background: #feb2b2;
-            border-color: #e53e3e;
         }
         
         /* Modal de Configuration */
@@ -307,11 +288,6 @@
                     <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Supprimer</button>
                 </div>
             </div>
-
-            <!-- Zone de corbeille par glisser-déposer -->
-            <div id="trash-zone">
-                🗑️ Glisser ici pour supprimer
-            </div>
         </div>
 
         <!-- Conteneur de l'image du mur -->
@@ -411,7 +387,6 @@
         const routeSelect = document.getElementById('routeSelect');
         const activeBanner = document.getElementById('active-route-banner');
         const selectionPanel = document.getElementById('selection-panel');
-        const trashZone = document.getElementById('trash-zone');
 
         let currentRouteId = null;
         let currentRouteColor = "#FFD700";
@@ -618,7 +593,6 @@
                 alert("Veuillez d'abord sélectionner une voie ou un bloc dans le menu déroulant en haut !");
                 return;
             }
-            // Si on clique sur un marqueur existant, on ne place pas un nouveau
             if (event.target.classList.contains('marker')) return;
 
             const rect = img.getBoundingClientRect();
@@ -663,7 +637,6 @@
                     marker.innerHTML = '❌';
                 }
 
-                // Clic pour sélectionner
                 marker.onpointerdown = (e) => startDrag(e, index);
 
                 container.appendChild(marker);
@@ -688,22 +661,18 @@
 
             if (index !== null && index >= 0) {
                 selectionPanel.style.display = 'block';
-                trashZone.style.display = 'block';
             } else {
                 selectionPanel.style.display = 'none';
-                trashZone.style.display = 'none';
             }
         }
 
-        // --- GLISSER-DÉPOSER ET CORBEILLE ---
+        // --- DÉPLACEMENT DES MARQUEURS ---
         let draggingIndex = null;
 
         function startDrag(e, index) {
             e.stopPropagation();
             selectMarker(index);
             draggingIndex = index;
-
-            trashZone.style.display = 'block';
 
             const onMove = (moveEvent) => {
                 if (draggingIndex === null) return;
@@ -717,38 +686,10 @@
                     renderMarkers();
                     selectMarker(draggingIndex);
                 }
-
-                // Vérifier si survol de la corbeille
-                const trashRect = trashZone.getBoundingClientRect();
-                if (
-                    moveEvent.clientX >= trashRect.left &&
-                    moveEvent.clientX <= trashRect.right &&
-                    moveEvent.clientY >= trashRect.top &&
-                    moveEvent.clientY <= trashRect.bottom
-                ) {
-                    trashZone.classList.add('drag-over');
-                } else {
-                    trashZone.classList.remove('drag-over');
-                }
             };
 
-            const onUp = (upEvent) => {
-                if (draggingIndex !== null) {
-                    const trashRect = trashZone.getBoundingClientRect();
-                    if (
-                        upEvent.clientX >= trashRect.left &&
-                        upEvent.clientX <= trashRect.right &&
-                        upEvent.clientY >= trashRect.top &&
-                        upEvent.clientY <= trashRect.bottom
-                    ) {
-                        // Supprimer le marqueur
-                        activeMarkers.splice(draggingIndex, 1);
-                        selectMarker(null);
-                        renderMarkers();
-                    }
-                }
+            const onUp = () => {
                 draggingIndex = null;
-                trashZone.classList.remove('drag-over');
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
             };
@@ -757,7 +698,7 @@
             window.addEventListener('pointerup', onUp);
         }
 
-        // --- TRANSFORMATION (ROTATION & ÉCHELLE) ---
+        // --- TRANSFORMATION & SUPPRESSION VIA BOUTONS ---
         function rotateSelected(angleDelta) {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers[selectedMarkerIndex].rotation = (activeMarkers[selectedMarkerIndex].rotation || 0) + angleDelta;
@@ -978,7 +919,6 @@
             const savedData = localStorage.getItem(`eps_route_${routeId}`);
             if (savedData) {
                 const points = JSON.parse(savedData);
-                // Rétrocompatibilité avec les anciens points (sans rotation/scale)
                 activeMarkers = points.map(p => ({
                     x: p.x,
                     y: p.y,
