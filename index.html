@@ -45,11 +45,46 @@
         button.config-btn { background-color: #6c757d; }
         button.config-btn:hover { background-color: #5a6268; }
         button.save-btn { background-color: #28a745; }
-        button.save-btn:hover { background-color: #218838; }
+        button.save-btn.save-btn:hover { background-color: #218838; }
         button.delete-btn { background-color: #dc3545; }
         button.delete-btn:hover { background-color: #c82333; }
+        button.custom-btn { background-color: #fd7e14; }
+        button.custom-btn:hover { background-color: #e8590c; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
+
+        /* Palette de marquage (Outils) */
+        .palette-bar {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 10px auto 15px auto;
+            max-width: 650px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .tool-btn {
+            background: #f1f3f5;
+            color: #333;
+            border: 2px solid #ccc;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .tool-btn:hover { background: #e2e6ea; }
+        .tool-btn.active-tool {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
         
         /* Modal de Configuration */
         #config-modal {
@@ -134,6 +169,15 @@
             gap: 8px;
         }
 
+        .section-title {
+            font-size: 0.85rem;
+            color: #495057;
+            margin-top: 5px;
+            font-weight: bold;
+            border-bottom: 1px solid #ced4da;
+            padding-bottom: 3px;
+        }
+
         .grade-badge {
             padding: 5px 10px;
             border-radius: 4px;
@@ -168,15 +212,36 @@
             height: auto;
             max-height: 70vh;
         }
-        .sticker {
+
+        .marker {
             position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .marker.dot {
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            transform: translate(-50%, -50%);
             border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            pointer-events: none;
+        }
+        .marker.arrow {
+            font-size: 26px;
+            color: #ffcc00;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .marker.cross {
+            font-size: 24px;
+            color: #dc3545;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
         }
     </style>
 </head>
@@ -189,13 +254,20 @@
         <label for="sectorSelect">Secteur :</label>
         <select id="sectorSelect" onchange="changeSector()"></select>
 
-        <input type="hidden" id="colorPicker" value="#FFD700">
-
-        <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration des voies</button>
+        <button class="custom-btn" onclick="createCustomRoute()">➕ Créer bloc élève/libre</button>
+        <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
         <button onclick="undoSticker()">Annuler</button>
         <button onclick="clearStickers()">Effacer écran</button>
+    </div>
+
+    <!-- Palette d'outils de marquage -->
+    <div class="palette-bar">
+        <span>Outil actif :</span>
+        <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille prise</button>
+        <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche direction</button>
+        <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Prise interdite (X)</button>
     </div>
 
     <!-- Modal de Configuration -->
@@ -212,7 +284,6 @@
             <div class="form-group">
                 <label>2. Modèle de tableau Excel :</label>
                 <button class="template-btn" onclick="downloadExcelTemplate()">📥 Télécharger le modèle Excel type</button>
-                <div class="help-text">Téléchargez ce modèle, remplissez-le avec vos voies (plusieurs lignes possibles par voie pour les différentes couleurs), puis réimportez-le ci-dessous.</div>
             </div>
 
             <div class="form-group">
@@ -227,17 +298,17 @@
     </div>
 
     <div id="active-route-banner">
-        ⚠️ Aucune voie sélectionnée. Clique sur une cotation ci-dessous pour afficher ou tracer une voie.
+        ⚠️ Aucune voie sélectionnée. Clique sur une cotation ou un bloc personnalisé ci-dessous pour afficher ou tracer.
     </div>
 
     <div id="topo-panel">
-        <strong>Cotations du secteur :</strong>
-        <div class="topo-hint">💡 Clique sur une cotation pour charger son tracé ou en créer un nouveau sur le mur !</div>
+        <strong>Voies et Blocs du secteur :</strong>
+        <div class="topo-hint">💡 Clique sur un élément pour charger son tracé ou en créer un nouveau sur le mur !</div>
         <div id="topo-content">Chargement de la configuration...</div>
     </div>
 
     <div>
-        <div id="wall-container" onclick="placeSticker(event)">
+        <div id="wall-container" onclick="placeMarker(event)">
             <img id="wall-image" alt="Mur d'escalade">
         </div>
     </div>
@@ -254,19 +325,22 @@
 
         let schoolConfig = JSON.parse(localStorage.getItem('eps_wall_config')) || {
             images: [],
-            topo: {}
+            topo: {},
+            customRoutes: {} // Stocke les blocs personnalisés par secteur
         };
+
+        if (!schoolConfig.customRoutes) schoolConfig.customRoutes = {};
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
         const sectorSelect = document.getElementById('sectorSelect');
         const topoContent = document.getElementById('topo-content');
         const activeBanner = document.getElementById('active-route-banner');
-        const colorPicker = document.getElementById('colorPicker');
 
         let currentRouteId = null;
         let currentRouteColor = "#FFD700";
-        let activeStickers = [];
+        let currentTool = "dot";
+        let activeMarkers = [];
 
         function initApp() {
             if (!schoolConfig.images || schoolConfig.images.length === 0) {
@@ -296,21 +370,47 @@
             initApp();
         }
 
-        // Fonction pour générer et télécharger automatiquement le modèle Excel type
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active-tool'));
+            document.getElementById(`tool-${tool}`).classList.add('active-tool');
+        }
+
+        // Créer un bloc personnalisé pour un élève ou un parcours libre
+        function createCustomRoute() {
+            const currentImg = sectorSelect.value;
+            const customName = prompt("Nom du bloc personnalisé (ex: Bloc de Lucas, Défi Vert...) :");
+            if (!customName || customName.trim() === "") return;
+
+            const routeId = `custom_${Date.now()}`;
+            const newRoute = {
+                id: routeId,
+                name: customName,
+                color: "#fd7e14", // Orange distinctif pour les blocs personnalisés
+                text: customName,
+                textColor: "#fff"
+            };
+
+            if (!schoolConfig.customRoutes[currentImg]) {
+                schoolConfig.customRoutes[currentImg] = [];
+            }
+            schoolConfig.customRoutes[currentImg].push(newRoute);
+            localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+
+            updateTopoInfo(currentImg);
+            selectRoute(routeId, customName, "#fd7e14");
+            alert(`✅ Bloc "${customName}" créé avec succès ! Tu peux placer tes marquages.`);
+        }
+
         function downloadExcelTemplate() {
             const templateData = [
                 { Secteur: 1, Voie: "Voie 1", Cotation: "4B", Couleur: "Jaune" },
                 { Secteur: 1, Voie: "Voie 1", Cotation: "6A", Couleur: "Bleu" },
-                { Secteur: 1, Voie: "Voie 2", Cotation: "6B", Couleur: "Noir" },
-                { Secteur: 1, Voie: "Voie 2", Cotation: "5B", Couleur: "Vert" },
-                { Secteur: 2, Voie: "Voie 4", Cotation: "5C", Couleur: "Rouge" }
+                { Secteur: 1, Voie: "Voie 2", Cotation: "6B", Couleur: "Noir" }
             ];
-
             const worksheet = XLSX.utils.json_to_sheet(templateData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Voies EPS");
-            
-            // Déclenche le téléchargement du fichier Excel
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
@@ -320,16 +420,13 @@
                 input.value = "";
                 return;
             }
-
             let newImages = [];
             Array.from(input.files).forEach((file) => {
-                const url = URL.createObjectURL(file);
-                newImages.push(url);
+                newImages.push(URL.createObjectURL(file));
             });
-
             schoolConfig.images = newImages;
             localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
-            alert(`✅ ${newImages.length} image(s) prise(s) en compte avec succès !`);
+            alert(`✅ ${newImages.length} image(s) prise(s) en compte !`);
         }
 
         function handleExcelUpload(input) {
@@ -340,18 +437,15 @@
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(worksheet);
 
                 let newTopo = {};
-
                 rows.forEach((row, idx) => {
                     let sectorIndex = parseInt(row.Secteur || row.secteur || 1) - 1;
                     if (isNaN(sectorIndex) || sectorIndex < 0) sectorIndex = 0;
                     
                     let targetImage = schoolConfig.images[sectorIndex] || schoolConfig.images[0];
-
                     let voieName = row.Voie || row.voie || `Voie ${idx + 1}`;
                     let cotation = row.Cotation || row.cotation || "4A";
                     let couleurInput = (row.Couleur || row.couleur || "Jaune").trim().toLowerCase();
@@ -360,10 +454,7 @@
                     let textColor = (hexColor === "#FFD700") ? "#000" : "#fff";
                     let routeId = `route_${sectorIndex}_${idx}`;
 
-                    if (!newTopo[targetImage]) {
-                        newTopo[targetImage] = [];
-                    }
-
+                    if (!newTopo[targetImage]) newTopo[targetImage] = [];
                     newTopo[targetImage].push({
                         id: routeId,
                         name: `${voieName} (${cotation} - ${couleurInput.toUpperCase()})`,
@@ -385,16 +476,31 @@
         }
 
         function updateTopoInfo(filename) {
-            const routes = schoolConfig.topo[filename] || [];
+            const standardRoutes = schoolConfig.topo[filename] || [];
+            const customRoutes = schoolConfig.customRoutes[filename] || [];
+            
             let html = "";
-            if (routes.length === 0) {
-                html = "<span style='color: #666; font-style: italic;'>Aucune voie configurée pour ce secteur. Cliquez sur 'Configuration des voies'.</span>";
+            
+            if (standardRoutes.length === 0 && customRoutes.length === 0) {
+                html = "<span style='color: #666; font-style: italic;'>Aucune voie configurée. Utilisez l'import Excel ou créez un bloc personnalisé.</span>";
             } else {
-                routes.forEach(r => {
-                    html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
-                });
+                if (standardRoutes.length > 0) {
+                    html += `<div class="section-title">Voies officielles (Excel) :</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:5px;">`;
+                    standardRoutes.forEach(r => {
+                        html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
+                    });
+                    html += `</div>`;
+                }
+
+                if (customRoutes.length > 0) {
+                    html += `<div class="section-title" style="margin-top: 10px;">Blocs personnalisés / Élèves :</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:5px;">`;
+                    customRoutes.forEach(r => {
+                        html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">⭐ ${r.text}</span>`;
+                    });
+                    html += `</div>`;
+                }
             }
-            topoContent.innerHTML = `<div class="route-card" style="gap: 12px; flex-wrap: wrap;">${html}</div>`;
+            topoContent.innerHTML = `<div class="route-card" style="flex-direction: column; align-items: stretch; gap: 5px;">${html}</div>`;
         }
 
         function selectRoute(id, name, color) {
@@ -404,38 +510,46 @@
 
             currentRouteId = id;
             currentRouteColor = color;
-            colorPicker.value = color;
 
             activeBanner.style.background = color;
-            activeBanner.style.color = (color === "#FFD700") ? "#000" : "#fff";
-            activeBanner.textContent = `🎯 Voie active : ${name} (Clique sur le mur pour placer les pastilles)`;
+            activeBanner.style.color = (color === "#FFD700" || color === "#fd7e14") ? "#000" : "#fff";
+            activeBanner.textContent = `🎯 Élément actif : ${name} (Utilise la palette pour tracer)`;
 
-            loadRouteStickers(id);
+            loadRouteMarkers(id);
         }
 
-        function loadRouteStickers(routeId) {
-            clearStickersDOM();
-            activeStickers = [];
+        function loadRouteMarkers(routeId) {
+            clearMarkersDOM();
+            activeMarkers = [];
             const savedData = localStorage.getItem(`eps_route_${routeId}`);
             if (savedData) {
                 const points = JSON.parse(savedData);
-                points.forEach(p => createStickerElement(p.x, p.y, p.color));
+                points.forEach(p => createMarkerElement(p.x, p.y, p.type, p.color));
             }
         }
 
-        function createStickerElement(x, y, color) {
-            const sticker = document.createElement('div');
-            sticker.className = 'sticker';
-            sticker.style.left = x + '%';
-            sticker.style.top = y + '%';
-            sticker.style.backgroundColor = color;
+        function createMarkerElement(x, y, type, color) {
+            const marker = document.createElement('div');
+            marker.style.left = x + '%';
+            marker.style.top = y + '%';
 
-            container.appendChild(sticker);
-            activeStickers.push({ element: sticker, x: x, y: y, color: color });
+            if (type === 'dot') {
+                marker.className = 'marker dot';
+                marker.style.backgroundColor = color;
+            } else if (type === 'arrow') {
+                marker.className = 'marker arrow';
+                marker.innerHTML = '⬆️';
+            } else if (type === 'cross') {
+                marker.className = 'marker cross';
+                marker.innerHTML = '❌';
+            }
+
+            container.appendChild(marker);
+            activeMarkers.push({ element: marker, x: x, y: y, type: type, color: color });
         }
 
-        function clearStickersDOM() {
-            activeStickers.forEach(s => s.element.remove());
+        function clearMarkersDOM() {
+            activeMarkers.forEach(m => m.element.remove());
         }
 
         function changeSector() {
@@ -445,16 +559,16 @@
             currentRouteId = null;
             activeBanner.style.background = "#d4edda";
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Clique sur une cotation ci-dessous pour afficher ou tracer une voie.";
+            activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Clique sur un élément ci-dessous pour afficher ou tracer.";
             
-            clearStickersDOM();
-            activeStickers = [];
+            clearMarkersDOM();
+            activeMarkers = [];
             updateTopoInfo(selectedFile);
         }
 
-        function placeSticker(event) {
+        function placeMarker(event) {
             if (!currentRouteId) {
-                alert("Veuillez d'abord cliquer sur une cotation dans le topo ci-dessous pour sélectionner la voie à tracer !");
+                alert("Veuillez d'abord cliquer sur un élément dans le topo ci-dessous (ou créer un bloc personnalisé) pour commencer le tracé !");
                 return;
             }
 
@@ -464,42 +578,42 @@
 
             if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
-            createStickerElement(x, y, currentRouteColor);
+            createMarkerElement(x, y, currentTool, currentRouteColor);
         }
 
         function saveCurrentRoute() {
             if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
+                alert("Aucun élément actif sélectionné !");
                 return;
             }
-            const pointsToSave = activeStickers.map(s => ({ x: s.x, y: s.y, color: s.color }));
+            const pointsToSave = activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, color: m.color }));
             localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
-            alert("✅ Tracé enregistré avec succès !");
+            alert("✅ Tracé et marquages enregistrés avec succès !");
         }
 
         function deleteCurrentRoute() {
             if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
+                alert("Aucun élément actif sélectionné !");
                 return;
             }
-            if (confirm("Voulez-vous vraiment supprimer le tracé enregistré pour cette voie ?")) {
+            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
                 localStorage.removeItem(`eps_route_${currentRouteId}`);
-                clearStickersDOM();
-                activeStickers = [];
+                clearMarkersDOM();
+                activeMarkers = [];
                 alert("🗑️ Tracé supprimé !");
             }
         }
 
         function undoSticker() {
-            if (activeStickers.length > 0) {
-                const last = activeStickers.pop();
+            if (activeMarkers.length > 0) {
+                const last = activeMarkers.pop();
                 last.element.remove();
             }
         }
 
         function clearStickers() {
-            clearStickersDOM();
-            activeStickers = [];
+            clearMarkersDOM();
+            activeMarkers = [];
         }
 
         initApp();
