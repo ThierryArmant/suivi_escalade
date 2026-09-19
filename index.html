@@ -60,7 +60,7 @@
             align-items: flex-start;
             gap: 15px;
             flex-wrap: nowrap;
-            max-width: 1350px;
+            max-width: 1380px;
             margin: 0 auto;
         }
 
@@ -73,7 +73,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            width: 180px;
+            width: 195px;
             text-align: left;
             flex-shrink: 0;
         }
@@ -217,13 +217,13 @@
             background: #3182ce;
         }
 
-        /* Barre de légende de droite avec illustrations */
+        /* Barre de légende de droite */
         .legend-bar {
             background: #fff;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            width: 270px;
+            width: 280px;
             text-align: left;
             flex-shrink: 0;
             max-height: 75vh;
@@ -237,17 +237,27 @@
             border-bottom: 2px solid #3498db;
             padding-bottom: 6px;
         }
+        .legend-category {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #34495e;
+            background: #ecf0f1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 10px 0 6px 0;
+            text-transform: uppercase;
+        }
         .legend-banner {
             background: #f8f9fa;
             border: 1px solid #dcdde1;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             overflow: hidden;
             transition: all 0.2s;
         }
         .legend-header {
-            padding: 8px 10px;
-            font-size: 0.85rem;
+            padding: 7px 10px;
+            font-size: 0.82rem;
             font-weight: bold;
             color: #2f3640;
             cursor: pointer;
@@ -258,8 +268,8 @@
         }
         .legend-header:hover { background: #dfe4ea; }
         .legend-body {
-            padding: 10px;
-            font-size: 0.78rem;
+            padding: 8px 10px;
+            font-size: 0.76rem;
             color: #57606f;
             background: #fff;
             border-top: 1px solid #dcdde1;
@@ -272,7 +282,7 @@
         
         .legend-illustration {
             width: 100%;
-            height: 90px;
+            height: 110px;
             background: #f1f2f6;
             border-radius: 4px;
             margin-bottom: 6px;
@@ -280,10 +290,12 @@
             align-items: center;
             justify-content: center;
             border: 1px solid #e1e2e6;
+            overflow: hidden;
         }
-        .legend-illustration svg {
-            max-width: 100%;
-            max-height: 100%;
+        .legend-illustration img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Modal de Configuration */
@@ -390,6 +402,8 @@
         .marker.tech-pme { background-color: #2b6cb0; }
         .marker.tech-lolotte { background-color: #805ad5; }
         .marker.tech-drapeau { background-color: #dd6b20; }
+        .marker.tech-cm { background-color: #0d9488; }
+        .marker.tech-cp { background-color: #16a34a; }
     </style>
 </head>
 <body>
@@ -426,6 +440,8 @@
             <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME (Repos)</button>
             <button class="tool-btn" id="tool-lolotte" onclick="setTool('lolotte')">🦵 Lolotte</button>
             <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
+            <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 Chang. Main (CM)</button>
+            <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 Chang. Pied (CP)</button>
             <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
 
             <!-- Bannière 1 : Exercices bloc -->
@@ -466,24 +482,18 @@
             </div>
         </div>
 
-        <!-- 3. COLONNE DE DROITE : Barre de légende technique avec illustrations -->
+        <!-- 3. COLONNE DE DROITE : Barre de légende technique avec images externes -->
         <div class="legend-bar">
             <h3>📖 Lexique Technique</h3>
             
+            <div class="legend-category">🤸 Gestes & Postures</div>
+
             <!-- PME -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">📌 PME (Repos)</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Schéma PME: Bras tendus, bassin contre mur -->
-                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
-                            <circle cx="50" cy="30" r="8" fill="#2b6cb0"/>
-                            <line x1="50" y1="38" x2="50" y2="55" stroke="#2b6cb0" stroke-width="4"/>
-                            <line x1="50" y1="42" x2="20" y2="35" stroke="#2b6cb0" stroke-width="3"/>
-                            <line x1="50" y1="55" x2="35" y2="70" stroke="#2b6cb0" stroke-width="3"/>
-                            <line x1="50" y1="55" x2="65" y2="70" stroke="#2b6cb0" stroke-width="3"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1522163182402-834f871fd951?auto=format&fit=crop&w=400&q=80" alt="Position de Moindre Effort">
                     </div>
                     Zone de repos idéale : bassin proche du mur, bras tendus, genoux fléchis pour se relâcher.
                 </div>
@@ -494,13 +504,7 @@
                 <div class="legend-header">🦵 Lolotte</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Schéma Lolotte: Genou rentré -->
-                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
-                            <circle cx="55" cy="28" r="8" fill="#805ad5"/>
-                            <path d="M55 36 Q 40 45 35 60" fill="none" stroke="#805ad5" stroke-width="4"/>
-                            <line x1="55" y1="36" x2="65" y2="65" stroke="#805ad5" stroke-width="4"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1564769662533-4f00a87b4056?auto=format&fit=crop&w=400&q=80" alt="Lolotte escalade">
                     </div>
                     Rotation interne du genou pour ramener le bassin près de la paroi et s'allonger.
                 </div>
@@ -511,29 +515,53 @@
                 <div class="legend-header">🚩 Drapeau</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Schéma Drapeau: Jambe latérale -->
-                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
-                            <circle cx="50" cy="28" r="8" fill="#dd6b20"/>
-                            <line x1="50" y1="36" x2="50" y2="58" stroke="#dd6b20" stroke-width="4"/>
-                            <line x1="50" y1="58" x2="35" y2="70" stroke="#dd6b20" stroke-width="4"/>
-                            <line x1="50" y1="58" x2="80" y2="50" stroke="#dd6b20" stroke-width="3" stroke-dasharray="3"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1607860108855-64b2dc73ed47?auto=format&fit=crop&w=400&q=80" alt="Drapeau escalade">
                     </div>
                     Placement de jambe en opposition (sans appui) pour contrer un déséquilibre (porte de grange).
                 </div>
             </div>
+
+            <!-- Changement de Main (CM) -->
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🔄 Changement de Main (CM)</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <img src="https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=400&q=80" alt="Changement de main">
+                    </div>
+                    Permutation des mains sur une même prise pour libérer la place ou préparer le mouvement suivant.
+                </div>
+            </div>
+
+            <!-- Changement de Pied (CP) -->
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">👟 Changement de Pied (CP)</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <img src="https://images.unsplash.com/photo-1516592673885-4a0ac8582d02?auto=format&fit=crop&w=400&q=80" alt="Changement de pied">
+                    </div>
+                    Permutation des pieds sur une même prise (par pivot, superposition ou saut) pour réorienter le corps.
+                </div>
+            </div>
+
+            <!-- Jeté -->
+            <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                <div class="legend-header">🚀 Le Jeté</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <img src="https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=400&q=80" alt="Jeté escalade">
+                    </div>
+                    Mouvement aérien avec élan et suspension pour attraper une prise lointaine hors de portée.
+                </div>
+            </div>
+
+            <div class="legend-category">🪨 Les Types de Prises</div>
 
             <!-- Bac -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">🪨 Le Bac</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Dessin prise Bac -->
-                            <path d="M30 45 Q 50 20 70 45 Q 85 65 15 65 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
-                            <path d="M35 45 Q 50 30 65 45" fill="none" stroke="#334155" stroke-width="3"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80" alt="Prise bac escalade">
                     </div>
                     Prise très confortable et creuse dans laquelle on peut passer toute la main sans effort.
                 </div>
@@ -544,10 +572,7 @@
                 <div class="legend-header">📏 La Réglette</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Dessin Réglette -->
-                            <rect x="20" y="35" width="60" height="12" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1565992441121-4367c2967103?auto=format&fit=crop&w=400&q=80" alt="Réglette escalade">
                     </div>
                     Prise plate, étroite et horizontale qui sollicite fortement la force des doigts.
                 </div>
@@ -558,11 +583,7 @@
                 <div class="legend-header">🤏 La Pince</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Dessin Pince -->
-                            <ellipse cx="50" cy="40" rx="20" ry="15" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                            <path d="M35 25 L 35 55 M 65 25 L 65 55" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1527937395635-97df7d394a50?auto=format&fit=crop&w=400&q=80" alt="Pince escalade">
                     </div>
                     Prise serrée en tenaille entre le pouce d'un côté et les doigts de l'autre.
                 </div>
@@ -573,29 +594,9 @@
                 <div class="legend-header">🔄 L'Inversée</div>
                 <div class="legend-body">
                     <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Dessin Inversée (flèche vers le bas) -->
-                            <path d="M30 35 L 50 55 L 70 35 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                            <path d="M50 20 L 50 45" stroke="#e11d48" stroke-width="4" marker-end="url(#arrow)"/>
-                        </svg>
+                        <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80" alt="Prise inversée">
                     </div>
                     Prise orientée vers le bas. On la tient en tirant vers soi et en plaçant les pieds haut.
-                </div>
-            </div>
-
-            <!-- Jeté -->
-            <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                <div class="legend-header">🚀 Le Jeté</div>
-                <div class="legend-body">
-                    <div class="legend-illustration">
-                        <svg viewBox="0 0 100 80" width="100" height="70">
-                            <!-- Dessin Jeté (mouvement aérien) -->
-                            <path d="M25 60 Q 50 15 75 30" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="4"/>
-                            <circle cx="25" cy="60" r="5" fill="#2563eb"/>
-                            <circle cx="75" cy="30" r="6" fill="#16a34a"/>
-                        </svg>
-                    </div>
-                    Mouvement aérien avec élan et suspension pour attraper une prise lointaine hors de portée.
                 </div>
             </div>
         </div>
@@ -1017,7 +1018,7 @@
             activeMarkers.forEach((p, index) => {
                 const marker = document.createElement('div');
                 
-                if (p.type === 'pme' || p.type === 'lolotte' || p.type === 'drapeau') {
+                if (['pme', 'lolotte', 'drapeau', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
