@@ -54,7 +54,7 @@
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
 
-        /* Palette de marquage */
+        /* Palette de marquage et filtres */
         .palette-bar {
             background: #fff;
             padding: 10px;
@@ -85,6 +85,17 @@
             color: white;
             border-color: #0056b3;
             box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        .magic-btn {
+            background: #f3e8ff;
+            color: #6b21a8;
+            border: 2px solid #d8b4fe;
+        }
+        .magic-btn.active-magic {
+            background: #9333ea;
+            color: white;
+            border-color: #7e22ce;
+            box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
         
         /* Modal de Configuration */
@@ -193,12 +204,13 @@
         <button onclick="clearStickers()">Effacer</button>
     </div>
 
-    <!-- Palette d'outils -->
+    <!-- Palette d'outils et Filtre Magique -->
     <div class="palette-bar">
-        <span>Outil actif :</span>
-        <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille prise</button>
-        <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche direction</button>
-        <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Prise interdite (X)</button>
+        <span>Outil :</span>
+        <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
+        <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
+        <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
+        <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler la couleur</button>
     </div>
 
     <!-- Modal de Configuration -->
@@ -209,13 +221,12 @@
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des secteurs (Max 6 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum). Stockage haute capacité sécurisé.</div>
+                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum).</div>
             </div>
 
             <div class="form-group">
                 <label>2. Modèle de tableau Excel :</label>
                 <button class="template-btn" onclick="downloadExcelTemplate()">📥 Télécharger le modèle Excel type</button>
-                <div class="help-text">Colonnes simples : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>.</div>
             </div>
 
             <div class="form-group">
@@ -230,7 +241,7 @@
     </div>
 
     <div id="active-route-banner">
-        ⚠️ Aucune voie sélectionnée. Choisis une voie dans le menu déroulant ci-dessus.
+        ⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.
     </div>
 
     <div>
@@ -240,7 +251,6 @@
     </div>
 
     <script>
-        // Gestionnaire IndexedDB pour stocker sans limite de taille
         const DB_NAME = "EPS_Climbing_DB";
         const STORE_NAME = "configStore";
         const DB_VERSION = 1;
@@ -305,6 +315,9 @@
         let currentRouteColor = "#FFD700";
         let currentTool = "dot";
         let activeMarkers = [];
+        
+        // Gestion du filtre magique
+        let isFilterActive = false;
 
         async function initApp() {
             try {
@@ -319,8 +332,13 @@
             populateRouteDropdown();
             if (schoolConfig.images && schoolConfig.images.length > 0) {
                 img.src = schoolConfig.images[0];
+                activeBanner.style.background = "#d4edda";
+                activeBanner.style.color = "#155724";
+                activeBanner.textContent = "⚠️ Aucune voie sélectionnée. Choisis une voie dans le menu déroulant ci-dessus.";
             } else {
                 img.src = ""; 
+                activeBanner.style.background = "#fff3cd";
+                activeBanner.style.color = "#856404";
                 activeBanner.textContent = "⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.";
             }
         }
@@ -374,9 +392,125 @@
 
         function setTool(tool) {
             currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active-tool'));
+            document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
+
+        // --- FILTRE MAGIQUE D'ISOLATION DES PRISES PAR COULEUR ---
+        function toggleColorFilter() {
+            if (!currentRouteId) {
+                alert("Veuillez d'abord sélectionner une voie dans le menu déroulant !");
+                return;
+            }
+            isFilterActive = !isFilterActive;
+            const btn = document.getElementById('magic-filter-btn');
+            
+            if (isFilterActive) {
+                btn.classList.add('active-magic');
+                applyColorFilter();
+            } else {
+                btn.classList.remove('active-magic');
+                restoreOriginalImage();
+            }
+        }
+
+        function getBaseImageSource() {
+            let isCustom = currentRouteId && currentRouteId.startsWith("custom_");
+            if (isCustom) {
+                let found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
+                return found ? found.imageSrc : schoolConfig.images[0];
+            } else {
+                let found = schoolConfig.routes.find(r => r.id === currentRouteId);
+                return found ? found.imageSrc : schoolConfig.images[0];
+            }
+        }
+
+        function getCurrentColorName() {
+            let isCustom = currentRouteId && currentRouteId.startsWith("custom_");
+            if (isCustom) return "";
+            let found = schoolConfig.routes.find(r => r.id === currentRouteId);
+            return found ? found.couleur.toLowerCase() : "";
+        }
+
+        function restoreOriginalImage() {
+            let src = getBaseImageSource();
+            if (src) img.src = src;
+        }
+
+        function applyColorFilter() {
+            let src = getBaseImageSource();
+            if (!src) return;
+
+            let colorName = getCurrentColorName();
+            if (!colorName) {
+                alert("Ce filtre magique s'applique sur les voies officielles colorées (jaune, bleu, rouge, vert, noir, violet).");
+                isFilterActive = false;
+                document.getElementById('magic-filter-btn').classList.remove('active-magic');
+                return;
+            }
+
+            const imageObj = new Image();
+            imageObj.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = imageObj.width;
+                canvas.height = imageObj.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imageObj, 0, 0);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i];
+                    let g = data[i + 1];
+                    let b = data[i + 2];
+
+                    let max = Math.max(r, g, b);
+                    let min = Math.min(r, g, b);
+                    let diff = max - min;
+                    let lightness = (max + min) / 2;
+                    let saturation = diff === 0 ? 0 : diff / (1 - Math.abs(2 * lightness / 255 - 1)) / 255;
+                    
+                    let hue = 0;
+                    if (diff !== 0) {
+                        if (max === r) hue = ((g - b) / diff) % 6;
+                        else if (max === g) hue = (b - r) / diff + 2;
+                        else hue = (r - g) / diff + 4;
+                        hue = Math.round(hue * 60);
+                        if (hue < 0) hue += 360;
+                    }
+
+                    let match = false;
+                    if (colorName.includes("jaune")) {
+                        if (hue >= 35 && hue <= 75 && saturation > 0.3 && lightness > 60) match = true;
+                    } else if (colorName.includes("bleu")) {
+                        if (hue >= 180 && hue <= 260 && saturation > 0.3) match = true;
+                    } else if (colorName.includes("rouge")) {
+                        if ((hue <= 15 || hue >= 335) && saturation > 0.3) match = true;
+                    } else if (colorName.includes("vert")) {
+                        if (hue >= 75 && hue <= 170 && saturation > 0.3) match = true;
+                    } else if (colorName.includes("noir")) {
+                        if (lightness < 55) match = true;
+                    } else if (colorName.includes("violet")) {
+                        if (hue >= 260 && hue <= 335 && saturation > 0.3) match = true;
+                    }
+
+                    if (!match) {
+                        // Transformation de l'arrière-plan en niveaux de gris atténués
+                        let avg = 0.299 * r + 0.587 * g + 0.114 * b;
+                        let grey = Math.min(255, Math.max(0, avg * 0.85));
+                        data[i] = grey;
+                        data[i + 1] = grey;
+                        data[i + 2] = grey;
+                    }
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+                img.src = canvas.toDataURL('image/jpeg', 0.9);
+            };
+            imageObj.src = src;
+        }
+        // --------------------------------------------------------
 
         async function createCustomRoute() {
             const customName = prompt("Nom du bloc personnalisé (ex: Bloc de Lucas, Défi Vert...) :");
@@ -414,7 +548,6 @@
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
-        // Import des photos avec stockage IndexedDB haute capacité
         function handleImagesUpload(input) {
             if (input.files.length > 6) {
                 alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
@@ -519,6 +652,10 @@
         }
 
         function changeRoute() {
+            // Réinitialisation du filtre magique lors du changement de voie
+            isFilterActive = false;
+            document.getElementById('magic-filter-btn').classList.remove('active-magic');
+
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null;
@@ -541,7 +678,7 @@
                     img.src = foundRoute.imageSrc || schoolConfig.images[0];
                     activeBanner.style.background = "#fd7e14";
                     activeBanner.style.color = "#fff";
-                    activeBanner.textContent = `🎯 Bloc Personnalisé : ${foundRoute.name} (Utilise la palette pour tracer)`;
+                    activeBanner.textContent = `🎯 Bloc Personnalisé : ${foundRoute.name}`;
                 }
             } else {
                 foundRoute = schoolConfig.routes.find(r => r.id === selectedId);
@@ -646,7 +783,6 @@
             activeMarkers = [];
         }
 
-        // Lancement initial au chargement de la page
         initApp();
     </script>
 
