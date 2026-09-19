@@ -53,7 +53,7 @@
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
 
-        /* Conteneur global de l'espace de travail à 3 colonnes (Gauche: Outils/Listes | Centre: Mur | Droite: Légende) */
+        /* Conteneur global de l'espace de travail à 3 colonnes */
         .workspace {
             display: flex;
             justify-content: center;
@@ -64,7 +64,7 @@
             margin: 0 auto;
         }
 
-        /* Palette de gauche réduite et optimisée */
+        /* Palette de gauche */
         .palette-bar {
             background: #fff;
             padding: 12px;
@@ -116,7 +116,7 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
 
-        /* Sections bannières réduites à gauche */
+        /* Sections bannières à gauche */
         .sidebar-section {
             background: #f8f9fa;
             border: 1px solid #ced4da;
@@ -190,7 +190,7 @@
         }
         .add-custom-btn:hover { background: #cbd5e1; }
 
-        /* Panneau de réglage dynamique de l'élément sélectionné */
+        /* Panneau de réglage dynamique */
         .selection-panel {
             background: #e7f5ff;
             border: 2px solid #3182ce;
@@ -217,13 +217,13 @@
             background: #3182ce;
         }
 
-        /* Barre de légende de droite (Lexique technique) */
+        /* Barre de légende de droite avec illustrations */
         .legend-bar {
             background: #fff;
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            width: 250px;
+            width: 270px;
             text-align: left;
             flex-shrink: 0;
             max-height: 75vh;
@@ -256,26 +256,36 @@
             align-items: center;
             background: #f1f2f6;
         }
-        .legend-header:hover {
-            background: #dfe4ea;
-        }
+        .legend-header:hover { background: #dfe4ea; }
         .legend-body {
-            padding: 8px 10px;
+            padding: 10px;
             font-size: 0.78rem;
             color: #57606f;
             background: #fff;
             border-top: 1px solid #dcdde1;
             display: none;
             line-height: 1.3;
+            text-align: center;
         }
-        .legend-banner.active .legend-body {
-            display: block;
-        }
-        .legend-banner.active .legend-header {
-            background: #e8f4fd;
-            color: #0984e3;
-        }
+        .legend-banner.active .legend-body { display: block; }
+        .legend-banner.active .legend-header { background: #e8f4fd; color: #0984e3; }
         
+        .legend-illustration {
+            width: 100%;
+            height: 90px;
+            background: #f1f2f6;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e1e2e6;
+        }
+        .legend-illustration svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
         /* Modal de Configuration */
         #config-modal {
             display: none;
@@ -456,48 +466,137 @@
             </div>
         </div>
 
-        <!-- 3. COLONNE DE DROITE : Barre de légende technique FFME interactive -->
+        <!-- 3. COLONNE DE DROITE : Barre de légende technique avec illustrations -->
         <div class="legend-bar">
             <h3>📖 Lexique Technique</h3>
             
+            <!-- PME -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                <div class="legend-header">📌 PME (Position de Moindre Effort)</div>
-                <div class="legend-body">Zone de repos idéale : bassin proche du mur, bras tendus, genoux fléchis pour se relâcher et délayer.</div>
+                <div class="legend-header">📌 PME (Repos)</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Schéma PME: Bras tendus, bassin contre mur -->
+                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
+                            <circle cx="50" cy="30" r="8" fill="#2b6cb0"/>
+                            <line x1="50" y1="38" x2="50" y2="55" stroke="#2b6cb0" stroke-width="4"/>
+                            <line x1="50" y1="42" x2="20" y2="35" stroke="#2b6cb0" stroke-width="3"/>
+                            <line x1="50" y1="55" x2="35" y2="70" stroke="#2b6cb0" stroke-width="3"/>
+                            <line x1="50" y1="55" x2="65" y2="70" stroke="#2b6cb0" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    Zone de repos idéale : bassin proche du mur, bras tendus, genoux fléchis pour se relâcher.
+                </div>
             </div>
 
+            <!-- Lolotte -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                <div class="legend-header">🦵 Lolotte (Genou rentré)</div>
-                <div class="legend-body">Rotation interne du genou pour ramener le bassin près de la paroi, baisser le centre de gravité et s'allonger.</div>
+                <div class="legend-header">🦵 Lolotte</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Schéma Lolotte: Genou rentré -->
+                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
+                            <circle cx="55" cy="28" r="8" fill="#805ad5"/>
+                            <path d="M55 36 Q 40 45 35 60" fill="none" stroke="#805ad5" stroke-width="4"/>
+                            <line x1="55" y1="36" x2="65" y2="65" stroke="#805ad5" stroke-width="4"/>
+                        </svg>
+                    </div>
+                    Rotation interne du genou pour ramener le bassin près de la paroi et s'allonger.
+                </div>
             </div>
 
+            <!-- Drapeau -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">🚩 Drapeau</div>
-                <div class="legend-body">Placement de jambe en opposition (sans appui) pour contrer un déséquilibre ou une « porte de grange ».</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Schéma Drapeau: Jambe latérale -->
+                            <line x1="20" y1="10" x2="20" y2="75" stroke="#cbd5e1" stroke-width="4"/>
+                            <circle cx="50" cy="28" r="8" fill="#dd6b20"/>
+                            <line x1="50" y1="36" x2="50" y2="58" stroke="#dd6b20" stroke-width="4"/>
+                            <line x1="50" y1="58" x2="35" y2="70" stroke="#dd6b20" stroke-width="4"/>
+                            <line x1="50" y1="58" x2="80" y2="50" stroke="#dd6b20" stroke-width="3" stroke-dasharray="3"/>
+                        </svg>
+                    </div>
+                    Placement de jambe en opposition (sans appui) pour contrer un déséquilibre (porte de grange).
+                </div>
             </div>
 
+            <!-- Bac -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">🪨 Le Bac</div>
-                <div class="legend-body">Prise très confortable et creuse dans laquelle on peut passer toute la main sans effort.</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Dessin prise Bac -->
+                            <path d="M30 45 Q 50 20 70 45 Q 85 65 15 65 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
+                            <path d="M35 45 Q 50 30 65 45" fill="none" stroke="#334155" stroke-width="3"/>
+                        </svg>
+                    </div>
+                    Prise très confortable et creuse dans laquelle on peut passer toute la main sans effort.
+                </div>
             </div>
 
+            <!-- Réglette -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">📏 La Réglette</div>
-                <div class="legend-body">Prise plate, étroite et horizontale qui sollicite fortement la force des doigts.</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Dessin Réglette -->
+                            <rect x="20" y="35" width="60" height="12" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    Prise plate, étroite et horizontale qui sollicite fortement la force des doigts.
+                </div>
             </div>
 
+            <!-- Pince -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">🤏 La Pince</div>
-                <div class="legend-body">Prise serrée en opposition, prise en tenaille entre le pouce d'un côté et les doigts de l'autre.</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Dessin Pince -->
+                            <ellipse cx="50" cy="40" rx="20" ry="15" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                            <path d="M35 25 L 35 55 M 65 25 L 65 55" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    Prise serrée en tenaille entre le pouce d'un côté et les doigts de l'autre.
+                </div>
             </div>
 
+            <!-- Inversée -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
                 <div class="legend-header">🔄 L'Inversée</div>
-                <div class="legend-body">Prise orientée vers le bas. On la tient en tirant vers soi et en plaçant les pieds haut.</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Dessin Inversée (flèche vers le bas) -->
+                            <path d="M30 35 L 50 55 L 70 35 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                            <path d="M50 20 L 50 45" stroke="#e11d48" stroke-width="4" marker-end="url(#arrow)"/>
+                        </svg>
+                    </div>
+                    Prise orientée vers le bas. On la tient en tirant vers soi et en plaçant les pieds haut.
+                </div>
             </div>
 
+            <!-- Jeté -->
             <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                <div class="legend-header">🚀 Le Jeté (Dynamique)</div>
-                <div class="legend-body">Mouvement aérien avec élan et suspension pour attraper une prise lointaine hors de portée.</div>
+                <div class="legend-header">🚀 Le Jeté</div>
+                <div class="legend-body">
+                    <div class="legend-illustration">
+                        <svg viewBox="0 0 100 80" width="100" height="70">
+                            <!-- Dessin Jeté (mouvement aérien) -->
+                            <path d="M25 60 Q 50 15 75 30" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="4"/>
+                            <circle cx="25" cy="60" r="5" fill="#2563eb"/>
+                            <circle cx="75" cy="30" r="6" fill="#16a34a"/>
+                        </svg>
+                    </div>
+                    Mouvement aérien avec élan et suspension pour attraper une prise lointaine hors de portée.
+                </div>
             </div>
         </div>
 
@@ -601,7 +700,6 @@
         
         let isFilterActive = false;
 
-        // Fonction pour ouvrir/fermer les bannières de légende au clic
         function toggleLegendBanner(element) {
             element.classList.toggle('active');
         }
