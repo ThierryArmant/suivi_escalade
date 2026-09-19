@@ -26,11 +26,12 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             display: inline-block;
+            max-width: 100%;
         }
         select, button {
             padding: 8px 12px;
-            margin: 5px;
-            font-size: 1rem;
+            margin: 4px;
+            font-size: 0.95rem;
             border-radius: 5px;
             border: 1px solid #ccc;
         }
@@ -43,8 +44,12 @@
         button:hover { background-color: #0056b3; }
         button.save-btn { background-color: #28a745; }
         button.save-btn:hover { background-color: #218838; }
+        button.delete-btn { background-color: #dc3545; }
+        button.delete-btn:hover { background-color: #c82333; }
+        button.share-btn { background-color: #6f42c1; }
+        button.share-btn:hover { background-color: #5a32a3; }
         
-        /* Panneau d'état de la voie active */
+        /* Bannière de la voie active */
         #active-route-banner {
             background: #d4edda;
             color: #155724;
@@ -56,7 +61,7 @@
             border: 1px solid #c3e6cb;
         }
 
-        /* Panneau d'affichage du topo interactif */
+        /* Panneau du topo */
         #topo-panel {
             background: #e9ecef;
             padding: 12px 15px;
@@ -79,14 +84,12 @@
             font-style: italic;
         }
         
-        /* Conteneur des cartes de voies */
         #topo-content {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
 
-        /* Style de chaque carte de voie */
         .route-card {
             background: #ffffff;
             padding: 10px 14px;
@@ -102,7 +105,6 @@
             gap: 8px;
         }
 
-        /* Pastilles interactives dans le topo */
         .grade-badge {
             padding: 5px 10px;
             border-radius: 4px;
@@ -151,14 +153,10 @@
 </head>
 <body>
 
-    <!-- ========================================== -->
-    <!-- SECTION 2 : INTERFACE HTML (Sélecteurs & Vue)-->
-    <!-- ========================================== -->
     <h1>🧗 Mur d'Escalade Giono</h1>
     <div class="subtitle">Outil de création de voies et bloc virtuel - EPS</div>
     
     <div class="controls">
-        <!-- Choix du secteur -->
         <label for="sectorSelect">Secteur :</label>
         <select id="sectorSelect" onchange="changeSector()">
             <option value="voies 1 2 3.jpg">Voies 1, 2, 3</option>
@@ -169,20 +167,20 @@
             <option value="voies 13 14 15 16.jpg">Voies 13 à 16</option>
         </select>
 
-        <!-- Sélecteur de couleur de secours -->
         <input type="hidden" id="colorPicker" value="#FFD700">
 
-        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer le tracé</button>
-        <button onclick="undoSticker()">Annuler dernier point</button>
-        <button onclick="clearStickers()">Effacer l'écran</button>
+        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+        <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
+        <button class="share-btn" onclick="exportAllRoutes()">📤 Exporter</button>
+        <button onclick="importAllRoutes()">📥 Importer</button>
+        <button onclick="undoSticker()">Annuler</button>
+        <button onclick="clearStickers()">Effacer écran</button>
     </div>
 
-    <!-- Bannière indiquant la voie active en cours de visualisation/modification -->
     <div id="active-route-banner">
         ⚠️ Aucune voie sélectionnée. Clique sur une cotation ci-dessous pour afficher ou tracer une voie.
     </div>
 
-    <!-- Panneau dynamique des cotations interactif -->
     <div id="topo-panel">
         <strong>Cotations du secteur :</strong>
         <div class="topo-hint">💡 Clique sur une cotation pour charger son tracé ou en créer un nouveau sur le mur !</div>
@@ -195,11 +193,7 @@
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- SECTION 3 : CODE JAVASCRIPT (Logique & Clics)-->
-    <!-- ========================================== -->
     <script>
-        // Base de données avec identifiants uniques par voie/couleur
         const topoData = {
             "voies 1 2 3.jpg": [
                 { id: "v1_jaune", name: "Voie 1 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
@@ -268,27 +262,19 @@
 
         let currentRouteId = null;
         let currentRouteColor = "#FFD700";
-        let activeStickers = []; // Stocke les éléments visuels affichés
+        let activeStickers = [];
 
-        // Chargement du panneau topo pour le secteur actuel
         function updateTopoInfo(filename) {
             const routes = topoData[filename] || [];
             let html = "";
-            
-            // Regrouper par voie approximative ou afficher par ligne de badge
             routes.forEach(r => {
                 html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
             });
-
             topoContent.innerHTML = `<div class="route-card" style="gap: 12px; flex-wrap: wrap;">${html}</div>`;
         }
 
-        // Sélectionner une voie pour l'afficher ou la modifier
         function selectRoute(id, name, color) {
-            // Retirer la classe active de tous les badges
             document.querySelectorAll('.grade-badge').forEach(b => b.classList.remove('active'));
-            
-            // Activer le badge cliqué
             const badge = document.getElementById(`badge-${id}`);
             if(badge) badge.classList.add('active');
 
@@ -297,29 +283,22 @@
             colorPicker.value = color;
 
             activeBanner.style.background = color;
-            // Assurer un texte lisible sur la bannière selon la couleur
             activeBanner.style.color = (color === "#FFD700") ? "#000" : "#fff";
             activeBanner.textContent = `🎯 Voie active : ${name} (Clique sur le mur pour placer/modifier les pastilles)`;
 
-            // Charger les pastilles enregistrées pour cette voie
             loadRouteStickers(id);
         }
 
-        // Afficher les pastilles enregistrées dans le localStorage
         function loadRouteStickers(routeId) {
             clearStickersDOM();
             activeStickers = [];
-
             const savedData = localStorage.getItem(`giono_route_${routeId}`);
             if (savedData) {
                 const points = JSON.parse(savedData);
-                points.forEach(p => {
-                    createStickerElement(p.x, p.y, p.color);
-                });
+                points.forEach(p => createStickerElement(p.x, p.y, p.color));
             }
         }
 
-        // Créer et afficher visuellement une pastille sur l'image
         function createStickerElement(x, y, color) {
             const sticker = document.createElement('div');
             sticker.className = 'sticker';
@@ -331,12 +310,10 @@
             activeStickers.push({ element: sticker, x: x, y: y, color: color });
         }
 
-        // Nettoyer uniquement le DOM visuel
         function clearStickersDOM() {
             activeStickers.forEach(s => s.element.remove());
         }
 
-        // Changement de secteur
         function changeSector() {
             const select = document.getElementById('sectorSelect');
             const selectedFile = select.value;
@@ -352,7 +329,6 @@
             updateTopoInfo(selectedFile);
         }
 
-        // Clic sur le mur pour ajouter une pastille à la voie active
         function placeSticker(event) {
             if (!currentRouteId) {
                 alert("Veuillez d'abord cliquer sur une cotation dans le topo ci-dessous pour sélectionner la voie à tracer !");
@@ -368,20 +344,58 @@
             createStickerElement(x, y, currentRouteColor);
         }
 
-        // Sauvegarder les pastilles de la voie active dans la mémoire du navigateur
         function saveCurrentRoute() {
             if (!currentRouteId) {
                 alert("Aucune voie active sélectionnée !");
                 return;
             }
-
             const pointsToSave = activeStickers.map(s => ({ x: s.x, y: s.y, color: s.color }));
             localStorage.setItem(`giono_route_${currentRouteId}`, JSON.stringify(pointsToSave));
-            
-            alert("✅ Tracé de la voie enregistré avec succès sur cet appareil !");
+            alert("✅ Tracé enregistré avec succès !");
         }
 
-        // Annuler la dernière pastille posée
+        // Supprimer le tracé de la voie active
+        function deleteCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+            if (confirm("Voulez-vous vraiment supprimer le tracé enregistré pour cette voie ?")) {
+                localStorage.removeItem(`giono_route_${currentRouteId}`);
+                clearStickersDOM();
+                activeStickers = [];
+                alert("🗑️ Tracé supprimé avec succès !");
+            }
+        }
+
+        function exportAllRoutes() {
+            let allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key.startsWith("giono_route_")) {
+                    allData[key] = localStorage.getItem(key);
+                }
+            }
+            let jsonString = JSON.stringify(allData, null, 2);
+            prompt("📋 Copie ce code et conserve-le précieusement :", jsonString);
+        }
+
+        function importAllRoutes() {
+            let jsonString = prompt("📥 Colle ici le code JSON de tes tracés :");
+            if (jsonString) {
+                try {
+                    let allData = JSON.parse(jsonString);
+                    for (let key in allData) {
+                        localStorage.setItem(key, allData[key]);
+                    }
+                    alert("✅ Tracés importés avec succès ! Rafraîchis la page.");
+                    location.reload();
+                } catch (e) {
+                    alert("❌ Erreur : le code collé n'est pas valide.");
+                }
+            }
+        }
+
         function undoSticker() {
             if (activeStickers.length > 0) {
                 const last = activeStickers.pop();
@@ -389,13 +403,11 @@
             }
         }
 
-        // Tout effacer à l'écran pour cette voie
         function clearStickers() {
             clearStickersDOM();
             activeStickers = [];
         }
 
-        // Initialisation au chargement de la page
         updateTopoInfo("voies 1 2 3.jpg");
     </script>
 
