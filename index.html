@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mur d'Escalade Giono - EPS</title>
+    <title>Mur d'Escalade - Outil EPS Universel</title>
     
-    <!-- ========================================== -->
-    <!-- SECTION 1 : STYLES CSS (Mise en page)      -->
-    <!-- ========================================== -->
+    <!-- Intégration de la bibliothèque pour lire les fichiers Excel (.xlsx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -42,13 +42,40 @@
             cursor: pointer;
         }
         button:hover { background-color: #0056b3; }
+        button.config-btn { background-color: #6c757d; }
+        button.config-btn:hover { background-color: #5a6268; }
         button.save-btn { background-color: #28a745; }
         button.save-btn:hover { background-color: #218838; }
         button.delete-btn { background-color: #dc3545; }
         button.delete-btn:hover { background-color: #c82333; }
-        button.share-btn { background-color: #6f42c1; }
-        button.share-btn:hover { background-color: #5a32a3; }
         
+        /* Modal / Panneau de Configuration */
+        #config-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-content h2 { margin-top: 0; color: #007bff; font-size: 1.3rem; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group input[type="file"] { width: 100%; padding: 6px; box-sizing: border-box; }
+        .help-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
+
         /* Bannière de la voie active */
         #active-route-banner {
             background: #d4edda;
@@ -153,28 +180,43 @@
 </head>
 <body>
 
-    <h1>🧗 Mur d'Escalade Giono</h1>
-    <div class="subtitle">Outil de création de voies et bloc virtuel - EPS</div>
+    <h1>🧗 Mur d'Escalade - Application EPS</h1>
+    <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
     <div class="controls">
         <label for="sectorSelect">Secteur :</label>
-        <select id="sectorSelect" onchange="changeSector()">
-            <option value="voies 1 2 3.jpg">Voies 1, 2, 3</option>
-            <option value="voies 4 5 6.jpg">Voies 4, 5, 6</option>
-            <option value="voies 7 8 9.jpg">Voies 7, 8, 9</option>
-            <option value="voies 9 10 11.jpg">Voies 9, 10, 11</option>
-            <option value="voies 10 11 12 (13).jpg">Voies 10 à 13</option>
-            <option value="voies 13 14 15 16.jpg">Voies 13 à 16</option>
-        </select>
+        <select id="sectorSelect" onchange="changeSector()"></select>
 
         <input type="hidden" id="colorPicker" value="#FFD700">
 
+        <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration des voies</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
-        <button class="share-btn" onclick="exportAllRoutes()">📤 Exporter</button>
-        <button onclick="importAllRoutes()">📥 Importer</button>
         <button onclick="undoSticker()">Annuler</button>
         <button onclick="clearStickers()">Effacer écran</button>
+    </div>
+
+    <!-- Modal de Configuration -->
+    <div id="config-modal">
+        <div class="modal-content">
+            <h2>⚙️ Configuration de l'établissement</h2>
+            
+            <div class="form-group">
+                <label for="wallImagesInput">1. Importer les photos des murs (Max 6 photos) :</label>
+                <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
+                <div class="help-text">Sélectionnez de 1 à 6 photos maximum représentant vos différents secteurs de murs.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="excelInput">2. Importer le fichier Excel des voies (.xlsx ou .csv) :</label>
+                <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
+                <div class="help-text">Modèle attendu : Colonnes <b>Secteur</b> (ex: Secteur 1 ou nom de l'image), <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b> (Jaune, Bleu, Noir, Vert, Rouge, Violet). Plusieurs lignes acceptées par voie.</div>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button onclick="closeConfigModal()" style="background-color: #28a745;">Valider et Fermer</button>
+            </div>
+        </div>
     </div>
 
     <div id="active-route-banner">
@@ -184,78 +226,40 @@
     <div id="topo-panel">
         <strong>Cotations du secteur :</strong>
         <div class="topo-hint">💡 Clique sur une cotation pour charger son tracé ou en créer un nouveau sur le mur !</div>
-        <div id="topo-content">Chargement...</div>
+        <div id="topo-content">Chargement de la configuration...</div>
     </div>
 
     <div>
         <div id="wall-container" onclick="placeSticker(event)">
-            <img id="wall-image" src="voies 1 2 3.jpg" alt="Mur d'escalade Giono">
+            <img id="wall-image" id="wall-preview" alt="Mur d'escalade">
         </div>
     </div>
 
     <script>
-        const topoData = {
-            "voies 1 2 3.jpg": [
-                { id: "v1_jaune", name: "Voie 1 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
-                { id: "v1_bleu", name: "Voie 1 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
-                { id: "v2_noir", name: "Voie 2 (6B - Noir)", color: "#212121", text: "6B (Noir)", textColor: "#fff" },
-                { id: "v2_vert", name: "Voie 2 (5B - Vert)", color: "#32CD32", text: "5B (Vert)", textColor: "#fff" },
-                { id: "v2_rouge", name: "Voie 2 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
-                { id: "v3_jaune", name: "Voie 3 (4A - Jaune)", color: "#FFD700", text: "4A (Jaune)", textColor: "#000" },
-                { id: "v3_bleu", name: "Voie 3 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
-            ],
-            "voies 4 5 6.jpg": [
-                { id: "v4_noir", name: "Voie 4 (6B - Noir)", color: "#212121", text: "6B (Noir)", textColor: "#fff" },
-                { id: "v4_vert", name: "Voie 4 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v4_rouge", name: "Voie 4 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
-                { id: "v5_jaune", name: "Voie 5 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
-                { id: "v5_violet", name: "Voie 5 (6B+ - Violet)", color: "#9C27B0", text: "6B+ (Violet)", textColor: "#fff" },
-                { id: "v6_vert", name: "Voie 6 (5A - Vert)", color: "#32CD32", text: "5A (Vert)", textColor: "#fff" },
-                { id: "v6_bleu", name: "Voie 6 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
-            ],
-            "voies 7 8 9.jpg": [
-                { id: "v7_jaune", name: "Voie 7 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
-                { id: "v8_rouge", name: "Voie 8 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
-                { id: "v8_bleu", name: "Voie 8 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
-                { id: "v9_violet", name: "Voie 9 (7A - Violet)", color: "#9C27B0", text: "7A (Violet)", textColor: "#fff" },
-                { id: "v9_vert", name: "Voie 9 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" }
-            ],
-            "voies 9 10 11.jpg": [
-                { id: "v9_violet", name: "Voie 9 (7A - Violet)", color: "#9C27B0", text: "7A (Violet)", textColor: "#fff" },
-                { id: "v9_vert", name: "Voie 9 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v10_jaune", name: "Voie 10 (4C+ - Jaune)", color: "#FFD700", text: "4C+ (Jaune)", textColor: "#000" },
-                { id: "v10_rouge", name: "Voie 10 (5C+ - Rouge)", color: "#FF4500", text: "5C+ (Rouge)", textColor: "#fff" },
-                { id: "v11_vert", name: "Voie 11 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v11_bleu", name: "Voie 11 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
-                { id: "v11_noir", name: "Voie 11 (6B+ - Noir)", color: "#212121", text: "6B+ (Noir)", textColor: "#fff" }
-            ],
-            "voies 10 11 12 (13).jpg": [
-                { id: "v10_jaune", name: "Voie 10 (4C+ - Jaune)", color: "#FFD700", text: "4C+ (Jaune)", textColor: "#000" },
-                { id: "v10_rouge", name: "Voie 10 (5C+ - Rouge)", color: "#FF4500", text: "5C+ (Rouge)", textColor: "#fff" },
-                { id: "v11_vert", name: "Voie 11 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v11_bleu", name: "Voie 11 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
-                { id: "v11_noir", name: "Voie 11 (6B+ - Noir)", color: "#212121", text: "6B+ (Noir)", textColor: "#fff" },
-                { id: "v12_violet", name: "Voie 12 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
-                { id: "v12_rouge", name: "Voie 12 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
-                { id: "v13_violet", name: "Voie 13 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
-                { id: "v13_vert", name: "Voie 13 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v13_bleu", name: "Voie 13 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
-            ],
-            "voies 13 14 15 16.jpg": [
-                { id: "v13_violet", name: "Voie 13 (6C - Violet)", color: "#9C27B0", text: "6C (Violet)", textColor: "#fff" },
-                { id: "v13_vert", name: "Voie 13 (5B+ - Vert)", color: "#32CD32", text: "5B+ (Vert)", textColor: "#fff" },
-                { id: "v13_bleu", name: "Voie 13 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" },
-                { id: "v14_jaune", name: "Voie 14 (4C - Jaune)", color: "#FFD700", text: "4C (Jaune)", textColor: "#000" },
-                { id: "v15_rouge", name: "Voie 15 (5C - Rouge)", color: "#FF4500", text: "5C (Rouge)", textColor: "#fff" },
-                { id: "v15_noir", name: "Voie 15 (6A+ - Noir)", color: "#212121", text: "6A+ (Noir)", textColor: "#fff" },
-                { id: "v16_jaune", name: "Voie 16 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
-                { id: "v16_vert", name: "Voie 16 (5B - Vert)", color: "#32CD32", text: "5B (Vert)", textColor: "#fff" },
-                { id: "v16_bleu", name: "Voie 16 (6A+ - Bleu)", color: "#00BFFF", text: "6A+ (Bleu)", textColor: "#fff" }
-            ]
+        // Dictionnaire des couleurs textuelles vers les codes Hexa officiels
+        const colorMap = {
+            "jaune": "#FFD700",
+            "bleu": "#00BFFF",
+            "noir": "#212121",
+            "vert": "#32CD32",
+            "rouge": "#FF4500",
+            "violet": "#9C27B0"
+        };
+
+        // Données par défaut ou stockées en LocalStorage
+        let schoolData = JSON.parse(localStorage.getItem('giono_school_config')) || {
+            images: ["voies 1 2 3.jpg"], // Image par défaut de secours
+            topo: {
+                "voies 1 2 3.jpg": [
+                    { id: "v1_jaune", name: "Voie 1 (4B - Jaune)", color: "#FFD700", text: "4B (Jaune)", textColor: "#000" },
+                    { id: "v1_bleu", name: "Voie 1 (6A - Bleu)", color: "#00BFFF", text: "6A (Bleu)", textColor: "#fff" }
+                ]
+            }
         };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
+        const sectorSelect = document.getElementById('sectorSelect');
         const topoContent = document.getElementById('topo-content');
         const activeBanner = document.getElementById('active-route-banner');
         const colorPicker = document.getElementById('colorPicker');
@@ -264,12 +268,129 @@
         let currentRouteColor = "#FFD700";
         let activeStickers = [];
 
-        function updateTopoInfo(filename) {
-            const routes = topoData[filename] || [];
-            let html = "";
-            routes.forEach(r => {
-                html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
+        // Initialisation de l'application au chargement
+        function initApp() {
+            populateSectors();
+            if (schoolData.images.length > 0) {
+                img.src = schoolData.images[0];
+                updateTopoInfo(schoolData.images[0]);
+            }
+        }
+
+        function populateSectors() {
+            sectorSelect.innerHTML = "";
+            schoolData.images.forEach((imgSrc, index) => {
+                const opt = document.createElement('option');
+                opt.value = imgSrc;
+                opt.textContent = `Secteur ${index + 1} (${imgSrc.substring(0, 20)})`;
+                sectorSelect.appendChild(opt);
             });
+        }
+
+        function openConfigModal() {
+            document.getElementById('config-modal').style.display = 'flex';
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').style.display = 'none';
+            initApp();
+        }
+
+        // Gestion de l'upload des images (Max 6)
+        function handleImagesUpload(input) {
+            if (input.files.length > 6) {
+                alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
+                input.value = "";
+                return;
+            }
+
+            let loadedImages = [];
+            let filesProcessed = 0;
+
+            Array.from(input.files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadedImages[index] = e.target.result; // Sauvegarde en base64
+                    filesProcessed++;
+                    if (filesProcessed === input.files.length) {
+                        schoolData.images = loadedImages;
+                        localStorage.setItem('giono_school_config', JSON.stringify(schoolData));
+                        alert(`✅ ${loadedImages.length} image(s) chargée(s) avec succès !`);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Gestion de l'upload du fichier Excel avec prise en compte des multi-difficultés
+        function handleExcelUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet);
+
+                // Reconstruction du topo structuré par secteur
+                let newTopo = {};
+
+                rows.forEach((row, idx) => {
+                    // On attend des colonnes : Secteur (ou index/nom), Voie, Cotation, Couleur
+                    let sectorKey = row.Secteur || row.secteur || schoolData.images[0];
+                    let voieName = row.Voie || row.voie || `Voie ${idx}`;
+                    let cotation = row.Cotation || row.cotation || "4A";
+                    let couleurInput = (row.Couleur || row.couleur || "Jaune").trim().toLowerCase();
+                    
+                    let hexColor = colorMap[couleurInput] || "#FFD700";
+                    let textColor = (hexColor === "#FFD700") ? "#000" : "#fff";
+                    let routeId = `route_${idx}_${Math.random().toString(36.substring(2, 7))}`;
+
+                    // Mapping intelligent sur les images disponibles si le secteur texte ne correspond pas exactement
+                    let targetImage = schoolData.images[0];
+                    schoolData.images.forEach((img, imgIdx) => {
+                        if (sectorKey.toString().includes((imgIdx + 1).toString()) || sectorKey.toString().toLowerCase().includes(img.toLowerCase())) {
+                            targetImage = img;
+                        }
+                    });
+
+                    if (!newTopo[targetImage]) {
+                        newTopo[targetImage] = [];
+                    }
+
+                    newTopo[targetImage].push({
+                        id: routeId,
+                        name: `${voieName} (${cotation} - ${couleurInput.toUpperCase()})`,
+                        color: hexColor,
+                        text: `${cotation} (${ucFirst(couleurInput)})`,
+                        textColor: textColor
+                    });
+                });
+
+                schoolData.topo = newTopo;
+                localStorage.setItem('giono_school_config', JSON.stringify(schoolData));
+                alert("✅ Fichier Excel importé et structuré avec succès !");
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function ucFirst(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function updateTopoInfo(filename) {
+            const routes = schoolData.topo[filename] || [];
+            let html = "";
+            if (routes.length === 0) {
+                html = "<span style='color: #666; font-style: italic;'>Aucune voie configurée pour ce secteur. Utilisez le bouton 'Configuration des voies'.</span>";
+            } else {
+                routes.forEach(r => {
+                    html += `<span class="grade-badge" id="badge-${r.id}" style="background:${r.color}; color:${r.textColor};" onclick="selectRoute('${r.id}', '${r.name}', '${r.color}')">${r.text}</span>`;
+                });
+            }
             topoContent.innerHTML = `<div class="route-card" style="gap: 12px; flex-wrap: wrap;">${html}</div>`;
         }
 
@@ -315,8 +436,7 @@
         }
 
         function changeSector() {
-            const select = document.getElementById('sectorSelect');
-            const selectedFile = select.value;
+            const selectedFile = sectorSelect.value;
             img.src = selectedFile;
             
             currentRouteId = null;
@@ -354,7 +474,6 @@
             alert("✅ Tracé enregistré avec succès !");
         }
 
-        // Supprimer le tracé de la voie active
         function deleteCurrentRoute() {
             if (!currentRouteId) {
                 alert("Aucune voie active sélectionnée !");
@@ -364,35 +483,7 @@
                 localStorage.removeItem(`giono_route_${currentRouteId}`);
                 clearStickersDOM();
                 activeStickers = [];
-                alert("🗑️ Tracé supprimé avec succès !");
-            }
-        }
-
-        function exportAllRoutes() {
-            let allData = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key.startsWith("giono_route_")) {
-                    allData[key] = localStorage.getItem(key);
-                }
-            }
-            let jsonString = JSON.stringify(allData, null, 2);
-            prompt("📋 Copie ce code et conserve-le précieusement :", jsonString);
-        }
-
-        function importAllRoutes() {
-            let jsonString = prompt("📥 Colle ici le code JSON de tes tracés :");
-            if (jsonString) {
-                try {
-                    let allData = JSON.parse(jsonString);
-                    for (let key in allData) {
-                        localStorage.setItem(key, allData[key]);
-                    }
-                    alert("✅ Tracés importés avec succès ! Rafraîchis la page.");
-                    location.reload();
-                } catch (e) {
-                    alert("❌ Erreur : le code collé n'est pas valide.");
-                }
+                alert("🗑️ Tracé supprimé !");
             }
         }
 
@@ -408,7 +499,8 @@
             activeStickers = [];
         }
 
-        updateTopoInfo("voies 1 2 3.jpg");
+        // Lancement initial
+        initApp();
     </script>
 
 </body>
