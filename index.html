@@ -209,7 +209,7 @@
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des secteurs (Max 6 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum).</div>
+                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum). Stockage haute capacité sécurisé.</div>
             </div>
 
             <div class="form-group">
@@ -240,6 +240,47 @@
     </div>
 
     <script>
+        // Gestionnaire IndexedDB pour stocker sans limite de taille
+        const DB_NAME = "EPS_Climbing_DB";
+        const STORE_NAME = "configStore";
+        const DB_VERSION = 1;
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+            });
+        }
+
+        async function saveToDB(key, value) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(value, key);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function getFromDB(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
         const colorMap = {
             "jaune": "#FFD700",
             "bleu": "#00BFFF", "bleue": "#00BFFF",
@@ -249,13 +290,11 @@
             "violet": "#9C27B0", "violette": "#9C27B0"
         };
 
-        let schoolConfig = JSON.parse(localStorage.getItem('eps_wall_config')) || {
+        let schoolConfig = {
             images: [],
             routes: [],
             customRoutes: []
         };
-
-        if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
@@ -267,13 +306,30 @@
         let currentTool = "dot";
         let activeMarkers = [];
 
-        function initApp() {
+        async function initApp() {
+            try {
+                const savedConfig = await getFromDB("school_config");
+                if (savedConfig) {
+                    schoolConfig = savedConfig;
+                }
+            } catch (e) {
+                console.error("Erreur chargement base de données locale", e);
+            }
+
             populateRouteDropdown();
             if (schoolConfig.images && schoolConfig.images.length > 0) {
                 img.src = schoolConfig.images[0];
             } else {
-                img.src = ""; // Vide si aucune image
+                img.src = ""; 
                 activeBanner.textContent = "⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.";
+            }
+        }
+
+        async function saveConfig() {
+            try {
+                await saveToDB("school_config", schoolConfig);
+            } catch (err) {
+                alert("❌ Erreur lors de l'enregistrement de la configuration.");
             }
         }
 
@@ -322,7 +378,7 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        function createCustomRoute() {
+        async function createCustomRoute() {
             const customName = prompt("Nom du bloc personnalisé (ex: Bloc de Lucas, Défi Vert...) :");
             if (!customName || customName.trim() === "") return;
 
@@ -334,8 +390,9 @@
                 imageSrc: img.src
             };
 
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+            await saveConfig();
 
             populateRouteDropdown();
             routeSelect.value = routeId;
@@ -357,7 +414,7 @@
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
-        // Encodage Base64 permanent des images pour le stockage LocalStorage
+        // Import des photos avec stockage IndexedDB haute capacité
         function handleImagesUpload(input) {
             if (input.files.length > 6) {
                 alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
@@ -372,14 +429,36 @@
             files.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    loadedImages[index] = e.target.result; // Format Base64 permanent
-                    filesProcessed++;
-                    if (filesProcessed === files.length) {
-                        schoolConfig.images = loadedImages;
-                        localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
-                        alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) avec succès !`);
-                        initApp();
-                    }
+                    const imgObj = new Image();
+                    imgObj.onload = async function() {
+                        const canvas = document.createElement('canvas');
+                        let width = imgObj.width;
+                        let height = imgObj.height;
+                        const maxWidth = 1400;
+                        
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(imgObj, 0, 0, width, height);
+                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        
+                        loadedImages[index] = compressedDataUrl;
+                        filesProcessed++;
+                        
+                        if (filesProcessed === files.length) {
+                            schoolConfig.images = loadedImages;
+                            await saveConfig();
+                            alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) avec succès !`);
+                            initApp();
+                        }
+                    };
+                    imgObj.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             });
@@ -396,7 +475,7 @@
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -428,7 +507,7 @@
                 });
 
                 schoolConfig.routes = parsedRoutes;
-                localStorage.setItem('eps_wall_config', JSON.stringify(schoolConfig));
+                await saveConfig();
                 alert("✅ Fichier Excel importé avec succès !");
                 initApp();
             };
@@ -567,6 +646,7 @@
             activeMarkers = [];
         }
 
+        // Lancement initial au chargement de la page
         initApp();
     </script>
 
