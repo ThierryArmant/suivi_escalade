@@ -892,7 +892,7 @@
 
             if (schoolConfig.images && schoolConfig.images.length > 0) {
                 if (!currentRouteId) {
-                    img.src = schoolConfig.images[0];
+                    switchImageAndLoadMarkers(schoolConfig.images[0], null);
                     activeBanner.style.background = "#d4edda";
                     activeBanner.style.color = "#155724";
                     activeBanner.textContent = "✨ Version Démo chargée : Sélectionnez une voie ou un bloc à gauche.";
@@ -957,7 +957,7 @@
                             activeMarkers = [];
                             selectMarker(null);
                             if (schoolConfig.images && schoolConfig.images.length > 0) {
-                                img.src = schoolConfig.images[0];
+                                switchImageAndLoadMarkers(schoolConfig.images[0], null);
                             }
                             activeBanner.style.background = "#d4edda";
                             activeBanner.style.color = "#155724";
@@ -1022,6 +1022,33 @@
             selectCustomRoute(routeId);
         }
 
+        // Fonction centralisée et robuste pour changer l'image et charger les marqueurs/balises une fois l'image prête
+        function switchImageAndLoadMarkers(imageSrc, routeId) {
+            clearMarkersDOM();
+            activeMarkers = [];
+
+            if (!imageSrc) {
+                if (routeId) loadRouteMarkers(routeId);
+                return;
+            }
+
+            img.onload = function() {
+                if (routeId) {
+                    loadRouteMarkers(routeId);
+                }
+                img.onload = null; // Nettoyage de l'événement
+            };
+
+            img.src = imageSrc;
+
+            // Sécurité au cas où l'image est déjà en cache
+            if (img.complete && img.naturalHeight !== 0) {
+                if (routeId) {
+                    loadRouteMarkers(routeId);
+                }
+            }
+        }
+
         function selectCustomRoute(routeId) {
             routeSelect.value = ""; 
             const found = schoolConfig.customRoutes.find(r => r.id === routeId);
@@ -1031,9 +1058,6 @@
             currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
             
             const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
-            if (targetImgSrc) {
-                img.src = targetImgSrc;
-            }
             
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
@@ -1048,7 +1072,7 @@
             activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
 
             renderCustomLists();
-            loadRouteMarkers(currentRouteId);
+            switchImageAndLoadMarkers(targetImgSrc, currentRouteId);
         }
 
         // --- FILTRE MAGIQUE ---
@@ -1436,7 +1460,7 @@
                 clearMarkersDOM();
                 activeMarkers = [];
                 if (schoolConfig.images && schoolConfig.images.length > 0) {
-                    img.src = schoolConfig.images[0];
+                    switchImageAndLoadMarkers(schoolConfig.images[0], null);
                 }
                 return;
             }
@@ -1447,9 +1471,7 @@
                 currentRouteColor = foundRoute.hexColor;
                 
                 let targetSrc = foundRoute.imageSrc || schoolConfig.images[0] || "";
-                if (targetSrc) {
-                    img.src = targetSrc;
-                }
+                switchImageAndLoadMarkers(targetSrc, currentRouteId);
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
@@ -1458,8 +1480,6 @@
                 activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
-
-            loadRouteMarkers(currentRouteId);
         }
 
         function loadRouteMarkers(routeId) {
