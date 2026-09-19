@@ -54,30 +54,49 @@
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
 
-        /* Palette de marquage */
-        .palette-bar {
-            background: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin: 10px auto 15px auto;
-            max-width: 650px;
+        /* Conteneur global de l'espace de travail (Palette à gauche + Mur à droite) */
+        .workspace {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 10px;
+            align-items: flex-start;
+            gap: 20px;
             flex-wrap: wrap;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Palette de marquage verticale à gauche */
+        .palette-bar {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 170px;
+            text-align: left;
+        }
+        .palette-bar span {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
+            text-align: center;
         }
         .tool-btn {
             background: #f1f3f5;
             color: #333;
             border: 2px solid #ccc;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             font-size: 0.9rem;
             transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
         .tool-btn:hover { background: #e2e6ea; }
         .tool-btn.active-tool {
@@ -85,6 +104,17 @@
             color: white;
             border-color: #0056b3;
             box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        .magic-btn {
+            background: #f3e8ff;
+            color: #6b21a8;
+            border: 2px solid #d8b4fe;
+        }
+        .magic-btn.active-magic {
+            background: #9333ea;
+            color: white;
+            border-color: #7e22ce;
+            box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
         
         /* Modal de Configuration */
@@ -193,12 +223,27 @@
         <button onclick="clearStickers()">Effacer</button>
     </div>
 
-    <!-- Palette d'outils de marquage -->
-    <div class="palette-bar">
-        <span>Outil actif :</span>
-        <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille prise</button>
-        <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche direction</button>
-        <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Prise interdite (X)</button>
+    <div id="active-route-banner">
+        ⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.
+    </div>
+
+    <!-- Espace de travail : Palette à gauche, Mur à droite -->
+    <div class="workspace">
+        <!-- Palette de marquage verticale -->
+        <div class="palette-bar">
+            <span>Outils :</span>
+            <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
+            <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
+            <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
+            <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
+        </div>
+
+        <!-- Conteneur de l'image du mur -->
+        <div>
+            <div id="wall-container" onclick="placeMarker(event)">
+                <img id="wall-image" alt="Mur d'escalade">
+            </div>
+        </div>
     </div>
 
     <!-- Modal de Configuration -->
@@ -207,9 +252,9 @@
             <h2>⚙️ Configuration de l'établissement</h2>
             
             <div class="form-group">
-                <label for="wallImagesInput">1. Importer les photos des secteurs (Max 6 photos) :</label>
+                <label for="wallImagesInput">1. Importer les photos des secteurs (Jusqu'à 20 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Importe tes photos de murs (Secteurs 1 à 6 maximum). Stockage haute capacité sécurisé.</div>
+                <div class="help-text">Importe tes photos de secteurs (Secteur 1 = 1ère photo, Secteur 2 = 2ème photo, etc.).</div>
             </div>
 
             <div class="form-group">
@@ -226,16 +271,6 @@
             <div style="text-align: right; margin-top: 20px;">
                 <button onclick="closeConfigModal()" style="background-color: #28a745;">Valider et Fermer</button>
             </div>
-        </div>
-    </div>
-
-    <div id="active-route-banner">
-        ⚠️ Veuillez aller dans 'Configuration' pour importer les photos de vos murs.
-    </div>
-
-    <div>
-        <div id="wall-container" onclick="placeMarker(event)">
-            <img id="wall-image" alt="Mur d'escalade">
         </div>
     </div>
 
@@ -304,6 +339,8 @@
         let currentRouteColor = "#FFD700";
         let currentTool = "dot";
         let activeMarkers = [];
+        
+        let isFilterActive = false;
 
         async function initApp() {
             try {
@@ -378,8 +415,122 @@
 
         function setTool(tool) {
             currentTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active-tool'));
+            document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
+        }
+
+        // --- FILTRE MAGIQUE D'ISOLATION DES PRISES PAR COULEUR ---
+        function toggleColorFilter() {
+            if (!currentRouteId) {
+                alert("Veuillez d'abord sélectionner une voie dans le menu déroulant !");
+                return;
+            }
+            isFilterActive = !isFilterActive;
+            const btn = document.getElementById('magic-filter-btn');
+            
+            if (isFilterActive) {
+                btn.classList.add('active-magic');
+                applyColorFilter();
+            } else {
+                btn.classList.remove('active-magic');
+                restoreOriginalImage();
+            }
+        }
+
+        function getBaseImageSource() {
+            let isCustom = currentRouteId && currentRouteId.startsWith("custom_");
+            if (isCustom) {
+                let found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
+                return found ? found.imageSrc : schoolConfig.images[0];
+            } else {
+                let found = schoolConfig.routes.find(r => r.id === currentRouteId);
+                return found ? found.imageSrc : schoolConfig.images[0];
+            }
+        }
+
+        function getCurrentColorName() {
+            let isCustom = currentRouteId && currentRouteId.startsWith("custom_");
+            if (isCustom) return "";
+            let found = schoolConfig.routes.find(r => r.id === currentRouteId);
+            return found ? found.couleur.toLowerCase() : "";
+        }
+
+        function restoreOriginalImage() {
+            let src = getBaseImageSource();
+            if (src) img.src = src;
+        }
+
+        function applyColorFilter() {
+            let src = getBaseImageSource();
+            if (!src) return;
+
+            let colorName = getCurrentColorName();
+            if (!colorName) {
+                alert("Ce filtre magique s'applique sur les voies officielles colorées (jaune, bleu, rouge, vert, noir, violet).");
+                isFilterActive = false;
+                document.getElementById('magic-filter-btn').classList.remove('active-magic');
+                return;
+            }
+
+            const imageObj = new Image();
+            imageObj.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = imageObj.width;
+                canvas.height = imageObj.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imageObj, 0, 0);
+
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imgData.data;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    let r = data[i];
+                    let g = data[i + 1];
+                    let b = data[i + 2];
+
+                    let max = Math.max(r, g, b);
+                    let min = Math.min(r, g, b);
+                    let diff = max - min;
+                    let lightness = (max + min) / 2;
+                    let saturation = diff === 0 ? 0 : diff / (1 - Math.abs(2 * lightness / 255 - 1)) / 255;
+                    
+                    let hue = 0;
+                    if (diff !== 0) {
+                        if (max === r) hue = ((g - b) / diff) % 6;
+                        else if (max === g) hue = (b - r) / diff + 2;
+                        else hue = (r - g) / diff + 4;
+                        hue = Math.round(hue * 60);
+                        if (hue < 0) hue += 360;
+                    }
+
+                    let match = false;
+                    if (colorName.includes("jaune")) {
+                        if (hue >= 25 && hue <= 85 && saturation > 0.2 && lightness > 35) match = true;
+                    } else if (colorName.includes("bleu")) {
+                        if (hue >= 165 && hue <= 275 && saturation > 0.2) match = true;
+                    } else if (colorName.includes("rouge")) {
+                        if ((hue <= 25 || hue >= 325) && saturation > 0.2) match = true;
+                    } else if (colorName.includes("vert")) {
+                        if (hue >= 65 && hue <= 175 && saturation > 0.2) match = true;
+                    } else if (colorName.includes("noir")) {
+                        if (lightness < 45) match = true;
+                    } else if (colorName.includes("violet")) {
+                        if (hue >= 245 && hue <= 335 && saturation > 0.2) match = true;
+                    }
+
+                    if (!match) {
+                        let avg = 0.299 * r + 0.587 * g + 0.114 * b;
+                        let grey = Math.min(255, Math.max(0, avg * 0.75));
+                        data[i] = grey;
+                        data[i + 1] = grey;
+                        data[i + 2] = grey;
+                    }
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+                img.src = canvas.toDataURL('image/jpeg', 0.9);
+            };
+            imageObj.src = src;
         }
 
         async function createCustomRoute() {
@@ -407,10 +558,10 @@
         function downloadExcelTemplate() {
             const templateData = [
                 { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
-                { Secteur: 1, Voie: 2, Cotation: "6A", Couleur: "bleue" },
-                { Secteur: 2, Voie: 3, Cotation: "6B", Couleur: "noire" },
-                { Secteur: 2, Voie: 4, Cotation: "5B", Couleur: "verte" },
-                { Secteur: 3, Voie: 5, Cotation: "5C", Couleur: "rouge" }
+                { Secteur: 2, Voie: 2, Cotation: "6A", Couleur: "bleue" },
+                { Secteur: 3, Voie: 3, Cotation: "6B", Couleur: "noire" },
+                { Secteur: 4, Voie: 4, Cotation: "5B", Couleur: "verte" },
+                { Secteur: 5, Voie: 5, Cotation: "5C", Couleur: "rouge" }
             ];
             const worksheet = XLSX.utils.json_to_sheet(templateData);
             const workbook = XLSX.utils.book_new();
@@ -419,8 +570,8 @@
         }
 
         function handleImagesUpload(input) {
-            if (input.files.length > 6) {
-                alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
+            if (input.files.length > 20) {
+                alert("❌ Erreur : Le nombre de photos est limité à 20 maximum !");
                 input.value = "";
                 return;
             }
@@ -457,7 +608,7 @@
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
                             await saveConfig();
-                            alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) avec succès !`);
+                            alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
                         }
                     };
@@ -494,8 +645,7 @@
                     
                     let hexColor = colorMap[couleurInput] || "#FFD700";
 
-                    let numImages = schoolConfig.images.length;
-                    let photoIndex = Math.min(Math.floor((secteurNum - 1) * numImages / 16), numImages - 1);
+                    let photoIndex = Math.max(0, secteurNum - 1);
                     let targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0];
 
                     parsedRoutes.push({
@@ -522,6 +672,10 @@
         }
 
         function changeRoute() {
+            isFilterActive = false;
+            const magicBtn = document.getElementById('magic-filter-btn');
+            if (magicBtn) magicBtn.classList.remove('active-magic');
+
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null;
@@ -596,7 +750,11 @@
         }
 
         function clearMarkersDOM() {
-            activeMarkers.forEach(m => m.element.remove());
+            activeMarkers.forEach(m => {
+                if (m.element && m.element.remove) {
+                    m.element.remove();
+                }
+            });
         }
 
         function placeMarker(event) {
@@ -640,7 +798,9 @@
         function undoSticker() {
             if (activeMarkers.length > 0) {
                 const last = activeMarkers.pop();
-                last.element.remove();
+                if (last.element && last.element.remove) {
+                    last.element.remove();
+                }
             }
         }
 
