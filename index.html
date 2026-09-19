@@ -645,11 +645,9 @@
         }
 
         function clearMarkersDOM() {
-            activeMarkers.forEach(m => {
-                if (m.element && m.element.remove) {
-                    m.element.remove();
-                }
-            });
+            // Nettoyage radical et direct de tous les marqueurs visuels dans le conteneur
+            const existingMarkers = container.querySelectorAll('.marker');
+            existingMarkers.forEach(el => el.remove());
         }
 
         function selectMarker(index) {
