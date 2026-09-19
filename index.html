@@ -894,17 +894,19 @@
                 const item = document.createElement('div');
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
+                
+                // Le clic s'applique désormais à toute la boîte de l'élément
+                item.onclick = () => selectCustomRoute(r.id);
 
                 const textSpan = document.createElement('span');
                 textSpan.textContent = r.name;
-                textSpan.onclick = () => selectCustomRoute(r.id);
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
                 delBtn.textContent = '❌';
                 delBtn.title = 'Supprimer';
                 delBtn.onclick = async (e) => {
-                    e.stopPropagation();
+                    e.stopPropagation(); // Empêche de déclencher la sélection du bloc lors de la suppression
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
@@ -937,25 +939,13 @@
             });
         }
 
-        function openConfigModal() {
-            document.getElementById('config-modal').style.display = 'flex';
-        }
-
-        function closeConfigModal() {
-            document.getElementById('config-modal').style.display = 'none';
-            initApp();
-        }
-
-        function setTool(tool) {
-            currentTool = tool;
-            document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
-            document.getElementById(`tool-${tool}`).classList.add('active-tool');
-        }
-
         async function createCustomRoute(type) {
             let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
             const customName = prompt(`Nom du ${labelType} (ex: ${type === 'individualise' ? 'Lucas, Sarah...' : 'Atelier Rétablissement, Bloc Jaune...'}) :`);
             if (!customName || customName.trim() === "") return;
+
+            // Sécurisation de l'image de fond active
+            const activeImageSrc = (img.src && img.src.startsWith('data:image')) ? img.src : (schoolConfig.images[0] || "");
 
             const routeId = `custom_${Date.now()}`;
             const newRoute = {
@@ -963,7 +953,7 @@
                 name: customName.trim(),
                 type: type,
                 color: (type === 'individualise') ? "#0284c7" : "#d97706",
-                imageSrc: img.src || (schoolConfig.images[0] || "")
+                imageSrc: activeImageSrc
             };
 
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
