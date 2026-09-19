@@ -472,7 +472,7 @@
     </div>
 
     <div id="active-route-banner">
-        ⚠️ Chargement...
+        ⚠️ Chargement de la version démo...
     </div>
 
     <!-- Espace de travail à 3 colonnes -->
@@ -754,12 +754,11 @@
     </div>
 
     <script>
-        const MASTER_KEY = "EPS_Climbing_Master_V1";
+        const MASTER_KEY = "EPS_Climbing_Master_V2";
 
-        // Récupération universelle incluant toutes les anciennes versions de clés pour ne rien perdre
         function loadConfig() {
             try {
-                const keysToTry = [MASTER_KEY, "EPS_Climbing_Config_V5", "EPS_Climbing_Config_V4", "EPS_Climbing_Config_V3", "EPS_Climbing_Config_V2", "EPS_Climbing_Config"];
+                const keysToTry = [MASTER_KEY, "EPS_Climbing_Master_V1", "EPS_Climbing_Config_V5", "EPS_Climbing_Config_V4", "EPS_Climbing_Config_V3", "EPS_Climbing_Config_V2", "EPS_Climbing_Config"];
                 for (let k of keysToTry) {
                     const data = localStorage.getItem(k);
                     if (data) {
@@ -915,6 +914,7 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
+                // Clic direct sur toute la boîte et le texte
                 item.onclick = (e) => {
                     e.stopPropagation();
                     selectCustomRoute(r.id);
@@ -922,6 +922,10 @@
 
                 const textSpan = document.createElement('span');
                 textSpan.textContent = r.name;
+                textSpan.onclick = (e) => {
+                    e.stopPropagation();
+                    selectCustomRoute(r.id);
+                };
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
