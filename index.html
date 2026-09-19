@@ -42,20 +42,41 @@
         }
         button:hover { background-color: #0056b3; }
         
-        /* Panneau d'affichage du topo pour le secteur */
+        /* Panneau d'affichage du topo */
         #topo-panel {
             background: #e9ecef;
-            padding: 10px 15px;
-            border-radius: 6px;
+            padding: 12px 15px;
+            border-radius: 8px;
             margin: 10px auto 15px auto;
             max-width: 600px;
-            font-size: 0.95rem;
-            color: #333;
             text-align: left;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
         }
         #topo-panel strong {
+            display: block;
+            margin-bottom: 10px;
             color: #007bff;
+            font-size: 1rem;
+        }
+        
+        /* Conteneur des blocs de voies espacés */
+        #topo-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px; /* Espace net entre chaque bloc de voie */
+        }
+
+        /* Style de chaque bloc de voie individuel */
+        .route-card {
+            background: #ffffff;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            border-left: 6px solid #ccc; /* Bordure colorée à gauche */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-weight: bold;
+            color: #333;
+            font-size: 0.95rem;
         }
 
         #wall-container {
@@ -118,9 +139,10 @@
         <button onclick="clearStickers()">Tout effacer</button>
     </div>
 
-    <!-- Panneau dynamique des cotations du secteur -->
+    <!-- Panneau dynamique des cotations en blocs espacés -->
     <div id="topo-panel">
-        <strong>Cotations du secteur :</strong> <span id="topo-text">Chargement...</span>
+        <strong>Cotations du secteur :</strong>
+        <div id="topo-content">Chargement...</div>
     </div>
 
     <div>
@@ -133,23 +155,49 @@
     <!-- SECTION 3 : CODE JAVASCRIPT (Logique & Clics)-->
     <!-- ========================================== -->
     <script>
-        // Base de données des cotations par photo
+        // Base de données structurée en cartes de blocs espacés
         const topoData = {
-            "voies 1 2 3.jpg": "Voie 1 : 4B, 6A | Voie 2 : 6B, 5B, 5C | Voie 3 : 4A, 6A",
-            "voies 4 5 6.jpg": "Voie 4 : 6B, 5B+, 5C | Voie 5 : 4B, 6B+ | Voie 6 : 5A, 6A",
-            "voies 7 8 9.jpg": "Voie 7 : 4B | Voie 8 : 5C, 6A | Voie 9 : 7A, 5B+",
-            "voies 9 10 11.jpg": "Voie 9 : 7A, 5B+ | Voie 10 : 4C+, 5C+ | Voie 11 : 5B+, 6A, 6B+",
-            "voies 10 11 12 (13).jpg": "Voie 10 : 4C+, 5C+ | Voie 11 : 5B+, 6A, 6B+ | Voie 12 : 6C, 5C | Voie 13 : 6C, 5B+, 6A",
-            "voies 13 14 15 16.jpg": "Voie 13 : 6C, 5B+, 6A | Voie 14 : 4C | Voie 15 : 5C, 6A+ | Voie 16 : 4B, 5B, 6A+"
+            "voies 1 2 3.jpg": `
+                <div class="route-card" style="border-left-color: #FFD700;">Voie 1 : 4B, 6A</div>
+                <div class="route-card" style="border-left-color: #00BFFF;">Voie 2 : 6B, 5B, 5C</div>
+                <div class="route-card" style="border-left-color: #32CD32;">Voie 3 : 4A, 6A</div>
+            `,
+            "voies 4 5 6.jpg": `
+                <div class="route-card" style="border-left-color: #00BFFF;">Voie 4 : 6B, 5B+, 5C</div>
+                <div class="route-card" style="border-left-color: #FF4500;">Voie 5 : 4B, 6B+</div>
+                <div class="route-card" style="border-left-color: #FFD700;">Voie 6 : 5A, 6A</div>
+            `,
+            "voies 7 8 9.jpg": `
+                <div class="route-card" style="border-left-color: #32CD32;">Voie 7 : 4B</div>
+                <div class="route-card" style="border-left-color: #FFD700;">Voie 8 : 5C, 6A</div>
+                <div class="route-card" style="border-left-color: #FF4500;">Voie 9 : 7A, 5B+</div>
+            `,
+            "voies 9 10 11.jpg": `
+                <div class="route-card" style="border-left-color: #FF4500;">Voie 9 : 7A, 5B+</div>
+                <div class="route-card" style="border-left-color: #00BFFF;">Voie 10 : 4C+, 5C+</div>
+                <div class="route-card" style="border-left-color: #32CD32;">Voie 11 : 5B+, 6A, 6B+</div>
+            `,
+            "voies 10 11 12 (13).jpg": `
+                <div class="route-card" style="border-left-color: #00BFFF;">Voie 10 : 4C+, 5C+</div>
+                <div class="route-card" style="border-left-color: #32CD32;">Voie 11 : 5B+, 6A, 6B+</div>
+                <div class="route-card" style="border-left-color: #FFD700;">Voie 12 : 6C, 5C</div>
+                <div class="route-card" style="border-left-color: #FF4500;">Voie 13 : 6C, 5B+, 6A</div>
+            `,
+            "voies 13 14 15 16.jpg": `
+                <div class="route-card" style="border-left-color: #FF4500;">Voie 13 : 6C, 5B+, 6A</div>
+                <div class="route-card" style="border-left-color: #FFD700;">Voie 14 : 4C</div>
+                <div class="route-card" style="border-left-color: #00BFFF;">Voie 15 : 5C, 6A+</div>
+                <div class="route-card" style="border-left-color: #32CD32;">Voie 16 : 4B, 5B, 6A+</div>
+            `
         };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
-        const topoText = document.getElementById('topo-text');
+        const topoContent = document.getElementById('topo-content');
         let stickers = [];
 
         function updateTopoInfo(filename) {
-            topoText.textContent = topoData[filename] || "Aucune information disponible";
+            topoContent.innerHTML = topoData[filename] || "Aucune information disponible";
         }
 
         function changeSector() {
@@ -191,7 +239,7 @@
             stickers = [];
         }
 
-        // Initialisation au chargement de la page
+        // Initialisation au chargement
         updateTopoInfo("voies 1 2 3.jpg");
     </script>
 
