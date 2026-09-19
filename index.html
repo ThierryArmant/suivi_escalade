@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mur d'Escalade Virtuel - EPS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { color: #333; font-size: 1.5rem; }
+        .controls {
+            margin-bottom: 15px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        select, button {
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0056b3; }
+        
+        /* Conteneur de l'image et des pastilles */
+        #wall-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        #wall-image {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 80vh;
+        }
+        /* Style des pastilles (stickers) */
+        .sticker {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🧗 Créateur de Voies - Escalade EPS</h1>
+    
+    <div class="controls">
+        <label for="colorPicker">Couleur de la voie :</label>
+        <select id="colorPicker">
+            <option value="#FFD700">Jaune (Niveau 1)</option>
+            <option value="#00BFFF">Bleu (Niveau 2)</option>
+            <option value="#FF4500">Rouge (Niveau 3)</option>
+            <option value="#32CD32">Vert (Niveau 4)</option>
+        </select>
+        <button onclick="undoSticker()">Annuler le dernier</button>
+        <button onclick="clearStickers()">Tout effacer</button>
+    </div>
+
+    <div>
+        <div id="wall-container" onclick="placeSticker(event)">
+            <!-- Remplace "mur.jpg" par le nom exact de ta photo de mur dans ton dépôt GitHub -->
+            <img id="wall-image" src="mur.jpg" alt="Mur d'escalade">
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('wall-container');
+        const img = document.getElementById('wall-image');
+        let stickers = [];
+
+        function placeSticker(event) {
+            const rect = img.getBoundingClientRect();
+            
+            // Calcul de la position relative en pourcentage (pour s'adapter à tous les écrans, mobile ou PC)
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+            // Empêcher de placer si on clique en dehors de l'image réelle
+            if (x < 0 || x > 100 || y < 0 || y > 100) return;
+
+            const color = document.getElementById('colorPicker').value;
+
+            // Création visuelle du sticker
+            const sticker = document.createElement('div');
+            sticker.className = 'sticker';
+            sticker.style.left = x + '%';
+            sticker.style.top = y + '%';
+            sticker.style.backgroundColor = color;
+
+            container.appendChild(sticker);
+            stickers.push({ element: sticker, x: x, y: y, color: color });
+        }
+
+        function undoSticker() {
+            if (stickers.length > 0) {
+                const last = stickers.pop();
+                last.element.remove();
+            }
+        }
+
+        function clearStickers() {
+            stickers.forEach(s => s.element.remove());
+            stickers = [];
+        }
+    </script>
+
+</body>
+</html>
