@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mur d'Escalade - Application EPS</title>
     
-    <!-- Bibliothèque pour lire les fichiers Excel (.xlsx) -->
+    <!-- Bibliothèque pour lire et écrire les fichiers Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -48,6 +48,8 @@
         button.save-btn:hover { background-color: #218838; }
         button.delete-btn { background-color: #dc3545; }
         button.delete-btn:hover { background-color: #c82333; }
+        button.template-btn { background-color: #17a2b8; }
+        button.template-btn:hover { background-color: #138496; }
         
         /* Modal de Configuration */
         #config-modal {
@@ -71,7 +73,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
         .modal-content h2 { margin-top: 0; color: #007bff; font-size: 1.3rem; }
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
         .form-group input[type="file"] { width: 100%; padding: 6px; box-sizing: border-box; }
         .help-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
@@ -208,9 +210,14 @@
             </div>
 
             <div class="form-group">
-                <label for="excelInput">2. Importer le fichier Excel des voies (.xlsx ou .csv) :</label>
+                <label>2. Modèle de tableau Excel :</label>
+                <button class="template-btn" onclick="downloadExcelTemplate()">📥 Télécharger le modèle Excel type</button>
+                <div class="help-text">Téléchargez ce modèle, remplissez-le avec vos voies (plusieurs lignes possibles par voie pour les différentes couleurs), puis réimportez-le ci-dessous.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="excelInput">3. Importer le fichier Excel rempli (.xlsx ou .csv) :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
-                <div class="help-text">Modèle : Colonnes <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b> (Jaune, Bleu, Noir, Vert, Rouge, Violet).</div>
             </div>
 
             <div style="text-align: right; margin-top: 20px;">
@@ -245,7 +252,6 @@
             "violet": "#9C27B0"
         };
 
-        // Chargement de la configuration enregistrée (ou valeurs par défaut)
         let schoolConfig = JSON.parse(localStorage.getItem('eps_wall_config')) || {
             images: [],
             topo: {}
@@ -263,11 +269,9 @@
         let activeStickers = [];
 
         function initApp() {
-            // Si aucune image n'est configurée, on met une image par défaut de secours
             if (!schoolConfig.images || schoolConfig.images.length === 0) {
                 schoolConfig.images = ["voies 1 2 3.jpg"];
             }
-
             populateSectors();
             img.src = schoolConfig.images[0];
             updateTopoInfo(schoolConfig.images[0]);
@@ -292,6 +296,24 @@
             initApp();
         }
 
+        // Fonction pour générer et télécharger automatiquement le modèle Excel type
+        function downloadExcelTemplate() {
+            const templateData = [
+                { Secteur: 1, Voie: "Voie 1", Cotation: "4B", Couleur: "Jaune" },
+                { Secteur: 1, Voie: "Voie 1", Cotation: "6A", Couleur: "Bleu" },
+                { Secteur: 1, Voie: "Voie 2", Cotation: "6B", Couleur: "Noir" },
+                { Secteur: 1, Voie: "Voie 2", Cotation: "5B", Couleur: "Vert" },
+                { Secteur: 2, Voie: "Voie 4", Cotation: "5C", Couleur: "Rouge" }
+            ];
+
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Voies EPS");
+            
+            // Déclenche le téléchargement du fichier Excel
+            XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
+        }
+
         function handleImagesUpload(input) {
             if (input.files.length > 6) {
                 alert("❌ Erreur : Le nombre de photos est limité à 6 maximum !");
@@ -301,7 +323,6 @@
 
             let newImages = [];
             Array.from(input.files).forEach((file) => {
-                // Utilisation d'object URLs pour fluidifier l'affichage instantané
                 const url = URL.createObjectURL(file);
                 newImages.push(url);
             });
