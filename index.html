@@ -48,7 +48,7 @@
         button.config-btn:hover { background-color: #5a6268; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
-        button.export-btn { background-color: #8b5cf6; display: none; } /* Caché pour les collègues, visible en local */
+        button.export-btn { background-color: #8b5cf6; } /* TOUJOURS VISIBLE POUR TOI */
         button.export-btn:hover { background-color: #7c3aed; }
 
         .workspace {
@@ -521,7 +521,7 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <!-- BOUTON EXPORT : Visible en local pour toi, masqué sur GitHub pour les collègues -->
+        <!-- LE BOUTON EST MAINTENANT BIEN VISIBLE DANS LA BARRE DU HAUT -->
         <button class="export-btn" id="demo-btn" onclick="generateDemo()" title="Génère un fichier index.html pour GitHub">🎁 Générer la démo</button>
     </div>
 
@@ -590,7 +590,7 @@
                 <div class="inst-item">
                     <b>Textes & Références :</b>
                     <ul class="inst-list">
-                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo16/MENE1711773C.htm" target="_blank">Exigence de la sécurité dans les activités physiques de pleine nature dans le second degré</a></li>
+                        <li><a href="https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000038902022" target="_blank">Code de l'Éducation (art. L312-2, R312-2)</a></li>
                         <li><a href="https://www.education.gouv.fr/bo/17/Hebdo18/MENE1711947C.htm" target="_blank">Circulaire missions de l'EPS et sécurité</a></li>
                         <li><a href="https://eduscol.education.fr/1193/education-physique-et-sportive" target="_blank">Notes de service encadrement APPN</a></li>
                         <li><a href="https://www.ffme.fr/escalade/sae/" target="_blank">Normes spécifiques SAE (NF EN 12572) & SNE</a></li>
@@ -934,12 +934,6 @@
         }
 
         async function initApp() {
-            // Si on est en ligne sur GitHub, on masque le bouton "Générer la démo" pour les collègues
-            if (window.location.hostname.includes("github.io")) {
-                const demoBtn = document.getElementById('demo-btn');
-                if (demoBtn) demoBtn.style.display = 'none';
-            }
-
             let savedConfig = null;
             try { savedConfig = await getFromDB("school_config_master"); } catch(e) {}
 
@@ -960,9 +954,6 @@
             } else if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
             } else {
-                // =========================================================================
-                // MODE DÉMO AUTOMATIQUE : Si l'outil est vierge, on charge un mur de test prêt à l'emploi
-                // =========================================================================
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
                         <defs>
@@ -975,7 +966,6 @@
                         <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
                         <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
                         
-                        <!-- Quelques prises dessinées pour la démo -->
                         <circle cx="200" cy="150" r="28" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
                         <circle cx="220" cy="350" r="25" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
                         <circle cx="180" cy="550" r="30" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
