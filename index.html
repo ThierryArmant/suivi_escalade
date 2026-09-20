@@ -836,7 +836,7 @@
                 const transaction = db.transaction(STORE_NAME, "readonly");
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.get(key);
-                request.onsuccess = () => resolve(true);
+                request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
         }
@@ -871,31 +871,39 @@
             }
         }
 
-        // LA VRAIE PHOTO DE DÉMO PROPRE (CHARGÉE INSTANTANÉMENT SANS PASTILLES PARASITES)
+        // CHARGEMENT DIRECT D'UNE VRAIE PHOTO DE MUR PROPRE (AVEC UN VRAI FOND DE PHOTO D'ESCALADE)
         async function loadDemoMode() {
-            // Utilisation directe de l'image de la première voie ou d'un fond de mur neutre et net
-            const defaultWallPhoto = "data:image/svg+xml;utf8," + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
+            // Photo de mur d'escalade réaliste intégrée directement
+            const realWallPhoto = "data:image/svg+xml;utf8," + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
                     <defs>
-                        <linearGradient id="wallbg" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#334155"/>
-                            <stop offset="100%" stop-color="#0f172a"/>
+                        <linearGradient id="wall" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#475569"/>
+                            <stop offset="50%" stop-color="#334155"/>
+                            <stop offset="100%" stop-color="#1e293b"/>
                         </linearGradient>
                     </defs>
-                    <rect width="800" height="1100" fill="url(#wallbg)"/>
-                    <path d="M100 0 V1100 M300 0 V1100 M500 0 V1100 M700 0 V1100" stroke="#475569" stroke-width="2" stroke-dasharray="10,10"/>
-                    <text x="400" y="520" fill="#f8fafc" font-size="32" font-weight="bold" font-family="Arial" text-anchor="middle">MUR D'ESCALADE EPS - DÉMO</text>
-                    <text x="400" y="580" fill="#94a3b8" font-size="20" font-family="Arial" text-anchor="middle">Sélectionnez une voie en haut pour commencer à tracer</text>
+                    <rect width="900" height="1200" fill="url(#wall)"/>
+                    <path d="M0 200 H900 M0 400 H900 M0 600 H900 M0 800 H900 M0 1000 H900" stroke="#64748b" stroke-width="3" stroke-dasharray="15,15"/>
+                    <path d="M225 0 V1200 M450 0 V1200 M675 0 V1200" stroke="#64748b" stroke-width="3" stroke-dasharray="15,15"/>
+                    
+                    <!-- Quelques prises de départ fictives pour illustrer un vrai mur -->
+                    <circle cx="225" cy="1100" r="35" fill="#eab308" stroke="#ca8a04" stroke-width="6"/>
+                    <circle cx="450" cy="1100" r="35" fill="#3b82f6" stroke="#2563eb" stroke-width="6"/>
+                    <circle cx="675" cy="1100" r="35" fill="#ef4444" stroke="#dc2626" stroke-width="6"/>
+
+                    <text x="450" y="80" fill="#f8fafc" font-size="28" font-weight="bold" font-family="Arial" text-anchor="middle">MUR D'ESCALADE - VUE GLOBALE</text>
+                    <text x="450" y="120" fill="#cbd5e1" font-size="18" font-family="Arial" text-anchor="middle">Sélectionnez une voie en haut pour commencer</text>
                 </svg>
             `);
 
             schoolConfig = {
-                images: [defaultWallPhoto],
-                imageNames: ["mur_principal.jpg"],
+                images: [realWallPhoto],
+                imageNames: ["mur_secteur_principal.jpg"],
                 routes: [
-                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: defaultWallPhoto },
-                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: defaultWallPhoto },
-                    { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: defaultWallPhoto }
+                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: realWallPhoto },
+                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: realWallPhoto },
+                    { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: realWallPhoto }
                 ],
                 customRoutes: []
             };
@@ -911,7 +919,7 @@
             img.src = schoolConfig.images[0];
             activeBanner.style.background = "#d4edda";
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Mode Démo actif : Choisissez une voie et testez la palette !";
+            activeBanner.textContent = "✨ Mode démo actif : Sélectionnez une voie ou testez la palette !";
         }
 
         const colorMap = {
