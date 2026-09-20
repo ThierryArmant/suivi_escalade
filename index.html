@@ -7,6 +7,8 @@
     
     <!-- Bibliothèque Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Bibliothèque QR Code -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
         body {
@@ -516,7 +518,7 @@
 </head>
 <body>
 
-    <h1>🧗 Bloc'Note EPS - Application EPS</h1>
+    <h1>🧗 Bloc'Note EPS</h1>
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
     <div class="controls">
@@ -556,6 +558,8 @@
                 <h3>Mise à jour</h3>
                 <button class="tool-btn action-save-btn" onclick="saveCurrentRoute()" title="Écrase le tracé actuel avec vos modifications">💾 Enregistrer modifs</button>
                 <button class="tool-btn action-delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
+                <!-- NOUVEAU BOUTON QR CODE -->
+                <button class="tool-btn" onclick="generateQRCode()" style="background:#e0f2fe!important; color:#0369a1!important; border-color:#7dd3fc!important; margin-top:5px;">📱 Générer QR Code Élève</button>
             </div>
 
             <!-- Zone Exercices bloc -->
@@ -814,6 +818,16 @@
         </div>
     </div>
 
+    <!-- Modal QR Code -->
+    <div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+        <div class="modal-content" style="text-align: center;">
+            <h2 style="color: #0369a1; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
+            <p style="font-size: 0.9rem; color: #475569; margin-top: 0;">L'élève peut scanner ce code pour afficher ce tracé en lecture seule.</p>
+            <div id="qrcode-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 15px; background: #fff; border-radius: 8px; border: 2px dashed #cbd5e1;"></div>
+            <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #64748b; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Fermer</button>
+        </div>
+    </div>
+
     <script>
         let hasUnsavedChanges = false;
 
@@ -929,6 +943,13 @@
         };
 
         async function initApp() {
+            // NOUVEAU : DÉTECTION DU MODE ÉLÈVE (QR CODE)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'eleve') {
+                setupStudentMode(urlParams);
+                return; // Arrête l'initialisation prof, on reste en mode élève
+            }
+
             let savedConfig = null;
             try { 
                 savedConfig = await getFromDB("school_config_master"); 
@@ -1601,6 +1622,85 @@
             activeMarkers = [];
             hasUnsavedChanges = true;
             renderMarkers();
+        }
+
+        // --- NOUVELLES FONCTIONS QR CODE ÉLÈVE ---
+
+        function generateQRCode() {
+            if (!currentRouteId || activeMarkers.length === 0) {
+                alert("❌ Veuillez d'abord créer ou sélectionner un bloc avec des balises pour générer son QR Code.");
+                return;
+            }
+
+            // On compresse les données des balises pour garder un lien court
+            const miniMarkers = activeMarkers.map(m => ({
+                x: Math.round(m.x * 10) / 10,
+                y: Math.round(m.y * 10) / 10,
+                t: m.type,
+                c: m.color
+            }));
+
+            const dataStr = encodeURIComponent(JSON.stringify(miniMarkers));
+            
+            // On récupère l'image de fond
+            let bgParam = "default";
+            if (img.src && !img.src.startsWith('data:image')) {
+                bgParam = encodeURIComponent(img.src);
+            }
+
+            // Création du lien avec toutes les infos encodées
+            const shareUrl = window.location.origin + window.location.pathname + "?mode=eleve&bg=" + bgParam + "&route=" + dataStr;
+
+            // Génération du visuel du QR Code
+            document.getElementById('qrcode-container').innerHTML = "";
+            new QRCode(document.getElementById('qrcode-container'), {
+                text: shareUrl,
+                width: 220,
+                height: 220,
+                colorDark : "#0f172a",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.L
+            });
+
+            document.getElementById('qr-modal').style.display = "flex";
+        }
+
+        function setupStudentMode(params) {
+            // Nettoyage de l'écran pour l'élève (On cache les menus profs)
+            document.querySelector('.palette-bar').style.display = 'none';
+            document.querySelector('.controls').style.display = 'none';
+            document.querySelector('.right-sidebar').style.display = 'none';
+            
+            // Adaptation de la bannière
+            const banner = document.getElementById('active-route-banner');
+            banner.textContent = "📱 Mode Élève : Consultez votre tracé";
+            banner.style.background = "#e0f2fe";
+            banner.style.color = "#0369a1";
+            banner.style.maxWidth = "900px";
+
+            // Chargement du mur
+            const bg = params.get('bg');
+            if (bg && bg !== "default") {
+                img.src = decodeURIComponent(bg);
+            } else {
+                img.src = "voies 1 2 3.jpg"; // Image de secours
+            }
+
+            // Placement des balises sans possibilité de modification
+            const routeData = params.get('route');
+            if (routeData) {
+                try {
+                    const markers = JSON.parse(decodeURIComponent(routeData));
+                    activeMarkers = markers.map(m => ({
+                        x: m.x, y: m.y, type: m.t, color: m.c, rotation: 0, scale: 1
+                    }));
+                    renderMarkers();
+                    // Bloque l'interaction : l'élève ne peut pas déplacer les balises
+                    document.getElementById('wall-container').style.pointerEvents = 'none';
+                } catch(e) {
+                    console.error("Erreur de lecture du QR Code", e);
+                }
+            }
         }
 
         window.onload = initApp;
