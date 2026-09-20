@@ -452,17 +452,17 @@
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
     <div class="controls">
-        <label for="routeSelect">Sélectionner une Voie (Excel) :</label>
+        <label for="routeSelect">Sélectionner une Voie :</label>
         <select id="routeSelect" onchange="changeRoute()">
             <option value="">-- Choisir une voie officielle --</option>
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="export-btn" onclick="exportForColleagues()" title="Génère un fichier prêt à l'emploi avec vos données pour les collègues">🎁 Exporter pour les collègues</button>
-        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+        <button class="export-btn" onclick="exportForColleagues()" title="Génère un fichier prêt à l'emploi pour les collègues">🎁 Exporter pour les collègues</button>
+        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer les modifs</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
-        <button onclick="undoSticker()">Annuler</button>
-        <button onclick="clearStickers()">Effacer</button>
+        <button onclick="undoSticker()">Annuler action</button>
+        <button onclick="clearStickers()">Effacer tout</button>
     </div>
 
     <div id="active-route-banner">
@@ -489,14 +489,14 @@
             <div class="sidebar-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
-                <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Bloc</button>
+                <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Créer un Bloc</button>
             </div>
 
             <!-- Bannière 2 : Exercices individualisés -->
             <div class="sidebar-section">
                 <h3 class="indiv-title">Indiv. / Élèves</h3>
                 <div id="indiv-list" class="custom-list"></div>
-                <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Élève</button>
+                <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Créer un Élève</button>
             </div>
 
             <!-- Panneau de réglage dynamique -->
@@ -879,7 +879,6 @@
                 if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
                 if (!schoolConfig.routes) schoolConfig.routes = [];
             } else {
-                // Modèle vectoriel en dernier recours si le prof ouvre l'outil tout neuf pour la première fois
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
                         <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient></defs>
@@ -904,7 +903,7 @@
                     img.src = schoolConfig.images[0];
                     activeBanner.style.background = "#d4edda";
                     activeBanner.style.color = "#155724";
-                    activeBanner.textContent = "✨ Outil prêt : Sélectionnez une voie ou un bloc à gauche pour interagir.";
+                    activeBanner.textContent = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
                 }
             }
         }
@@ -987,11 +986,14 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
+        // =========================================================================
+        // NOUVELLE LOGIQUE DE CREATION DE BLOC / ÉLÈVE : VALIDATION VISUELLE ET NETTOYAGE
+        // =========================================================================
         async function createCustomRoute(type) {
-            let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
+            let labelType = (type === 'individualise') ? "l'élève" : "bloc de travail";
             let defaultName = type === 'individualise' ? `Élève ${schoolConfig.customRoutes.filter(r=>r.type==='individualise').length + 1}` : `Bloc ${schoolConfig.customRoutes.filter(r=>r.type!=='individualise').length + 1}`;
             
-            let customName = prompt(`Nom du ${labelType} :`, defaultName);
+            let customName = prompt(`Nom de ${labelType} (le tracé à l'écran sera enregistré automatiquement) :`, defaultName);
             if (customName === null) return;
             customName = customName.trim() === "" ? defaultName : customName.trim();
 
@@ -1013,7 +1015,7 @@
             schoolConfig.customRoutes.push(newRoute);
             await saveConfig();
 
-            // LIAISON AUTOMATIQUE : On associe les pastilles posées au nouveau bloc
+            // TRANSFERT ET SAUVEGARDE DE TOUTES LES PASTILLES DANS LE NOUVEAU BLOC
             if (activeMarkers.length > 0) {
                 const pointsToSave = activeMarkers.map(m => ({
                     x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
@@ -1022,7 +1024,21 @@
             }
 
             renderCustomLists();
-            selectCustomRoute(routeId);
+            
+            // VALIDATION POUR L'UTILISATEUR
+            alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nLe mur va être nettoyé pour votre prochain exercice.`);
+            
+            // NETTOYAGE DE L'ÉCRAN
+            clearMarkersDOM();
+            activeMarkers = [];
+            selectMarker(null);
+            currentRouteId = null;
+            routeSelect.value = "";
+            document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
+            
+            activeBanner.style.background = "#d4edda";
+            activeBanner.style.color = "#155724";
+            activeBanner.textContent = "✨ Tracé sauvegardé ! Sélectionnez une voie ou créez un nouveau bloc.";
         }
 
         function selectCustomRoute(routeId) {
@@ -1152,7 +1168,9 @@
 
         function placeMarker(event) {
             if (!currentRouteId) {
-                alert("Veuillez d'abord sélectionner une voie ou un bloc (via Excel ou à gauche) !");
+                // Si l'utilisateur clique sur le mur sans avoir sélectionné de voie, on ne le bloque pas !
+                // On crée une alerte plus douce.
+                alert("Veuillez sélectionner une Voie Officielle en haut ou créer un Bloc / Élève à gauche pour commencer à placer des pastilles.");
                 return;
             }
             if (event.target.classList.contains('marker')) return;
@@ -1225,6 +1243,7 @@
                 const rect = img.getBoundingClientRect();
                 const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
                 const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
+
                 if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
                     activeMarkers[draggingIndex].x = x;
                     activeMarkers[draggingIndex].y = y;
@@ -1291,7 +1310,7 @@
                     imgObj.onload = async function() {
                         const canvas = document.createElement('canvas');
                         let width = imgObj.width; let height = imgObj.height;
-                        const maxWidth = 1200; // Légère réduction pour plus de sécurité
+                        const maxWidth = 1200; 
                         
                         if (width > maxWidth) {
                             height = Math.round((height * maxWidth) / width);
@@ -1320,15 +1339,14 @@
 
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') {
-                alert("❌ Erreur : Module Excel introuvable. Vérifiez votre connexion Internet !");
+                alert("❌ Module Excel introuvable. Vérifiez votre connexion Internet !");
                 input.value = ""; return;
             }
-
             const file = input.files[0];
             if (!file) return;
 
             if (!schoolConfig.images || schoolConfig.images.length === 0) {
-                alert("❌ Veuillez d'abord importer les photos des secteurs avant le fichier Excel !");
+                alert("❌ Importez d'abord les photos des secteurs dans Configuration avant le fichier Excel !");
                 input.value = ""; return;
             }
 
@@ -1354,7 +1372,6 @@
                         couleur: couleurInput, hexColor: hexColor, imageSrc: targetImage
                     });
                 });
-
                 schoolConfig.routes = parsedRoutes;
                 await saveConfig();
                 alert("✅ Fichier Excel importé avec succès !");
@@ -1390,12 +1407,80 @@
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
-                
                 activeBanner.style.background = bannerBg; activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
-
             loadRouteMarkers(currentRouteId);
+        }
+
+        function loadRouteMarkers(routeId) {
+            clearMarkersDOM();
+            activeMarkers = [];
+            const savedData = localStorage.getItem(`eps_route_${routeId}`);
+            if (savedData) {
+                const points = JSON.parse(savedData);
+                activeMarkers = points.map(p => ({
+                    x: p.x, y: p.y, type: p.type || 'dot', color: p.color || currentRouteColor,
+                    rotation: p.rotation || 0, scale: p.scale || 1
+                }));
+            }
+            renderMarkers();
+        }
+
+        // =========================================================================
+        // NOUVELLE LOGIQUE DE SAUVEGARDE DE MODIFICATION : VALIDATION ET NETTOYAGE
+        // =========================================================================
+        function saveCurrentRoute() {
+            if (!currentRouteId) {
+                alert("❌ Aucune voie ou bloc actif sélectionné !\nCliquez d'abord sur une voie dans les listes."); 
+                return;
+            }
+            const pointsToSave = activeMarkers.map(m => ({ 
+                x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
+            }));
+            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            
+            // VALIDATION VISUELLE
+            alert("✅ Modifications enregistrées avec succès !\nL'image va être remise au propre.");
+            
+            // NETTOYAGE DE L'ÉCRAN
+            clearMarkersDOM();
+            activeMarkers = [];
+            selectMarker(null);
+            currentRouteId = null;
+            routeSelect.value = "";
+            document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
+            
+            activeBanner.style.background = "#d4edda";
+            activeBanner.style.color = "#155724";
+            activeBanner.textContent = "✨ Modifications sauvegardées. Sélectionnez une voie ou créez un nouveau bloc.";
+        }
+
+        function deleteCurrentRoute() {
+            if (!currentRouteId) {
+                alert("❌ Aucune voie active sélectionnée !"); return;
+            }
+            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
+                localStorage.removeItem(`eps_route_${currentRouteId}`);
+                selectMarker(null);
+                activeMarkers = [];
+                renderMarkers();
+                alert("🗑️ Tracé supprimé !");
+            }
+        }
+
+        function undoSticker() {
+            if (activeMarkers.length > 0) {
+                activeMarkers.pop();
+                selectMarker(null);
+                renderMarkers();
+            }
+        }
+
+        function clearStickers() {
+            selectMarker(null);
+            activeMarkers = [];
+            renderMarkers();
         }
 
         window.onload = initApp;
