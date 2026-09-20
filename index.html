@@ -52,8 +52,9 @@
         button.delete-btn:hover { background-color: #c82333; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
+        button.export-btn { background-color: #8b5cf6; }
+        button.export-btn:hover { background-color: #7c3aed; }
 
-        /* Conteneur global de l'espace de travail à 3 colonnes */
         .workspace {
             display: flex;
             justify-content: center;
@@ -64,7 +65,6 @@
             margin: 0 auto;
         }
 
-        /* Palette de gauche */
         .palette-bar {
             background: #fff;
             padding: 12px;
@@ -116,7 +116,6 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
 
-        /* Sections bannières à gauche */
         .sidebar-section {
             background: #f8f9fa;
             border: 1px solid #ced4da;
@@ -191,7 +190,6 @@
         }
         .add-custom-btn:hover { background: #cbd5e1; }
 
-        /* Panneau de réglage dynamique */
         .selection-panel {
             background: #e7f5ff;
             border: 2px solid #3182ce;
@@ -218,7 +216,6 @@
             background: #3182ce;
         }
 
-        /* Colonne de droite globale */
         .right-sidebar {
             width: 290px;
             text-align: left;
@@ -230,7 +227,6 @@
             gap: 12px;
         }
 
-        /* Zone Institutionnelle */
         .institutional-zone {
             background: #fff;
             padding: 12px;
@@ -274,7 +270,6 @@
             font-size: 0.73rem;
         }
 
-        /* Zone Technique */
         .technical-zone {
             background: #f0fdf4;
             padding: 12px;
@@ -345,7 +340,6 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* Modal de Configuration */
         #config-modal {
             display: none;
             position: fixed;
@@ -372,7 +366,6 @@
         .form-group input[type="file"] { width: 100%; padding: 6px; box-sizing: border-box; }
         .help-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
 
-        /* Bannière de la voie active */
         #active-route-banner {
             background: #d4edda;
             color: #155724;
@@ -465,6 +458,7 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
+        <button class="export-btn" onclick="exportForColleagues()" title="Génère un fichier prêt à l'emploi avec vos données pour les collègues">🎁 Exporter pour les collègues</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
         <button onclick="undoSticker()">Annuler</button>
@@ -472,7 +466,7 @@
     </div>
 
     <div id="active-route-banner">
-        ⚠️ Chargement de la version démo...
+        ⚠️ Chargement en cours...
     </div>
 
     <!-- Espace de travail à 3 colonnes -->
@@ -505,7 +499,7 @@
                 <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Élève</button>
             </div>
 
-            <!-- Panneau de réglage dynamique si un marqueur est sélectionné -->
+            <!-- Panneau de réglage dynamique -->
             <div id="selection-panel" class="selection-panel">
                 <h4>🎯 Élément actif</h4>
                 <div class="control-row">
@@ -532,7 +526,6 @@
         <!-- 3. COLONNE DE DROITE : Zone Institutionnelle + Zone Technique -->
         <div class="right-sidebar">
             
-            <!-- Zone Institutionnelle -->
             <div class="institutional-zone">
                 <h3>⚖️ Zone Institutionnelle</h3>
                 <div class="inst-item">
@@ -552,7 +545,7 @@
                 </div>
                 <div class="inst-item appn-alert">
                     <b>Guide Déclaration APPN :</b><br>
-                    Procédure obligatoire si la sortie comporte <b>au moins 1 relai</b> (validation de l'encadrement, contrôle EPI et gestion rigoureuse de la verticalité).
+                    Procédure obligatoire si la sortie comporte <b>au moins 1 relai</b>.
                 </div>
             </div>
 
@@ -562,7 +555,6 @@
                 
                 <div class="legend-category">🤸 Gestes & Postures</div>
 
-                <!-- PME -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">📌 PME (Repos)</div>
                     <div class="legend-body">
@@ -579,7 +571,6 @@
                     </div>
                 </div>
 
-                <!-- Lolotte -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🦵 Lolotte</div>
                     <div class="legend-body">
@@ -596,7 +587,6 @@
                     </div>
                 </div>
 
-                <!-- Drapeau -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🚩 Drapeau</div>
                     <div class="legend-body">
@@ -613,7 +603,6 @@
                     </div>
                 </div>
 
-                <!-- Changement de Main (CM) -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🔄 Chang. de Main (CM)</div>
                     <div class="legend-body">
@@ -629,7 +618,6 @@
                     </div>
                 </div>
 
-                <!-- Changement de Pied (CP) -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">👟 Chang. de Pied (CP)</div>
                     <div class="legend-body">
@@ -645,7 +633,6 @@
                     </div>
                 </div>
 
-                <!-- Jeté -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🚀 Le Jeté</div>
                     <div class="legend-body">
@@ -663,7 +650,6 @@
 
                 <div class="legend-category">🪨 Les Types de Prises</div>
 
-                <!-- Bac -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🪨 Le Bac</div>
                     <div class="legend-body">
@@ -677,7 +663,6 @@
                     </div>
                 </div>
 
-                <!-- Réglette -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">📏 La Réglette</div>
                     <div class="legend-body">
@@ -691,7 +676,6 @@
                     </div>
                 </div>
 
-                <!-- Pince -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🤏 La Pince</div>
                     <div class="legend-body">
@@ -705,7 +689,6 @@
                     </div>
                 </div>
 
-                <!-- Inversée -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🔄 L'Inversée</div>
                     <div class="legend-body">
@@ -754,49 +737,101 @@
     </div>
 
     <script>
-        const MASTER_KEY = "EPS_Climbing_Master_V2";
+        // ==========================================================
+        // SYSTÈME DE BASE DE DONNÉES (INDEXED-DB) POUR GROS FICHIERS
+        // ==========================================================
+        const DB_NAME = "EPS_Climbing_DB";
+        const STORE_NAME = "configStore";
+        const DB_VERSION = 1;
 
-        function loadConfig() {
-            try {
-                // Ce système récupère tout, même si tu avais créé des données sur d'anciennes versions
-                const keysToTry = [MASTER_KEY, "EPS_Climbing_Master_V1", "EPS_Climbing_Config_V5", "EPS_Climbing_Config_V4", "EPS_Climbing_Config_V3", "EPS_Climbing_Config_V2", "EPS_Climbing_Config"];
-                for (let k of keysToTry) {
-                    const data = localStorage.getItem(k);
-                    if (data) {
-                        const parsed = JSON.parse(data);
-                        if (parsed && parsed.images && parsed.images.length > 0) {
-                            return parsed;
-                        }
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => resolve(request.result);
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
                     }
-                }
-            } catch (e) {
-                console.error("Erreur lecture configuration", e);
-            }
-            return null;
+                };
+            });
         }
 
-        function saveConfig() {
-            try {
-                localStorage.setItem(MASTER_KEY, JSON.stringify(schoolConfig));
-            } catch (err) {
-                alert("❌ Erreur lors de l'enregistrement de la configuration. Pense à vérifier la taille de tes images.");
-            }
+        async function saveToDB(key, value) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, "readwrite");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.put(value, key);
+                request.onsuccess = () => resolve(true);
+                request.onerror = () => reject(request.error);
+            });
         }
+
+        async function getFromDB(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, "readonly");
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get(key);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // ==========================================================
+        // EXPORT MAGIQUE POUR LES COLLÈGUES
+        // ==========================================================
+        function exportForColleagues() {
+            if (!schoolConfig || !schoolConfig.images || schoolConfig.images.length === 0) {
+                alert("❌ Erreur : Vous n'avez configuré aucune photo ni voie à exporter !");
+                return;
+            }
+
+            let clone = document.documentElement.cloneNode(true);
+            
+            let cloneImg = clone.querySelector('#wall-image');
+            if(cloneImg) cloneImg.src = "";
+            
+            let cloneContainer = clone.querySelector('#wall-container');
+            if(cloneContainer) {
+                let markers = cloneContainer.querySelectorAll('.marker');
+                markers.forEach(m => m.remove());
+            }
+
+            let cloneSelect = clone.querySelector('#routeSelect');
+            if(cloneSelect) cloneSelect.value = "";
+
+            let oldConfig = clone.querySelector('#preloaded-config');
+            if(oldConfig) oldConfig.remove();
+
+            let script = document.createElement('script');
+            script.id = "preloaded-config";
+            script.textContent = "window.PRELOADED_CONFIG = " + JSON.stringify(schoolConfig) + ";";
+            clone.querySelector('head').prepend(script);
+
+            let htmlContent = "<!DOCTYPE html>\n<html lang=\"fr\">\n" + clone.innerHTML + "\n</html>";
+            let blob = new Blob([htmlContent], {type: "text/html;charset=utf-8"});
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "Mur_Escalade_Partage.html";
+            link.click();
+            
+            alert("✅ Fichier généré avec succès !\n\nLe fichier 'Mur_Escalade_Partage.html' vient d'être téléchargé dans votre dossier Téléchargements.\n\nC'est CE fichier que vous devez envoyer à vos collègues. Vos photos et vos voies y sont incluses par défaut !");
+        }
+
+        // ==========================================================
+        // LOGIQUE PRINCIPALE DE L'APPLICATION
+        // ==========================================================
 
         const colorMap = {
-            "jaune": "#FFD700",
-            "bleu": "#00BFFF", "bleue": "#00BFFF",
-            "noir": "#212121", "noire": "#212121",
-            "vert": "#32CD32", "verte": "#32CD32",
-            "rouge": "#FF4500",
-            "violet": "#9C27B0", "violette": "#9C27B0"
+            "jaune": "#FFD700", "bleu": "#00BFFF", "bleue": "#00BFFF",
+            "noir": "#212121", "noire": "#212121", "vert": "#32CD32", "verte": "#32CD32",
+            "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
         };
 
-        let schoolConfig = {
-            images: [],
-            routes: [],
-            customRoutes: []
-        };
+        let schoolConfig = { images: [], routes: [], customRoutes: [] };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
@@ -809,71 +844,56 @@
         let currentTool = "dot";
         let activeMarkers = [];
         let selectedMarkerIndex = null;
-        
         let isFilterActive = false;
 
         function toggleLegendBanner(element) {
             const allBanners = document.querySelectorAll('.legend-banner');
             const isOpen = element.classList.contains('active');
-            
             allBanners.forEach(b => b.classList.remove('active'));
-            
-            if (!isOpen) {
-                element.classList.add('active');
+            if (!isOpen) element.classList.add('active');
+        }
+
+        async function saveConfig() {
+            try {
+                await saveToDB("school_config_master", schoolConfig);
+            } catch (err) {
+                console.error(err);
+                alert("❌ Erreur lors de l'enregistrement de la base de données.");
             }
         }
 
-        function initApp() {
-            const savedConfig = loadConfig();
+        async function initApp() {
+            let savedConfig = null;
+
+            if (window.PRELOADED_CONFIG) {
+                savedConfig = window.PRELOADED_CONFIG;
+                await saveToDB("school_config_master", savedConfig);
+            } else {
+                try {
+                    savedConfig = await getFromDB("school_config_master");
+                } catch(e) { console.error(e); }
+            }
             
             if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
                 if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
                 if (!schoolConfig.routes) schoolConfig.routes = [];
             } else {
-                // --- VERSION DÉMO INTÉGRÉE PAR DÉFAUT ---
+                // Modèle vectoriel en dernier recours si le prof ouvre l'outil tout neuf pour la première fois
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
-                        <defs>
-                            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#1e293b"/>
-                                <stop offset="100%" stop-color="#0f172a"/>
-                            </linearGradient>
-                        </defs>
+                        <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient></defs>
                         <rect width="800" height="1100" fill="url(#bg)"/>
                         <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
                         <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
-                        
-                        <circle cx="200" cy="150" r="28" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                        <circle cx="220" cy="350" r="25" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                        <circle cx="180" cy="550" r="30" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
-                        
-                        <circle cx="500" cy="200" r="26" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
-                        <circle cx="480" cy="450" r="28" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
-                        <circle cx="530" cy="700" r="25" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
-
-                        <circle cx="350" cy="250" r="25" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
-                        <circle cx="370" cy="500" r="28" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
-                        <circle cx="330" cy="750" r="30" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
-
                         <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">VERSION DÉMO - MUR D'ESCALADE</text>
-                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Modifiable via le bouton 'Configuration' de votre établissement</text>
+                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Veuillez configurer l'outil via le bouton 'Configuration'</text>
                     </svg>
                 `);
-
                 schoolConfig = {
-                    images: [demoWallSvg],
-                    routes: [
-                        { id: "demo_1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoWallSvg },
-                        { id: "demo_2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: demoWallSvg },
-                        { id: "demo_3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: demoWallSvg }
-                    ],
-                    customRoutes: [
-                        { id: "custom_demo_bloc", name: "Atelier Rétablissement", type: "bloc", color: "#d97706", imageSrc: demoWallSvg },
-                        { id: "custom_demo_eleve", name: "Élève : Cassie", type: "individualise", color: "#0284c7", imageSrc: demoWallSvg }
-                    ]
+                    images: [demoWallSvg], routes: [], customRoutes: []
                 };
-                saveConfig();
+                await saveConfig();
             }
 
             populateRouteDropdown();
@@ -884,14 +904,13 @@
                     img.src = schoolConfig.images[0];
                     activeBanner.style.background = "#d4edda";
                     activeBanner.style.color = "#155724";
-                    activeBanner.textContent = "✨ Version Démo chargée : Cliquez sur un bloc ou un élève à gauche pour interagir.";
+                    activeBanner.textContent = "✨ Outil prêt : Sélectionnez une voie ou un bloc à gauche pour interagir.";
                 }
             }
         }
 
         function populateRouteDropdown() {
             routeSelect.innerHTML = '<option value="">-- Choisir une voie officielle (Excel) --</option>';
-
             if (schoolConfig.routes && schoolConfig.routes.length > 0) {
                 schoolConfig.routes.forEach(r => {
                     const opt = document.createElement('option');
@@ -915,28 +934,22 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                item.onclick = (e) => {
-                    e.stopPropagation();
-                    selectCustomRoute(r.id);
-                };
+                item.onclick = (e) => { e.stopPropagation(); selectCustomRoute(r.id); };
 
                 const textSpan = document.createElement('span');
                 textSpan.textContent = r.name;
-                textSpan.onclick = (e) => {
-                    e.stopPropagation();
-                    selectCustomRoute(r.id);
-                };
+                textSpan.onclick = (e) => { e.stopPropagation(); selectCustomRoute(r.id); };
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
                 delBtn.textContent = '❌';
                 delBtn.title = 'Supprimer';
-                delBtn.onclick = (e) => {
+                delBtn.onclick = async (e) => {
                     e.stopPropagation();
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
-                        saveConfig();
+                        await saveConfig();
 
                         if (currentRouteId === r.id) {
                             currentRouteId = null;
@@ -965,14 +978,8 @@
             });
         }
 
-        function openConfigModal() {
-            document.getElementById('config-modal').style.display = 'flex';
-        }
-
-        function closeConfigModal() {
-            document.getElementById('config-modal').style.display = 'none';
-            initApp();
-        }
+        function openConfigModal() { document.getElementById('config-modal').style.display = 'flex'; }
+        function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; initApp(); }
 
         function setTool(tool) {
             currentTool = tool;
@@ -980,7 +987,7 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        function createCustomRoute(type) {
+        async function createCustomRoute(type) {
             let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
             let defaultName = type === 'individualise' ? `Élève ${schoolConfig.customRoutes.filter(r=>r.type==='individualise').length + 1}` : `Bloc ${schoolConfig.customRoutes.filter(r=>r.type!=='individualise').length + 1}`;
             
@@ -997,28 +1004,19 @@
 
             const routeId = `custom_${Date.now()}`;
             const newRoute = {
-                id: routeId,
-                name: customName,
-                type: type,
+                id: routeId, name: customName, type: type,
                 color: (type === 'individualise') ? "#0284c7" : "#d97706",
                 imageSrc: activeImageSrc
             };
 
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            saveConfig();
+            await saveConfig();
 
-            // LA VRAIE CORRECTION EST ICI : 
-            // Si l'utilisateur a placé des pastilles à l'écran, puis cliqué sur "+ Bloc", 
-            // on associe AUTOMATIQUEMENT ces pastilles au nouveau bloc créé !
+            // LIAISON AUTOMATIQUE : On associe les pastilles posées au nouveau bloc
             if (activeMarkers.length > 0) {
                 const pointsToSave = activeMarkers.map(m => ({
-                    x: m.x,
-                    y: m.y,
-                    type: m.type,
-                    color: m.color,
-                    rotation: m.rotation,
-                    scale: m.scale
+                    x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
                 }));
                 localStorage.setItem(`eps_route_${routeId}`, JSON.stringify(pointsToSave));
             }
@@ -1036,9 +1034,7 @@
             currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
             
             const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
-            if (targetImgSrc) {
-                img.src = targetImgSrc;
-            }
+            if (targetImgSrc) img.src = targetImgSrc;
             
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
@@ -1056,7 +1052,6 @@
             loadRouteMarkers(currentRouteId);
         }
 
-        // --- FILTRE MAGIQUE ---
         function toggleColorFilter() {
             if (!currentRouteId) {
                 alert("Veuillez d'abord sélectionner une voie ou un bloc !");
@@ -1121,14 +1116,9 @@
                 const data = imgData.data;
 
                 for (let i = 0; i < data.length; i += 4) {
-                    let r = data[i];
-                    let g = data[i + 1];
-                    let b = data[i + 2];
-
-                    let max = Math.max(r, g, b);
-                    let min = Math.min(r, g, b);
-                    let diff = max - min;
-                    let lightness = (max + min) / 2;
+                    let r = data[i]; let g = data[i + 1]; let b = data[i + 2];
+                    let max = Math.max(r, g, b); let min = Math.min(r, g, b);
+                    let diff = max - min; let lightness = (max + min) / 2;
                     let saturation = diff === 0 ? 0 : diff / (1 - Math.abs(2 * lightness / 255 - 1)) / 255;
                     
                     let hue = 0;
@@ -1141,36 +1131,25 @@
                     }
 
                     let match = false;
-                    if (colorName.includes("jaune")) {
-                        if (hue >= 25 && hue <= 85 && saturation > 0.2 && lightness > 35) match = true;
-                    } else if (colorName.includes("bleu")) {
-                        if (hue >= 165 && hue <= 275 && saturation > 0.2) match = true;
-                    } else if (colorName.includes("rouge")) {
-                        if ((hue <= 25 || hue >= 325) && saturation > 0.2) match = true;
-                    } else if (colorName.includes("vert")) {
-                        if (hue >= 65 && hue <= 175 && saturation > 0.2) match = true;
-                    } else if (colorName.includes("noir")) {
-                        if (lightness < 45) match = true;
-                    } else if (colorName.includes("violet")) {
-                        if (hue >= 245 && hue <= 335 && saturation > 0.2) match = true;
-                    }
+                    if (colorName.includes("jaune") && hue >= 25 && hue <= 85 && saturation > 0.2 && lightness > 35) match = true;
+                    else if (colorName.includes("bleu") && hue >= 165 && hue <= 275 && saturation > 0.2) match = true;
+                    else if (colorName.includes("rouge") && (hue <= 25 || hue >= 325) && saturation > 0.2) match = true;
+                    else if (colorName.includes("vert") && hue >= 65 && hue <= 175 && saturation > 0.2) match = true;
+                    else if (colorName.includes("noir") && lightness < 45) match = true;
+                    else if (colorName.includes("violet") && hue >= 245 && hue <= 335 && saturation > 0.2) match = true;
 
                     if (!match) {
                         let avg = 0.299 * r + 0.587 * g + 0.114 * b;
                         let grey = Math.min(255, Math.max(0, avg * 0.75));
-                        data[i] = grey;
-                        data[i + 1] = grey;
-                        data[i + 2] = grey;
+                        data[i] = grey; data[i + 1] = grey; data[i + 2] = grey;
                     }
                 }
-
                 ctx.putImageData(imgData, 0, 0);
                 img.src = canvas.toDataURL('image/jpeg', 0.9);
             };
             imageObj.src = src;
         }
 
-        // --- GESTION DES MARQUEURS ---
         function placeMarker(event) {
             if (!currentRouteId) {
                 alert("Veuillez d'abord sélectionner une voie ou un bloc (via Excel ou à gauche) !");
@@ -1181,16 +1160,10 @@
             const rect = img.getBoundingClientRect();
             const x = ((event.clientX - rect.left) / rect.width) * 100;
             const y = ((event.clientY - rect.top) / rect.height) * 100;
-
             if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
             const newMarkerData = {
-                x: x,
-                y: y,
-                type: currentTool,
-                color: currentRouteColor,
-                rotation: 0,
-                scale: 1
+                x: x, y: y, type: currentTool, color: currentRouteColor, rotation: 0, scale: 1
             };
 
             activeMarkers.push(newMarkerData);
@@ -1214,21 +1187,14 @@
 
                 marker.style.left = p.x + '%';
                 marker.style.top = p.y + '%';
-                
-                let rot = p.rotation || 0;
-                let scl = p.scale || 1;
+                let rot = p.rotation || 0; let scl = p.scale || 1;
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
-                if (p.type === 'dot') {
-                    marker.style.backgroundColor = p.color;
-                } else if (p.type === 'arrow') {
-                    marker.innerHTML = '⬆️';
-                } else if (p.type === 'cross') {
-                    marker.innerHTML = '❌';
-                }
+                if (p.type === 'dot') marker.style.backgroundColor = p.color;
+                else if (p.type === 'arrow') marker.innerHTML = '⬆️';
+                else if (p.type === 'cross') marker.innerHTML = '❌';
 
                 marker.onpointerdown = (e) => startDrag(e, index);
-
                 container.appendChild(marker);
                 p.element = marker;
             });
@@ -1245,17 +1211,10 @@
                 if (idx === index) el.classList.add('selected');
                 else el.classList.remove('selected');
             });
-
-            if (index !== null && index >= 0) {
-                selectionPanel.style.display = 'block';
-            } else {
-                selectionPanel.style.display = 'none';
-            }
+            selectionPanel.style.display = (index !== null && index >= 0) ? 'block' : 'none';
         }
 
-        // --- DÉPLACEMENT DES MARQUEURS ---
         let draggingIndex = null;
-
         function startDrag(e, index) {
             e.stopPropagation();
             selectMarker(index);
@@ -1266,7 +1225,6 @@
                 const rect = img.getBoundingClientRect();
                 const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
                 const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-
                 if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
                     activeMarkers[draggingIndex].x = x;
                     activeMarkers[draggingIndex].y = y;
@@ -1274,13 +1232,11 @@
                     selectMarker(draggingIndex);
                 }
             };
-
             const onUp = () => {
                 draggingIndex = null;
                 window.removeEventListener('pointermove', onMove);
                 window.removeEventListener('pointerup', onUp);
             };
-
             window.addEventListener('pointermove', onMove);
             window.addEventListener('pointerup', onUp);
         }
@@ -1288,27 +1244,22 @@
         function rotateSelected(angleDelta) {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers[selectedMarkerIndex].rotation = (activeMarkers[selectedMarkerIndex].rotation || 0) + angleDelta;
-            renderMarkers();
-            selectMarker(selectedMarkerIndex);
+            renderMarkers(); selectMarker(selectedMarkerIndex);
         }
 
         function scaleSelected(factor) {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             let currentScale = activeMarkers[selectedMarkerIndex].scale || 1;
-            let newScale = Math.max(0.5, Math.min(3, currentScale * factor));
-            activeMarkers[selectedMarkerIndex].scale = newScale;
-            renderMarkers();
-            selectMarker(selectedMarkerIndex);
+            activeMarkers[selectedMarkerIndex].scale = Math.max(0.5, Math.min(3, currentScale * factor));
+            renderMarkers(); selectMarker(selectedMarkerIndex);
         }
 
         function deleteSelected() {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers.splice(selectedMarkerIndex, 1);
-            selectMarker(null);
-            renderMarkers();
+            selectMarker(null); renderMarkers();
         }
 
-        // --- CHARGEMENT / SAUVEGARDE / EXCEL ---
         function downloadExcelTemplate() {
             const templateData = [
                 { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
@@ -1326,8 +1277,7 @@
         function handleImagesUpload(input) {
             if (input.files.length > 20) {
                 alert("❌ Erreur : Le nombre de photos est limité à 20 maximum !");
-                input.value = "";
-                return;
+                input.value = ""; return;
             }
 
             let loadedImages = [];
@@ -1338,30 +1288,26 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imgObj = new Image();
-                    imgObj.onload = function() {
+                    imgObj.onload = async function() {
                         const canvas = document.createElement('canvas');
-                        let width = imgObj.width;
-                        let height = imgObj.height;
-                        const maxWidth = 1400;
+                        let width = imgObj.width; let height = imgObj.height;
+                        const maxWidth = 1200; // Légère réduction pour plus de sécurité
                         
                         if (width > maxWidth) {
                             height = Math.round((height * maxWidth) / width);
                             width = maxWidth;
                         }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
+                        canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(imgObj, 0, 0, width, height);
                         
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        
+                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
                         loadedImages[index] = compressedDataUrl;
                         filesProcessed++;
                         
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
-                            saveConfig();
+                            await saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
                         }
@@ -1374,9 +1320,8 @@
 
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') {
-                alert("❌ Erreur : Module Excel introuvable. Vérifie ta connexion Internet !");
-                input.value = "";
-                return;
+                alert("❌ Erreur : Module Excel introuvable. Vérifiez votre connexion Internet !");
+                input.value = ""; return;
             }
 
             const file = input.files[0];
@@ -1384,52 +1329,41 @@
 
             if (!schoolConfig.images || schoolConfig.images.length === 0) {
                 alert("❌ Veuillez d'abord importer les photos des secteurs avant le fichier Excel !");
-                input.value = "";
-                return;
+                input.value = ""; return;
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                 const rows = XLSX.utils.sheet_to_json(worksheet);
 
                 let parsedRoutes = [];
-
                 rows.forEach((row, idx) => {
                     let secteurNum = parseInt(row.Secteur || row.secteur || 1);
                     let voieNum = row.Voie || row.voie || (idx + 1);
                     let cotation = (row.Cotation || row.cotation || "4A").toString().trim();
                     let couleurInput = (row.Couleur || row.couleur || "jaune").trim().toLowerCase();
-                    
                     let hexColor = colorMap[couleurInput] || "#FFD700";
-
                     let photoIndex = Math.max(0, secteurNum - 1);
                     let targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
 
                     parsedRoutes.push({
-                        id: `route_excel_${idx}`,
-                        secteur: secteurNum,
-                        voie: voieNum,
-                        cotation: cotation,
-                        couleur: couleurInput,
-                        hexColor: hexColor,
-                        imageSrc: targetImage
+                        id: `route_excel_${idx}`, secteur: secteurNum, voie: voieNum, cotation: cotation,
+                        couleur: couleurInput, hexColor: hexColor, imageSrc: targetImage
                     });
                 });
 
                 schoolConfig.routes = parsedRoutes;
-                saveConfig();
+                await saveConfig();
                 alert("✅ Fichier Excel importé avec succès !");
                 initApp();
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function ucFirst(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+        function ucFirst(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
 
         function changeRoute() {
             isFilterActive = false;
@@ -1441,14 +1375,10 @@
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null;
-                activeBanner.style.background = "#d4edda";
-                activeBanner.style.color = "#155724";
+                activeBanner.style.background = "#d4edda"; activeBanner.style.color = "#155724";
                 activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
-                clearMarkersDOM();
-                activeMarkers = [];
-                if (schoolConfig.images && schoolConfig.images.length > 0) {
-                    img.src = schoolConfig.images[0];
-                }
+                clearMarkersDOM(); activeMarkers = [];
+                if (schoolConfig.images && schoolConfig.images.length > 0) img.src = schoolConfig.images[0];
                 return;
             }
 
@@ -1456,88 +1386,19 @@
             if (foundRoute) {
                 currentRouteId = foundRoute.id;
                 currentRouteColor = foundRoute.hexColor;
-                
-                let targetSrc = foundRoute.imageSrc || schoolConfig.images[0] || "";
-                if (targetSrc) {
-                    img.src = targetSrc;
-                }
+                if (foundRoute.imageSrc) img.src = foundRoute.imageSrc;
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
                 
-                activeBanner.style.background = bannerBg;
-                activeBanner.style.color = bannerText;
+                activeBanner.style.background = bannerBg; activeBanner.style.color = bannerText;
                 activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
 
             loadRouteMarkers(currentRouteId);
         }
 
-        function loadRouteMarkers(routeId) {
-            clearMarkersDOM();
-            activeMarkers = [];
-            const savedData = localStorage.getItem(`eps_route_${routeId}`);
-            if (savedData) {
-                const points = JSON.parse(savedData);
-                activeMarkers = points.map(p => ({
-                    x: p.x,
-                    y: p.y,
-                    type: p.type || 'dot',
-                    color: p.color || currentRouteColor,
-                    rotation: p.rotation || 0,
-                    scale: p.scale || 1
-                }));
-            }
-            renderMarkers();
-        }
-
-        function saveCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            const pointsToSave = activeMarkers.map(m => ({ 
-                x: m.x, 
-                y: m.y, 
-                type: m.type, 
-                color: m.color,
-                rotation: m.rotation,
-                scale: m.scale
-            }));
-            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
-            alert("✅ Tracé enregistré avec succès !");
-        }
-
-        function deleteCurrentRoute() {
-            if (!currentRouteId) {
-                alert("Aucune voie active sélectionnée !");
-                return;
-            }
-            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
-                localStorage.removeItem(`eps_route_${currentRouteId}`);
-                selectMarker(null);
-                activeMarkers = [];
-                renderMarkers();
-                alert("🗑️ Tracé supprimé !");
-            }
-        }
-
-        function undoSticker() {
-            if (activeMarkers.length > 0) {
-                activeMarkers.pop();
-                selectMarker(null);
-                renderMarkers();
-            }
-        }
-
-        function clearStickers() {
-            selectMarker(null);
-            activeMarkers = [];
-            renderMarkers();
-        }
-
-        // Lancement immédiat au chargement de la page
-        initApp();
+        window.onload = initApp;
     </script>
 </body>
 </html>
