@@ -115,6 +115,28 @@
             border-color: #7e22ce;
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
+        
+        /* Nouveaux boutons de nettoyage */
+        .eraser-btn {
+            background: #ffe4e6 !important;
+            color: #e11d48 !important;
+            border-color: #fda4af !important;
+        }
+        .eraser-btn.active-tool {
+            background: #e11d48 !important;
+            color: white !important;
+            border-color: #be123c !important;
+            box-shadow: 0 0 8px rgba(225, 29, 72, 0.6) !important;
+        }
+        .clear-all-btn {
+            background: #fef2f2 !important;
+            color: #991b1b !important;
+            border-color: #fca5a5 !important;
+        }
+        .clear-all-btn:hover {
+            background: #fee2e2 !important;
+            border-color: #f87171 !important;
+        }
 
         .sidebar-section {
             background: #f8f9fa;
@@ -444,19 +466,6 @@
         .marker.tech-drapeau { background-color: #dd6b20; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
-        
-        /* Bouton gomme */
-        .eraser-btn {
-            background: #ffe4e6 !important;
-            color: #e11d48 !important;
-            border-color: #fda4af !important;
-        }
-        .eraser-btn.active-tool {
-            background: #e11d48 !important;
-            color: white !important;
-            border-color: #be123c !important;
-            box-shadow: 0 0 8px rgba(225, 29, 72, 0.6) !important;
-        }
     </style>
 </head>
 <body>
@@ -474,6 +483,7 @@
         <button class="export-btn" onclick="generateDemo()" title="Génère un fichier prêt à l'emploi (index.html) pour GitHub">🎁 Générer la démo</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer les modifs</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
+        <button onclick="undoSticker()">Annuler action</button>
         <button onclick="clearStickers()">🧹 Effacer l'écran</button>
     </div>
 
@@ -493,6 +503,7 @@
             <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 Chang. Main (CM)</button>
             <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 Chang. Pied (CP)</button>
             <button class="tool-btn eraser-btn" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
+            <button class="tool-btn clear-all-btn" onclick="clearStickers()">🧹 Tout nettoyer</button>
             <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
 
             <div class="sidebar-section">
@@ -793,10 +804,8 @@
                 return;
             }
 
-            // On clone la page actuelle pour ne pas perturber l'affichage en cours
             let clone = document.documentElement.cloneNode(true);
             
-            // Nettoyage de l'image de fond et des pastilles sur le clone
             let cloneImg = clone.querySelector('#wall-image');
             if(cloneImg) cloneImg.src = "";
             let cloneContainer = clone.querySelector('#wall-container');
@@ -811,13 +820,12 @@
             let oldConfig = clone.querySelector('#preloaded-config');
             if(oldConfig) oldConfig.remove();
 
-            // Injection des données de l'enseignant "en dur" dans le script HTML exporté
+            schoolConfig.exportDate = Date.now();
             let script = document.createElement('script');
             script.id = "preloaded-config";
             script.textContent = "window.PRELOADED_CONFIG = " + JSON.stringify(schoolConfig) + ";";
             clone.querySelector('head').prepend(script);
 
-            // Téléchargement du fichier sous le nom "index.html" (idéal pour GitHub Pages)
             let htmlContent = "<!DOCTYPE html>\n<html lang=\"fr\">\n" + clone.innerHTML + "\n</html>";
             let blob = new Blob([htmlContent], {type: "text/html;charset=utf-8"});
             let link = document.createElement('a');
@@ -825,12 +833,8 @@
             link.download = "index.html"; 
             link.click();
             
-            alert("✅ Fichier de Démo généré avec succès !\n\nLe fichier 'index.html' vient d'être téléchargé sur votre ordinateur.\n\nIl vous suffit de le placer à la racine de votre répertoire sur GitHub (en remplaçant l'ancien). Vos collègues verront instantanément votre mur et vos voies !");
+            alert("✅ Fichier de Démo généré avec succès !\n\nLe fichier 'index.html' vient d'être téléchargé sur votre ordinateur.\n\nPlacez-le à la racine de votre répertoire sur GitHub (en remplaçant l'ancien). Vos collègues verront instantanément votre mur et vos voies !");
         }
-
-        // ==========================================================
-        // LOGIQUE PRINCIPALE DE L'APPLICATION
-        // ==========================================================
 
         const colorMap = {
             "jaune": "#FFD700", "bleu": "#00BFFF", "bleue": "#00BFFF",
@@ -838,7 +842,6 @@
             "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
         };
 
-        // schoolConfig intègre .imageNames pour relier intelligemment le fichier Excel au nom des images
         let schoolConfig = { images: [], imageNames: [], routes: [], customRoutes: [] };
 
         const container = document.getElementById('wall-container');
@@ -861,25 +864,36 @@
             if (!isOpen) element.classList.add('active');
         }
 
+        async function saveConfig() {
+            try {
+                await saveToDB("school_config_master", schoolConfig);
+            } catch (err) {
+                console.error(err);
+                alert("❌ Erreur lors de l'enregistrement de la base de données.");
+            }
+        }
+
         async function initApp() {
             let savedConfig = null;
+            try { savedConfig = await getFromDB("school_config_master"); } catch(e) {}
 
-            if (window.PRELOADED_CONFIG) {
-                savedConfig = window.PRELOADED_CONFIG;
-                await saveToDB("school_config_master", savedConfig);
-            } else {
-                try {
-                    savedConfig = await getFromDB("school_config_master");
-                } catch(e) { console.error(e); }
-            }
-            
-            if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
+            let preloaded = window.PRELOADED_CONFIG;
+
+            if (preloaded && savedConfig) {
+                let localTime = savedConfig.localUpdate || 0;
+                let preloadedTime = preloaded.exportDate || 0;
+                if (localTime > preloadedTime) {
+                    schoolConfig = savedConfig;
+                } else {
+                    schoolConfig = preloaded;
+                    await saveToDB("school_config_master", schoolConfig);
+                }
+            } else if (preloaded) {
+                schoolConfig = preloaded;
+                await saveToDB("school_config_master", schoolConfig);
+            } else if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
-                if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
-                if (!schoolConfig.routes) schoolConfig.routes = [];
-                if (!schoolConfig.imageNames) schoolConfig.imageNames = [];
             } else {
-                // Image vectorielle de secours si l'outil est vierge
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
                         <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient></defs>
@@ -890,11 +904,13 @@
                         <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Veuillez configurer vos photos et votre tableau Excel via le bouton 'Configuration'</text>
                     </svg>
                 `);
-                schoolConfig = {
-                    images: [demoWallSvg], imageNames: ["demo.jpg"], routes: [], customRoutes: []
-                };
-                await saveToDB("school_config_master", schoolConfig);
+                schoolConfig = { images: [demoWallSvg], imageNames: ["demo.jpg"], routes: [], customRoutes: [] };
+                await saveConfig();
             }
+
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+            if (!schoolConfig.routes) schoolConfig.routes = [];
+            if (!schoolConfig.imageNames) schoolConfig.imageNames = [];
 
             populateRouteDropdown();
             renderCustomLists();
@@ -949,7 +965,9 @@
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
-                        await saveToDB("school_config_master", schoolConfig);
+                        
+                        schoolConfig.localUpdate = Date.now();
+                        await saveConfig();
 
                         if (currentRouteId === r.id) {
                             currentRouteId = null;
@@ -1011,9 +1029,10 @@
 
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            await saveToDB("school_config_master", schoolConfig);
+            
+            schoolConfig.localUpdate = Date.now();
+            await saveConfig();
 
-            // SAUVEGARDE AUTO DES PASTILLES ET NETTOYAGE
             if (activeMarkers.length > 0) {
                 const pointsToSave = activeMarkers.map(m => ({
                     x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
@@ -1025,9 +1044,7 @@
             
             alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
             
-            clearMarkersDOM();
-            activeMarkers = [];
-            selectMarker(null);
+            clearStickers(); // Utilise la fonction instantanée (sans popup)
             currentRouteId = null;
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
@@ -1169,7 +1186,6 @@
             }
             if (event.target.classList.contains('marker')) return;
             
-            // LA GOMME MAGIQUE : on ne pose pas de point si on est en mode gomme
             if (currentTool === 'eraser') return;
 
             const rect = img.getBoundingClientRect();
@@ -1209,10 +1225,9 @@
                 else if (p.type === 'arrow') marker.innerHTML = '⬆️';
                 else if (p.type === 'cross') marker.innerHTML = '❌';
 
-                // GESTION DU CLIC SUR UN MARQUEUR (DÉPLACEMENT OU GOMME MAGIQUE)
                 marker.onpointerdown = (e) => {
                     if (currentTool === 'eraser') {
-                        e.stopPropagation(); // Évite de poser un autre marqueur en dessous
+                        e.stopPropagation();
                         activeMarkers.splice(index, 1);
                         renderMarkers();
                         selectMarker(null);
@@ -1301,9 +1316,6 @@
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
-        // =========================================================
-        // IMPORT IMAGES : L'APPLICATION SAUVEGARDE LE NOM DES PHOTOS
-        // =========================================================
         function handleImagesUpload(input) {
             if (input.files.length > 20) {
                 alert("❌ Erreur : Le nombre de photos est limité à 20 maximum !");
@@ -1335,12 +1347,13 @@
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
                         
                         loadedImages[index] = compressedDataUrl;
-                        loadedNames[index] = file.name; // On mémorise le nom pour le détective !
+                        loadedNames[index] = file.name;
                         filesProcessed++;
                         
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
                             schoolConfig.imageNames = loadedNames;
+                            schoolConfig.localUpdate = Date.now(); // <-- MARQUEUR LOCAL
                             await saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
@@ -1352,9 +1365,6 @@
             });
         }
 
-        // =========================================================
-        // IMPORT EXCEL : DETECTIVE INTELLIGENT (NOM PHOTO -> VOIES)
-        // =========================================================
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') {
                 alert("❌ Erreur : Module Excel introuvable. Vérifiez votre connexion Internet !");
@@ -1386,7 +1396,6 @@
                     
                     let targetImage = "";
                     
-                    // RECHERCHE INTELLIGENTE DANS LE NOM DU FICHIER : "voies 1 2 3.jpeg" -> trouve le chiffre "2"
                     if (schoolConfig.imageNames && schoolConfig.imageNames.length === schoolConfig.images.length) {
                         let matchedIndex = schoolConfig.imageNames.findIndex(name => {
                             let numsInName = name.match(/\d+/g) || [];
@@ -1396,12 +1405,10 @@
                         if (matchedIndex !== -1) {
                             targetImage = schoolConfig.images[matchedIndex];
                         } else {
-                            // Repli de sécurité : si le numéro n'est pas dans le nom, on prend la photo du secteur
                             let photoIndex = Math.max(0, secteurNum - 1);
                             targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
                         }
                     } else {
-                        // Repli de sécurité classique
                         let photoIndex = Math.max(0, secteurNum - 1);
                         targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
                     }
@@ -1413,6 +1420,7 @@
                 });
 
                 schoolConfig.routes = parsedRoutes;
+                schoolConfig.localUpdate = Date.now(); // <-- MARQUEUR LOCAL
                 await saveConfig();
                 alert("✅ Fichier Excel importé avec succès ! L'association avec vos photos est terminée.");
                 initApp();
@@ -1469,7 +1477,7 @@
 
         function saveCurrentRoute() {
             if (!currentRouteId) {
-                alert("❌ Aucune voie active sélectionnée !"); return;
+                alert("❌ Aucune voie ou bloc actif sélectionné !"); return;
             }
             const pointsToSave = activeMarkers.map(m => ({ 
                 x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
@@ -1478,9 +1486,7 @@
             
             alert("✅ Modifications enregistrées avec succès !\nL'image va être remise au propre.");
             
-            clearMarkersDOM();
-            activeMarkers = [];
-            selectMarker(null);
+            clearStickers();
             currentRouteId = null;
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
@@ -1512,11 +1518,10 @@
         }
 
         function clearStickers() {
-            if (confirm("Attention : ceci effacera tout ce qui est actuellement à l'écran.\nVoulez-vous continuer ?")) {
-                selectMarker(null);
-                activeMarkers = [];
-                renderMarkers();
-            }
+            // Effacement instantané et direct, sans popup de confirmation
+            selectMarker(null);
+            activeMarkers = [];
+            renderMarkers();
         }
 
         window.onload = initApp;
