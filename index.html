@@ -177,7 +177,7 @@
             display: flex;
             flex-direction: column;
             gap: 3px;
-            max-height: 90px;
+            max-height: 120px;
             overflow-y: auto;
             margin-bottom: 4px;
         }
@@ -208,14 +208,37 @@
             border-color: #2b6cb0;
             font-weight: bold;
         }
-        .delete-custom-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 0.7rem;
-            padding: 2px 4px;
-            margin-left: 3px;
+
+        /* Nouveaux boutons d'actions QR Code et Corbeille */
+        .custom-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
+        .qr-custom-btn {
+            background: #e0f2fe;
+            border: 1px solid #7dd3fc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px 5px;
+            color: #0369a1;
+            transition: all 0.2s;
+        }
+        .qr-custom-btn:hover { background: #bae6fd; }
+        
+        .delete-custom-btn {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 2px 5px;
+            color: #991b1b;
+            transition: all 0.2s;
+        }
+        .delete-custom-btn:hover { background: #fecaca; }
+
         .add-custom-btn {
             background: #f8fafc;
             color: #334155;
@@ -558,8 +581,7 @@
                 <h3>Mise à jour</h3>
                 <button class="tool-btn action-save-btn" onclick="saveCurrentRoute()" title="Écrase le tracé actuel avec vos modifications">💾 Enregistrer modifs</button>
                 <button class="tool-btn action-delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
-                <!-- NOUVEAU BOUTON QR CODE -->
-                <button class="tool-btn" onclick="generateQRCode()" style="background:#e0f2fe!important; color:#0369a1!important; border-color:#7dd3fc!important; margin-top:5px;">📱 Générer QR Code Élève</button>
+                <button class="tool-btn" onclick="generateQRCode()" style="background:#e0f2fe!important; color:#0369a1!important; border-color:#7dd3fc!important; margin-top:5px;">📱 Afficher QR Code Actif</button>
             </div>
 
             <!-- Zone Exercices bloc -->
@@ -821,7 +843,7 @@
     <!-- Modal QR Code -->
     <div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
         <div class="modal-content" style="text-align: center;">
-            <h2 style="color: #0369a1; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
+            <h2 id="qr-modal-title" style="color: #0369a1; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
             <p style="font-size: 0.9rem; color: #475569; margin-top: 0;">L'élève peut scanner ce code pour afficher ce tracé en lecture seule.</p>
             <div id="qrcode-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 15px; background: #fff; border-radius: 8px; border: 2px dashed #cbd5e1;"></div>
             <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #64748b; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Fermer</button>
@@ -1015,6 +1037,20 @@
                 textSpan.textContent = r.name;
                 textSpan.onclick = (e) => { e.stopPropagation(); selectCustomRoute(r.id); };
 
+                // Conteneur pour les boutons d'actions
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'custom-item-actions';
+
+                // NOUVEAU BOUTON QR CODE DANS LA LISTE
+                const qrBtn = document.createElement('button');
+                qrBtn.className = 'qr-custom-btn';
+                qrBtn.textContent = '📱';
+                qrBtn.title = 'Afficher le QR Code de ce tracé';
+                qrBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    generateQRCode(r.id);
+                };
+
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn';
                 delBtn.textContent = '❌';
@@ -1044,8 +1080,11 @@
                     }
                 };
 
+                actionsDiv.appendChild(qrBtn);
+                actionsDiv.appendChild(delBtn);
+
                 item.appendChild(textSpan);
-                item.appendChild(delBtn);
+                item.appendChild(actionsDiv);
 
                 if (r.type === 'individualise') {
                     indivListContainer.appendChild(item);
@@ -1624,28 +1663,55 @@
             renderMarkers();
         }
 
-        // --- NOUVELLES FONCTIONS QR CODE ÉLÈVE ---
+        // --- FONCTIONS QR CODE ÉLÈVE ---
 
-        function generateQRCode() {
-            if (!currentRouteId || activeMarkers.length === 0) {
-                alert("❌ Veuillez d'abord créer ou sélectionner un bloc avec des balises pour générer son QR Code.");
-                return;
+        function generateQRCode(routeId = null) {
+            let targetMarkers = [];
+            let targetImage = "";
+            let targetName = "le Bloc";
+
+            if (routeId) {
+                // Le professeur clique sur l'icône téléphone dans la liste
+                const found = schoolConfig.customRoutes.find(r => r.id === routeId);
+                if (!found) return;
+                
+                targetName = found.name;
+                const savedData = localStorage.getItem(`eps_route_${routeId}`);
+                
+                if (!savedData || JSON.parse(savedData).length === 0) {
+                    alert("❌ Ce tracé est vide. Ajoutez des balises et enregistrez d'abord.");
+                    return;
+                }
+                
+                targetMarkers = JSON.parse(savedData);
+                targetImage = found.imageSrc || (schoolConfig.images[0] || "");
+            } else {
+                // Le professeur clique sur le bouton principal (voie actuellement affichée)
+                if (!currentRouteId || activeMarkers.length === 0) {
+                    alert("❌ Veuillez d'abord créer ou sélectionner un bloc avec des balises.");
+                    return;
+                }
+                targetMarkers = activeMarkers;
+                targetImage = img.src;
+                
+                const found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
+                if(found) targetName = found.name;
             }
 
             // On compresse les données des balises pour garder un lien court
-            const miniMarkers = activeMarkers.map(m => ({
+            const miniMarkers = targetMarkers.map(m => ({
                 x: Math.round(m.x * 10) / 10,
                 y: Math.round(m.y * 10) / 10,
-                t: m.type,
-                c: m.color
+                t: m.type || m.t,
+                c: m.color || m.c
             }));
 
             const dataStr = encodeURIComponent(JSON.stringify(miniMarkers));
             
             // On récupère l'image de fond
             let bgParam = "default";
-            if (img.src && !img.src.startsWith('data:image')) {
-                bgParam = encodeURIComponent(img.src);
+            if (targetImage && !targetImage.startsWith('data:image')) {
+                bgParam = encodeURIComponent(targetImage);
             }
 
             // Création du lien avec toutes les infos encodées
@@ -1662,6 +1728,7 @@
                 correctLevel : QRCode.CorrectLevel.L
             });
 
+            document.getElementById('qr-modal-title').textContent = `📱 Scanner : ${targetName}`;
             document.getElementById('qr-modal').style.display = "flex";
         }
 
