@@ -444,6 +444,19 @@
         .marker.tech-drapeau { background-color: #dd6b20; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
+        
+        /* Bouton gomme */
+        .eraser-btn {
+            background: #ffe4e6 !important;
+            color: #e11d48 !important;
+            border-color: #fda4af !important;
+        }
+        .eraser-btn.active-tool {
+            background: #e11d48 !important;
+            color: white !important;
+            border-color: #be123c !important;
+            box-shadow: 0 0 8px rgba(225, 29, 72, 0.6) !important;
+        }
     </style>
 </head>
 <body>
@@ -458,21 +471,17 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="export-btn" onclick="exportForColleagues()" title="Génère un fichier prêt à l'emploi pour les collègues">🎁 Exporter pour les collègues</button>
+        <button class="export-btn" onclick="generateDemo()" title="Génère un fichier prêt à l'emploi (index.html) pour GitHub">🎁 Générer la démo</button>
         <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer les modifs</button>
         <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
-        <button onclick="undoSticker()">Annuler action</button>
-        <button onclick="clearStickers()">Effacer tout</button>
+        <button onclick="clearStickers()">🧹 Effacer l'écran</button>
     </div>
 
     <div id="active-route-banner">
         ⚠️ Chargement en cours...
     </div>
 
-    <!-- Espace de travail à 3 colonnes -->
     <div class="workspace">
-        
-        <!-- 1. COLONNE DE GAUCHE : Outils et bannières compactes -->
         <div class="palette-bar">
             <span>Outils & Balises :</span>
             <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
@@ -483,23 +492,21 @@
             <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
             <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 Chang. Main (CM)</button>
             <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 Chang. Pied (CP)</button>
+            <button class="tool-btn eraser-btn" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
             <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
 
-            <!-- Bannière 1 : Exercices bloc -->
             <div class="sidebar-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
                 <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Créer un Bloc</button>
             </div>
 
-            <!-- Bannière 2 : Exercices individualisés -->
             <div class="sidebar-section">
                 <h3 class="indiv-title">Indiv. / Élèves</h3>
                 <div id="indiv-list" class="custom-list"></div>
                 <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Créer un Élève</button>
             </div>
 
-            <!-- Panneau de réglage dynamique -->
             <div id="selection-panel" class="selection-panel">
                 <h4>🎯 Élément actif</h4>
                 <div class="control-row">
@@ -516,16 +523,13 @@
             </div>
         </div>
 
-        <!-- 2. COLONNE CENTRALE : Photo du mur -->
         <div>
             <div id="wall-container" onclick="placeMarker(event)">
                 <img id="wall-image" alt="Mur d'escalade">
             </div>
         </div>
 
-        <!-- 3. COLONNE DE DROITE : Zone Institutionnelle + Zone Technique -->
         <div class="right-sidebar">
-            
             <div class="institutional-zone">
                 <h3>⚖️ Zone Institutionnelle</h3>
                 <div class="inst-item">
@@ -549,10 +553,8 @@
                 </div>
             </div>
 
-            <!-- Zone Technique -->
             <div class="technical-zone">
                 <h3>📖 Zone Technique</h3>
-                
                 <div class="legend-category">🤸 Gestes & Postures</div>
 
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
@@ -716,7 +718,7 @@
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des secteurs (Jusqu'à 20 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Importe tes photos de secteurs (Secteur 1 = 1ère photo, Secteur 2 = 2ème photo, etc.).</div>
+                <div class="help-text">Le script liera automatiquement la photo aux voies si son nom contient le numéro des voies (ex: "voies 1 2 3.jpg").</div>
             </div>
 
             <div class="form-group">
@@ -780,20 +782,23 @@
             });
         }
 
+        const MASTER_KEY = "EPS_Climbing_Master_V2";
+
         // ==========================================================
-        // EXPORT MAGIQUE POUR LES COLLÈGUES
+        // GÉRER LA DÉMO POUR GITHUB PAGES (EXPORT INTELLIGENT)
         // ==========================================================
-        function exportForColleagues() {
+        function generateDemo() {
             if (!schoolConfig || !schoolConfig.images || schoolConfig.images.length === 0) {
                 alert("❌ Erreur : Vous n'avez configuré aucune photo ni voie à exporter !");
                 return;
             }
 
+            // On clone la page actuelle pour ne pas perturber l'affichage en cours
             let clone = document.documentElement.cloneNode(true);
             
+            // Nettoyage de l'image de fond et des pastilles sur le clone
             let cloneImg = clone.querySelector('#wall-image');
             if(cloneImg) cloneImg.src = "";
-            
             let cloneContainer = clone.querySelector('#wall-container');
             if(cloneContainer) {
                 let markers = cloneContainer.querySelectorAll('.marker');
@@ -806,19 +811,21 @@
             let oldConfig = clone.querySelector('#preloaded-config');
             if(oldConfig) oldConfig.remove();
 
+            // Injection des données de l'enseignant "en dur" dans le script HTML exporté
             let script = document.createElement('script');
             script.id = "preloaded-config";
             script.textContent = "window.PRELOADED_CONFIG = " + JSON.stringify(schoolConfig) + ";";
             clone.querySelector('head').prepend(script);
 
+            // Téléchargement du fichier sous le nom "index.html" (idéal pour GitHub Pages)
             let htmlContent = "<!DOCTYPE html>\n<html lang=\"fr\">\n" + clone.innerHTML + "\n</html>";
             let blob = new Blob([htmlContent], {type: "text/html;charset=utf-8"});
             let link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = "Mur_Escalade_Partage.html";
+            link.download = "index.html"; 
             link.click();
             
-            alert("✅ Fichier généré avec succès !\n\nLe fichier 'Mur_Escalade_Partage.html' vient d'être téléchargé dans votre dossier Téléchargements.\n\nC'est CE fichier que vous devez envoyer à vos collègues. Vos photos et vos voies y sont incluses par défaut !");
+            alert("✅ Fichier de Démo généré avec succès !\n\nLe fichier 'index.html' vient d'être téléchargé sur votre ordinateur.\n\nIl vous suffit de le placer à la racine de votre répertoire sur GitHub (en remplaçant l'ancien). Vos collègues verront instantanément votre mur et vos voies !");
         }
 
         // ==========================================================
@@ -831,7 +838,8 @@
             "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
         };
 
-        let schoolConfig = { images: [], routes: [], customRoutes: [] };
+        // schoolConfig intègre .imageNames pour relier intelligemment le fichier Excel au nom des images
+        let schoolConfig = { images: [], imageNames: [], routes: [], customRoutes: [] };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
@@ -853,15 +861,6 @@
             if (!isOpen) element.classList.add('active');
         }
 
-        async function saveConfig() {
-            try {
-                await saveToDB("school_config_master", schoolConfig);
-            } catch (err) {
-                console.error(err);
-                alert("❌ Erreur lors de l'enregistrement de la base de données.");
-            }
-        }
-
         async function initApp() {
             let savedConfig = null;
 
@@ -878,21 +877,23 @@
                 schoolConfig = savedConfig;
                 if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
                 if (!schoolConfig.routes) schoolConfig.routes = [];
+                if (!schoolConfig.imageNames) schoolConfig.imageNames = [];
             } else {
+                // Image vectorielle de secours si l'outil est vierge
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
                         <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient></defs>
                         <rect width="800" height="1100" fill="url(#bg)"/>
                         <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
                         <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
-                        <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">VERSION DÉMO - MUR D'ESCALADE</text>
-                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Veuillez configurer l'outil via le bouton 'Configuration'</text>
+                        <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">MUR D'ESCALADE - EPS</text>
+                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Veuillez configurer vos photos et votre tableau Excel via le bouton 'Configuration'</text>
                     </svg>
                 `);
                 schoolConfig = {
-                    images: [demoWallSvg], routes: [], customRoutes: []
+                    images: [demoWallSvg], imageNames: ["demo.jpg"], routes: [], customRoutes: []
                 };
-                await saveConfig();
+                await saveToDB("school_config_master", schoolConfig);
             }
 
             populateRouteDropdown();
@@ -948,7 +949,7 @@
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
-                        await saveConfig();
+                        await saveToDB("school_config_master", schoolConfig);
 
                         if (currentRouteId === r.id) {
                             currentRouteId = null;
@@ -986,14 +987,11 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        // =========================================================================
-        // NOUVELLE LOGIQUE DE CREATION DE BLOC / ÉLÈVE : VALIDATION VISUELLE ET NETTOYAGE
-        // =========================================================================
         async function createCustomRoute(type) {
-            let labelType = (type === 'individualise') ? "l'élève" : "bloc de travail";
+            let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
             let defaultName = type === 'individualise' ? `Élève ${schoolConfig.customRoutes.filter(r=>r.type==='individualise').length + 1}` : `Bloc ${schoolConfig.customRoutes.filter(r=>r.type!=='individualise').length + 1}`;
             
-            let customName = prompt(`Nom de ${labelType} (le tracé à l'écran sera enregistré automatiquement) :`, defaultName);
+            let customName = prompt(`Nom du ${labelType} :`, defaultName);
             if (customName === null) return;
             customName = customName.trim() === "" ? defaultName : customName.trim();
 
@@ -1013,9 +1011,9 @@
 
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            await saveConfig();
+            await saveToDB("school_config_master", schoolConfig);
 
-            // TRANSFERT ET SAUVEGARDE DE TOUTES LES PASTILLES DANS LE NOUVEAU BLOC
+            // SAUVEGARDE AUTO DES PASTILLES ET NETTOYAGE
             if (activeMarkers.length > 0) {
                 const pointsToSave = activeMarkers.map(m => ({
                     x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
@@ -1025,10 +1023,8 @@
 
             renderCustomLists();
             
-            // VALIDATION POUR L'UTILISATEUR
-            alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nLe mur va être nettoyé pour votre prochain exercice.`);
+            alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
             
-            // NETTOYAGE DE L'ÉCRAN
             clearMarkersDOM();
             activeMarkers = [];
             selectMarker(null);
@@ -1168,12 +1164,13 @@
 
         function placeMarker(event) {
             if (!currentRouteId) {
-                // Si l'utilisateur clique sur le mur sans avoir sélectionné de voie, on ne le bloque pas !
-                // On crée une alerte plus douce.
-                alert("Veuillez sélectionner une Voie Officielle en haut ou créer un Bloc / Élève à gauche pour commencer à placer des pastilles.");
+                alert("Veuillez sélectionner une Voie ou un Bloc avant de dessiner !");
                 return;
             }
             if (event.target.classList.contains('marker')) return;
+            
+            // LA GOMME MAGIQUE : on ne pose pas de point si on est en mode gomme
+            if (currentTool === 'eraser') return;
 
             const rect = img.getBoundingClientRect();
             const x = ((event.clientX - rect.left) / rect.width) * 100;
@@ -1212,7 +1209,18 @@
                 else if (p.type === 'arrow') marker.innerHTML = '⬆️';
                 else if (p.type === 'cross') marker.innerHTML = '❌';
 
-                marker.onpointerdown = (e) => startDrag(e, index);
+                // GESTION DU CLIC SUR UN MARQUEUR (DÉPLACEMENT OU GOMME MAGIQUE)
+                marker.onpointerdown = (e) => {
+                    if (currentTool === 'eraser') {
+                        e.stopPropagation(); // Évite de poser un autre marqueur en dessous
+                        activeMarkers.splice(index, 1);
+                        renderMarkers();
+                        selectMarker(null);
+                    } else {
+                        startDrag(e, index);
+                    }
+                };
+                
                 container.appendChild(marker);
                 p.element = marker;
             });
@@ -1229,7 +1237,7 @@
                 if (idx === index) el.classList.add('selected');
                 else el.classList.remove('selected');
             });
-            selectionPanel.style.display = (index !== null && index >= 0) ? 'block' : 'none';
+            selectionPanel.style.display = (index !== null && index >= 0 && currentTool !== 'eraser') ? 'block' : 'none';
         }
 
         let draggingIndex = null;
@@ -1293,6 +1301,9 @@
             XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
+        // =========================================================
+        // IMPORT IMAGES : L'APPLICATION SAUVEGARDE LE NOM DES PHOTOS
+        // =========================================================
         function handleImagesUpload(input) {
             if (input.files.length > 20) {
                 alert("❌ Erreur : Le nombre de photos est limité à 20 maximum !");
@@ -1300,6 +1311,7 @@
             }
 
             let loadedImages = [];
+            let loadedNames = [];
             let filesProcessed = 0;
             const files = Array.from(input.files);
 
@@ -1321,11 +1333,14 @@
                         ctx.drawImage(imgObj, 0, 0, width, height);
                         
                         const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
+                        
                         loadedImages[index] = compressedDataUrl;
+                        loadedNames[index] = file.name; // On mémorise le nom pour le détective !
                         filesProcessed++;
                         
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
+                            schoolConfig.imageNames = loadedNames;
                             await saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
@@ -1337,16 +1352,20 @@
             });
         }
 
+        // =========================================================
+        // IMPORT EXCEL : DETECTIVE INTELLIGENT (NOM PHOTO -> VOIES)
+        // =========================================================
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') {
-                alert("❌ Module Excel introuvable. Vérifiez votre connexion Internet !");
+                alert("❌ Erreur : Module Excel introuvable. Vérifiez votre connexion Internet !");
                 input.value = ""; return;
             }
+
             const file = input.files[0];
             if (!file) return;
 
             if (!schoolConfig.images || schoolConfig.images.length === 0) {
-                alert("❌ Importez d'abord les photos des secteurs dans Configuration avant le fichier Excel !");
+                alert("❌ Veuillez d'abord importer les photos des secteurs avant le fichier Excel !");
                 input.value = ""; return;
             }
 
@@ -1364,17 +1383,38 @@
                     let cotation = (row.Cotation || row.cotation || "4A").toString().trim();
                     let couleurInput = (row.Couleur || row.couleur || "jaune").trim().toLowerCase();
                     let hexColor = colorMap[couleurInput] || "#FFD700";
-                    let photoIndex = Math.max(0, secteurNum - 1);
-                    let targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
+                    
+                    let targetImage = "";
+                    
+                    // RECHERCHE INTELLIGENTE DANS LE NOM DU FICHIER : "voies 1 2 3.jpeg" -> trouve le chiffre "2"
+                    if (schoolConfig.imageNames && schoolConfig.imageNames.length === schoolConfig.images.length) {
+                        let matchedIndex = schoolConfig.imageNames.findIndex(name => {
+                            let numsInName = name.match(/\d+/g) || [];
+                            return numsInName.includes(voieNum.toString());
+                        });
+                        
+                        if (matchedIndex !== -1) {
+                            targetImage = schoolConfig.images[matchedIndex];
+                        } else {
+                            // Repli de sécurité : si le numéro n'est pas dans le nom, on prend la photo du secteur
+                            let photoIndex = Math.max(0, secteurNum - 1);
+                            targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
+                        }
+                    } else {
+                        // Repli de sécurité classique
+                        let photoIndex = Math.max(0, secteurNum - 1);
+                        targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
+                    }
 
                     parsedRoutes.push({
                         id: `route_excel_${idx}`, secteur: secteurNum, voie: voieNum, cotation: cotation,
                         couleur: couleurInput, hexColor: hexColor, imageSrc: targetImage
                     });
                 });
+
                 schoolConfig.routes = parsedRoutes;
                 await saveConfig();
-                alert("✅ Fichier Excel importé avec succès !");
+                alert("✅ Fichier Excel importé avec succès ! L'association avec vos photos est terminée.");
                 initApp();
             };
             reader.readAsArrayBuffer(file);
@@ -1427,23 +1467,17 @@
             renderMarkers();
         }
 
-        // =========================================================================
-        // NOUVELLE LOGIQUE DE SAUVEGARDE DE MODIFICATION : VALIDATION ET NETTOYAGE
-        // =========================================================================
         function saveCurrentRoute() {
             if (!currentRouteId) {
-                alert("❌ Aucune voie ou bloc actif sélectionné !\nCliquez d'abord sur une voie dans les listes."); 
-                return;
+                alert("❌ Aucune voie active sélectionnée !"); return;
             }
             const pointsToSave = activeMarkers.map(m => ({ 
                 x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
             }));
             localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
             
-            // VALIDATION VISUELLE
             alert("✅ Modifications enregistrées avec succès !\nL'image va être remise au propre.");
             
-            // NETTOYAGE DE L'ÉCRAN
             clearMarkersDOM();
             activeMarkers = [];
             selectMarker(null);
@@ -1453,7 +1487,7 @@
             
             activeBanner.style.background = "#d4edda";
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Modifications sauvegardées. Sélectionnez une voie ou créez un nouveau bloc.";
+            activeBanner.textContent = "✨ Modifications sauvegardées. Sélectionnez une voie ou créez un bloc.";
         }
 
         function deleteCurrentRoute() {
@@ -1478,9 +1512,11 @@
         }
 
         function clearStickers() {
-            selectMarker(null);
-            activeMarkers = [];
-            renderMarkers();
+            if (confirm("Attention : ceci effacera tout ce qui est actuellement à l'écran.\nVoulez-vous continuer ?")) {
+                selectMarker(null);
+                activeMarkers = [];
+                renderMarkers();
+            }
         }
 
         window.onload = initApp;
