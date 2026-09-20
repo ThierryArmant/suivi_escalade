@@ -48,17 +48,16 @@
         button.config-btn:hover { background-color: #5a6268; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
-        button.export-btn { background-color: #8b5cf6; }
+        button.export-btn { background-color: #8b5cf6; display: none; } /* Caché pour les collègues, visible en local */
         button.export-btn:hover { background-color: #7c3aed; }
 
-        /* Conteneur global en Flexbox adaptatif */
         .workspace {
             display: flex;
             justify-content: center;
             align-items: flex-start;
             gap: 15px;
-            flex-wrap: wrap; /* Permet le passage à la ligne sur petit écran */
-            max-width: 1600px; /* Élargi pour les grands écrans */
+            flex-wrap: wrap; 
+            max-width: 1600px; 
             margin: 0 auto;
         }
 
@@ -114,7 +113,6 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
         
-        /* Boutons de nettoyage */
         .eraser-btn {
             background: #ffe4e6 !important;
             color: #e11d48 !important;
@@ -251,9 +249,8 @@
             background: #3182ce;
         }
 
-        /* NOUVEAU : Colonne centrale dynamique pour l'image */
         .center-col {
-            flex: 1 1 500px; /* Prend tout l'espace dispo, mini 500px avant de passer à la ligne */
+            flex: 1 1 500px;
             display: flex;
             justify-content: center;
             max-width: 100%;
@@ -263,7 +260,7 @@
             position: relative;
             display: inline-block;
             width: 100%;
-            max-width: 900px; /* L'image peut s'agrandir jusqu'à 900px ! */
+            max-width: 900px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             border-radius: 8px;
             overflow: hidden;
@@ -272,15 +269,14 @@
 
         #wall-image {
             display: block;
-            width: 100%; /* S'adapte à la largeur du conteneur */
-            height: auto; /* Conserve les proportions */
-            max-height: 85vh; /* Évite de dépasser la hauteur de l'écran par défaut */
+            width: 100%;
+            height: auto;
+            max-height: 85vh;
             object-fit: contain;
         }
 
-        /* Colonne de droite agrandie */
         .right-sidebar {
-            width: 350px; /* Élargi pour éviter que les liens se coupent */
+            width: 350px;
             text-align: left;
             flex-shrink: 0;
             max-height: 85vh;
@@ -290,7 +286,6 @@
             gap: 12px;
         }
 
-        /* RESPONSIVE DESIGN : Tablettes et Téléphones */
         @media (max-width: 1100px) {
             .workspace {
                 flex-direction: column;
@@ -299,14 +294,14 @@
             .palette-bar, .right-sidebar {
                 width: 100%;
                 max-width: 600px;
-                max-height: none; /* Désactive la limite de hauteur sur mobile */
+                max-height: none;
             }
             .center-col {
                 width: 100%;
-                order: -1; /* Place l'image tout en haut sur téléphone */
+                order: -1;
             }
             #wall-image {
-                max-height: none; /* Sur mobile, l'image prend la place qu'il lui faut */
+                max-height: none;
             }
         }
 
@@ -526,7 +521,8 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="export-btn" onclick="generateDemo()" title="Génère un fichier prêt à l'emploi (index.html) pour GitHub">🎁 Générer la démo</button>
+        <!-- BOUTON EXPORT : Visible en local pour toi, masqué sur GitHub pour les collègues -->
+        <button class="export-btn" id="demo-btn" onclick="generateDemo()" title="Génère un fichier index.html pour GitHub">🎁 Générer la démo</button>
     </div>
 
     <div id="active-route-banner">
@@ -582,7 +578,6 @@
             </div>
         </div>
 
-        <!-- ZONE DYNAMIQUE POUR L'IMAGE -->
         <div class="center-col">
             <div id="wall-container" onclick="placeMarker(event)">
                 <img id="wall-image" alt="Mur d'escalade">
@@ -799,7 +794,6 @@
     </div>
 
     <script>
-        // VARIABLE GLOBALE POUR LA SÉCURITÉ ANTI-FERMETURE
         let hasUnsavedChanges = false;
 
         window.addEventListener('beforeunload', function (e) {
@@ -863,12 +857,23 @@
             if(cloneImg) cloneImg.src = "";
             let cloneContainer = clone.querySelector('#wall-container');
             if(cloneContainer) {
-                let markers = cloneContainer.querySelectorAll('.marker');
-                markers.forEach(m => m.remove());
+                cloneContainer.innerHTML = '<img id="wall-image" alt="Mur d\'escalade">';
             }
 
+            let blocList = clone.querySelector('#bloc-list');
+            if (blocList) blocList.innerHTML = '';
+            
+            let indivList = clone.querySelector('#indiv-list');
+            if (indivList) indivList.innerHTML = '';
+
             let cloneSelect = clone.querySelector('#routeSelect');
-            if(cloneSelect) cloneSelect.value = "";
+            if(cloneSelect) cloneSelect.innerHTML = '<option value="">-- Choisir une voie officielle --</option>';
+
+            let banner = clone.querySelector('#active-route-banner');
+            if (banner) {
+                banner.textContent = "⚠️ Chargement en cours...";
+                banner.style = "";
+            }
 
             let oldConfig = clone.querySelector('#preloaded-config');
             if(oldConfig) oldConfig.remove();
@@ -929,6 +934,12 @@
         }
 
         async function initApp() {
+            // Si on est en ligne sur GitHub, on masque le bouton "Générer la démo" pour les collègues
+            if (window.location.hostname.includes("github.io")) {
+                const demoBtn = document.getElementById('demo-btn');
+                if (demoBtn) demoBtn.style.display = 'none';
+            }
+
             let savedConfig = null;
             try { savedConfig = await getFromDB("school_config_master"); } catch(e) {}
 
@@ -949,17 +960,52 @@
             } else if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
             } else {
+                // =========================================================================
+                // MODE DÉMO AUTOMATIQUE : Si l'outil est vierge, on charge un mur de test prêt à l'emploi
+                // =========================================================================
                 const demoWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
                     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
-                        <defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/></linearGradient></defs>
+                        <defs>
+                            <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#1e293b"/>
+                                <stop offset="100%" stop-color="#0f172a"/>
+                            </linearGradient>
+                        </defs>
                         <rect width="800" height="1100" fill="url(#bg)"/>
                         <path d="M0 200 H800 M0 400 H800 M0 600 H800 M0 800 H800 M0 1000 H800" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
                         <path d="M200 0 V1100 M400 0 V1100 M600 0 V1100" stroke="#334155" stroke-width="2" stroke-dasharray="5,5"/>
-                        <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">MUR D'ESCALADE - EPS</text>
-                        <text x="400" y="1055" fill="#94a3b8" font-size="15" font-family="Arial" text-anchor="middle">Veuillez configurer vos photos et votre tableau Excel via le bouton 'Configuration'</text>
+                        
+                        <!-- Quelques prises dessinées pour la démo -->
+                        <circle cx="200" cy="150" r="28" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        <circle cx="220" cy="350" r="25" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        <circle cx="180" cy="550" r="30" fill="#FFD700" stroke="#b45309" stroke-width="4"/>
+                        
+                        <circle cx="500" cy="200" r="26" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+                        <circle cx="480" cy="450" r="28" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+                        <circle cx="530" cy="700" r="25" fill="#00BFFF" stroke="#0369a1" stroke-width="4"/>
+
+                        <circle cx="350" cy="250" r="25" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+                        <circle cx="370" cy="500" r="28" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+                        <circle cx="330" cy="750" r="30" fill="#FF4500" stroke="#991b1b" stroke-width="4"/>
+
+                        <text x="400" y="80" fill="#e2e8f0" font-size="26" font-weight="bold" font-family="Arial" text-anchor="middle">MODE TEST - MUR D'ESCALADE VIRTUEL</text>
+                        <text x="400" y="1040" fill="#94a3b8" font-size="16" font-family="Arial" text-anchor="middle">Testez les outils de la palette de gauche et sélectionnez une voie en haut !</text>
+                        <text x="400" y="1070" fill="#94a3b8" font-size="14" font-family="Arial" text-anchor="middle">Pour configurer votre propre mur, cliquez sur 'Configuration'.</text>
                     </svg>
                 `);
-                schoolConfig = { images: [demoWallSvg], imageNames: ["demo.jpg"], routes: [], customRoutes: [] };
+
+                schoolConfig = {
+                    images: [demoWallSvg],
+                    imageNames: ["demo_secteur1.jpg"],
+                    routes: [
+                        { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoWallSvg },
+                        { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: demoWallSvg },
+                        { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: demoWallSvg }
+                    ],
+                    customRoutes: [
+                        { id: "demo_c1", name: "Atelier Rétablissement (Démo)", type: "bloc", color: "#d97706", imageSrc: demoWallSvg }
+                    ]
+                };
                 await saveConfig();
             }
 
@@ -981,7 +1027,7 @@
         }
 
         function populateRouteDropdown() {
-            routeSelect.innerHTML = '<option value="">-- Choisir une voie officielle (Excel) --</option>';
+            routeSelect.innerHTML = '<option value="">-- Choisir une voie officielle --</option>';
             if (schoolConfig.routes && schoolConfig.routes.length > 0) {
                 schoolConfig.routes.forEach(r => {
                     const opt = document.createElement('option');
