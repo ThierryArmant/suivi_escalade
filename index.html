@@ -61,11 +61,13 @@
             margin: 0 auto;
         }
 
+        /* Fond commun uniforme pour l'ensemble du panneau latéral */
         .palette-bar {
-            background: #ffffff;
-            padding: 12px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background: #eef2f7;
+            padding: 14px;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+            border: 1px solid #cbd5e1;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -143,31 +145,16 @@
         }
         .action-delete-btn:hover { background: #fecaca !important; }
 
-        /* Styles améliorés pour le relief et les fonds de sections */
+        /* Zones intérieures en relief blanc sur fond commun */
         .sidebar-section {
+            background: #ffffff;
             border-radius: 8px;
             padding: 8px;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
-            border: 1px solid;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            border: 1px solid #cbd5e1;
             display: flex;
             flex-direction: column;
             gap: 6px;
-        }
-        .tools-section {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-        }
-        .update-section {
-            background: #f0fdf4;
-            border-color: #86efac;
-        }
-        .bloc-section {
-            background: #fffbeb;
-            border-color: #fde68a;
-        }
-        .indiv-section {
-            background: #f0f9ff;
-            border-color: #7dd3fc;
         }
 
         .sidebar-section h3 {
@@ -228,7 +215,7 @@
             margin-left: 3px;
         }
         .add-custom-btn {
-            background: #ffffff;
+            background: #f8fafc;
             color: #334155;
             border: 1px dashed #94a3b8;
             width: 100%;
@@ -238,7 +225,7 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .add-custom-btn:hover { background: #f1f5f9; }
+        .add-custom-btn:hover { background: #e2e8f0; }
 
         .selection-panel {
             background: #e7f5ff;
