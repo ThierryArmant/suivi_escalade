@@ -556,7 +556,7 @@
                 </div>
             </div>
 
-            <!-- Zone Technique (Vert pale nature) -->
+            <!-- Zone Technique -->
             <div class="technical-zone">
                 <h3>📖 Zone Technique</h3>
                 
@@ -758,6 +758,7 @@
 
         function loadConfig() {
             try {
+                // Ce système récupère tout, même si tu avais créé des données sur d'anciennes versions
                 const keysToTry = [MASTER_KEY, "EPS_Climbing_Master_V1", "EPS_Climbing_Config_V5", "EPS_Climbing_Config_V4", "EPS_Climbing_Config_V3", "EPS_Climbing_Config_V2", "EPS_Climbing_Config"];
                 for (let k of keysToTry) {
                     const data = localStorage.getItem(k);
@@ -778,7 +779,7 @@
             try {
                 localStorage.setItem(MASTER_KEY, JSON.stringify(schoolConfig));
             } catch (err) {
-                alert("❌ Erreur lors de l'enregistrement de la configuration.");
+                alert("❌ Erreur lors de l'enregistrement de la configuration. Pense à vérifier la taille de tes images.");
             }
         }
 
@@ -914,7 +915,6 @@
                 item.className = 'custom-item';
                 if (r.id === currentRouteId) item.classList.add('active-custom');
                 
-                // Clic direct sur toute la boîte et le texte
                 item.onclick = (e) => {
                     e.stopPropagation();
                     selectCustomRoute(r.id);
@@ -1007,6 +1007,21 @@
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
             saveConfig();
+
+            // LA VRAIE CORRECTION EST ICI : 
+            // Si l'utilisateur a placé des pastilles à l'écran, puis cliqué sur "+ Bloc", 
+            // on associe AUTOMATIQUEMENT ces pastilles au nouveau bloc créé !
+            if (activeMarkers.length > 0) {
+                const pointsToSave = activeMarkers.map(m => ({
+                    x: m.x,
+                    y: m.y,
+                    type: m.type,
+                    color: m.color,
+                    rotation: m.rotation,
+                    scale: m.scale
+                }));
+                localStorage.setItem(`eps_route_${routeId}`, JSON.stringify(pointsToSave));
+            }
 
             renderCustomLists();
             selectCustomRoute(routeId);
@@ -1358,6 +1373,12 @@
         }
 
         function handleExcelUpload(input) {
+            if (typeof XLSX === 'undefined') {
+                alert("❌ Erreur : Module Excel introuvable. Vérifie ta connexion Internet !");
+                input.value = "";
+                return;
+            }
+
             const file = input.files[0];
             if (!file) return;
 
@@ -1450,6 +1471,69 @@
             }
 
             loadRouteMarkers(currentRouteId);
+        }
+
+        function loadRouteMarkers(routeId) {
+            clearMarkersDOM();
+            activeMarkers = [];
+            const savedData = localStorage.getItem(`eps_route_${routeId}`);
+            if (savedData) {
+                const points = JSON.parse(savedData);
+                activeMarkers = points.map(p => ({
+                    x: p.x,
+                    y: p.y,
+                    type: p.type || 'dot',
+                    color: p.color || currentRouteColor,
+                    rotation: p.rotation || 0,
+                    scale: p.scale || 1
+                }));
+            }
+            renderMarkers();
+        }
+
+        function saveCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+            const pointsToSave = activeMarkers.map(m => ({ 
+                x: m.x, 
+                y: m.y, 
+                type: m.type, 
+                color: m.color,
+                rotation: m.rotation,
+                scale: m.scale
+            }));
+            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            alert("✅ Tracé enregistré avec succès !");
+        }
+
+        function deleteCurrentRoute() {
+            if (!currentRouteId) {
+                alert("Aucune voie active sélectionnée !");
+                return;
+            }
+            if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
+                localStorage.removeItem(`eps_route_${currentRouteId}`);
+                selectMarker(null);
+                activeMarkers = [];
+                renderMarkers();
+                alert("🗑️ Tracé supprimé !");
+            }
+        }
+
+        function undoSticker() {
+            if (activeMarkers.length > 0) {
+                activeMarkers.pop();
+                selectMarker(null);
+                renderMarkers();
+            }
+        }
+
+        function clearStickers() {
+            selectMarker(null);
+            activeMarkers = [];
+            renderMarkers();
         }
 
         // Lancement immédiat au chargement de la page
