@@ -46,10 +46,6 @@
         button:hover { background-color: #0056b3; }
         button.config-btn { background-color: #6c757d; }
         button.config-btn:hover { background-color: #5a6268; }
-        button.save-btn { background-color: #28a745; }
-        button.save-btn:hover { background-color: #218838; }
-        button.delete-btn { background-color: #dc3545; }
-        button.delete-btn:hover { background-color: #c82333; }
         button.template-btn { background-color: #17a2b8; }
         button.template-btn:hover { background-color: #138496; }
         button.export-btn { background-color: #8b5cf6; }
@@ -116,7 +112,7 @@
             box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
         }
         
-        /* Nouveaux boutons de nettoyage */
+        /* Boutons de nettoyage */
         .eraser-btn {
             background: #ffe4e6 !important;
             color: #e11d48 !important;
@@ -137,6 +133,22 @@
             background: #fee2e2 !important;
             border-color: #f87171 !important;
         }
+
+        /* Nouveaux boutons d'action tracé (sauvegarde/suppression) */
+        .action-save-btn {
+            background: #dcfce7 !important;
+            color: #166534 !important;
+            border-color: #86efac !important;
+            margin-bottom: 4px;
+        }
+        .action-save-btn:hover { background: #bbf7d0 !important; }
+        
+        .action-delete-btn {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+            border-color: #fca5a5 !important;
+        }
+        .action-delete-btn:hover { background: #fecaca !important; }
 
         .sidebar-section {
             background: #f8f9fa;
@@ -286,6 +298,7 @@
             font-size: 0.72rem;
             color: #475569;
         }
+        .inst-list li { margin-bottom: 3px; }
         .appn-alert {
             background: #eff6ff;
             border-left-color: #f59e0b;
@@ -481,10 +494,6 @@
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="export-btn" onclick="generateDemo()" title="Génère un fichier prêt à l'emploi (index.html) pour GitHub">🎁 Générer la démo</button>
-        <button class="save-btn" onclick="saveCurrentRoute()">💾 Enregistrer les modifs</button>
-        <button class="delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracés</button>
-        <button onclick="undoSticker()">Annuler action</button>
-        <button onclick="clearStickers()">🧹 Effacer l'écran</button>
     </div>
 
     <div id="active-route-banner">
@@ -505,6 +514,12 @@
             <button class="tool-btn eraser-btn" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
             <button class="tool-btn clear-all-btn" onclick="clearStickers()">🧹 Tout nettoyer</button>
             <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
+
+            <div class="sidebar-section">
+                <h3 style="color: #15803d; border-color: #bbf7d0;">Mise à jour</h3>
+                <button class="tool-btn action-save-btn" onclick="saveCurrentRoute()" title="Écrase le tracé actuel avec vos modifications">💾 Enregistrer modifs</button>
+                <button class="tool-btn action-delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
+            </div>
 
             <div class="sidebar-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
@@ -546,10 +561,10 @@
                 <div class="inst-item">
                     <b>Textes & Références :</b>
                     <ul class="inst-list">
-                        <li>Code de l'Éducation (art. L312-2, R312-2)</li>
-                        <li>Circulaire missions de l'EPS et sécurité</li>
-                        <li>Notes de service encadrement APPN</li>
-                        <li>Normes spécifiques SAE (NF EN 12572) & SNE</li>
+                        <li><a href="https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000038902022" target="_blank">Code de l'Éducation (art. L312-2, R312-2)</a></li>
+                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo18/MENE1711947C.htm" target="_blank">Circulaire missions de l'EPS et sécurité</a></li>
+                        <li><a href="https://eduscol.education.fr/1193/education-physique-et-sportive" target="_blank">Notes de service encadrement APPN</a></li>
+                        <li><a href="https://www.ffme.fr/escalade/sae/" target="_blank">Normes spécifiques SAE (NF EN 12572) & SNE</a></li>
                     </ul>
                 </div>
                 <div class="inst-item">
@@ -750,9 +765,16 @@
     </div>
 
     <script>
-        // ==========================================================
-        // SYSTÈME DE BASE DE DONNÉES (INDEXED-DB) POUR GROS FICHIERS
-        // ==========================================================
+        // VARIABLE GLOBALE POUR LA SÉCURITÉ ANTI-FERMETURE
+        let hasUnsavedChanges = false;
+
+        window.addEventListener('beforeunload', function (e) {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
         const DB_NAME = "EPS_Climbing_DB";
         const STORE_NAME = "configStore";
         const DB_VERSION = 1;
@@ -795,9 +817,6 @@
 
         const MASTER_KEY = "EPS_Climbing_Master_V2";
 
-        // ==========================================================
-        // GÉRER LA DÉMO POUR GITHUB PAGES (EXPORT INTELLIGENT)
-        // ==========================================================
         function generateDemo() {
             if (!schoolConfig || !schoolConfig.images || schoolConfig.images.length === 0) {
                 alert("❌ Erreur : Vous n'avez configuré aucune photo ni voie à exporter !");
@@ -832,6 +851,8 @@
             link.href = URL.createObjectURL(blob);
             link.download = "index.html"; 
             link.click();
+            
+            hasUnsavedChanges = false;
             
             alert("✅ Fichier de Démo généré avec succès !\n\nLe fichier 'index.html' vient d'être téléchargé sur votre ordinateur.\n\nPlacez-le à la racine de votre répertoire sur GitHub (en remplaçant l'ancien). Vos collègues verront instantanément votre mur et vos voies !");
         }
@@ -1042,9 +1063,13 @@
 
             renderCustomLists();
             
+            hasUnsavedChanges = false;
+            
             alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
             
-            clearStickers(); // Utilise la fonction instantanée (sans popup)
+            clearMarkersDOM();
+            activeMarkers = [];
+            selectMarker(null);
             currentRouteId = null;
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
@@ -1055,6 +1080,12 @@
         }
 
         function selectCustomRoute(routeId) {
+            if (hasUnsavedChanges) {
+                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de tracé et les perdre ?")) {
+                    return;
+                }
+            }
+
             routeSelect.value = ""; 
             const found = schoolConfig.customRoutes.find(r => r.id === routeId);
             if (!found) return;
@@ -1198,6 +1229,7 @@
             };
 
             activeMarkers.push(newMarkerData);
+            hasUnsavedChanges = true;
             renderMarkers();
             selectMarker(activeMarkers.length - 1);
         }
@@ -1229,6 +1261,7 @@
                     if (currentTool === 'eraser') {
                         e.stopPropagation();
                         activeMarkers.splice(index, 1);
+                        hasUnsavedChanges = true; 
                         renderMarkers();
                         selectMarker(null);
                     } else {
@@ -1270,6 +1303,7 @@
                 if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
                     activeMarkers[draggingIndex].x = x;
                     activeMarkers[draggingIndex].y = y;
+                    hasUnsavedChanges = true; 
                     renderMarkers();
                     selectMarker(draggingIndex);
                 }
@@ -1286,6 +1320,7 @@
         function rotateSelected(angleDelta) {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers[selectedMarkerIndex].rotation = (activeMarkers[selectedMarkerIndex].rotation || 0) + angleDelta;
+            hasUnsavedChanges = true;
             renderMarkers(); selectMarker(selectedMarkerIndex);
         }
 
@@ -1293,12 +1328,14 @@
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             let currentScale = activeMarkers[selectedMarkerIndex].scale || 1;
             activeMarkers[selectedMarkerIndex].scale = Math.max(0.5, Math.min(3, currentScale * factor));
+            hasUnsavedChanges = true;
             renderMarkers(); selectMarker(selectedMarkerIndex);
         }
 
         function deleteSelected() {
             if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
             activeMarkers.splice(selectedMarkerIndex, 1);
+            hasUnsavedChanges = true;
             selectMarker(null); renderMarkers();
         }
 
@@ -1325,7 +1362,7 @@
             let loadedImages = [];
             let loadedNames = [];
             let filesProcessed = 0;
-            const files = Array.from(input.files);
+            const files = Array.from(input.files).sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
 
             files.forEach((file, index) => {
                 const reader = new FileReader();
@@ -1353,7 +1390,7 @@
                         if (filesProcessed === files.length) {
                             schoolConfig.images = loadedImages;
                             schoolConfig.imageNames = loadedNames;
-                            schoolConfig.localUpdate = Date.now(); // <-- MARQUEUR LOCAL
+                            schoolConfig.localUpdate = Date.now();
                             await saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
                             initApp();
@@ -1395,11 +1432,32 @@
                     let hexColor = colorMap[couleurInput] || "#FFD700";
                     
                     let targetImage = "";
+                    let secteurNumStr = secteurNum.toString();
+                    let voieNumStr = voieNum.toString();
+                    let vNum = parseInt(voieNum);
                     
                     if (schoolConfig.imageNames && schoolConfig.imageNames.length === schoolConfig.images.length) {
                         let matchedIndex = schoolConfig.imageNames.findIndex(name => {
-                            let numsInName = name.match(/\d+/g) || [];
-                            return numsInName.includes(voieNum.toString());
+                            let n = name.toLowerCase();
+                            let nums = n.match(/\d+/g) || [];
+                            
+                            if (nums.includes(voieNumStr)) return true;
+                            
+                            let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
+                            if (ranges) {
+                                for (let r of ranges) {
+                                    let bounds = r.match(/\d+/g);
+                                    if (bounds && bounds.length === 2) {
+                                        if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true;
+                                    }
+                                }
+                            }
+                            
+                            if (n.includes("secteur " + secteurNumStr) || n.includes("secteur" + secteurNumStr) || n.includes("s" + secteurNumStr) || n.includes("mur " + secteurNumStr)) return true;
+                            
+                            if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
+
+                            return false;
                         });
                         
                         if (matchedIndex !== -1) {
@@ -1420,7 +1478,7 @@
                 });
 
                 schoolConfig.routes = parsedRoutes;
-                schoolConfig.localUpdate = Date.now(); // <-- MARQUEUR LOCAL
+                schoolConfig.localUpdate = Date.now();
                 await saveConfig();
                 alert("✅ Fichier Excel importé avec succès ! L'association avec vos photos est terminée.");
                 initApp();
@@ -1431,6 +1489,14 @@
         function ucFirst(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
 
         function changeRoute() {
+            if (hasUnsavedChanges) {
+                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de tracé et les perdre ?")) {
+                    // Si l'utilisateur annule, on remet le select sur la voie précédente
+                    routeSelect.value = currentRouteId || "";
+                    return;
+                }
+            }
+
             isFilterActive = false;
             const magicBtn = document.getElementById('magic-filter-btn');
             if (magicBtn) magicBtn.classList.remove('active-magic');
@@ -1443,6 +1509,7 @@
                 activeBanner.style.background = "#d4edda"; activeBanner.style.color = "#155724";
                 activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
                 clearMarkersDOM(); activeMarkers = [];
+                hasUnsavedChanges = false;
                 if (schoolConfig.images && schoolConfig.images.length > 0) img.src = schoolConfig.images[0];
                 return;
             }
@@ -1472,6 +1539,7 @@
                     rotation: p.rotation || 0, scale: p.scale || 1
                 }));
             }
+            hasUnsavedChanges = false;
             renderMarkers();
         }
 
@@ -1484,9 +1552,13 @@
             }));
             localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
             
+            hasUnsavedChanges = false;
+            
             alert("✅ Modifications enregistrées avec succès !\nL'image va être remise au propre.");
             
-            clearStickers();
+            clearMarkersDOM();
+            activeMarkers = [];
+            selectMarker(null);
             currentRouteId = null;
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
@@ -1504,23 +1576,16 @@
                 localStorage.removeItem(`eps_route_${currentRouteId}`);
                 selectMarker(null);
                 activeMarkers = [];
+                hasUnsavedChanges = false;
                 renderMarkers();
                 alert("🗑️ Tracé supprimé !");
             }
         }
 
-        function undoSticker() {
-            if (activeMarkers.length > 0) {
-                activeMarkers.pop();
-                selectMarker(null);
-                renderMarkers();
-            }
-        }
-
         function clearStickers() {
-            // Effacement instantané et direct, sans popup de confirmation
             selectMarker(null);
             activeMarkers = [];
+            hasUnsavedChanges = true;
             renderMarkers();
         }
 
