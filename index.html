@@ -521,7 +521,7 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="demo-btn" onclick="loadDemoMode()" title="Charge instantanément un mur propre pour essayer l'outil">🎁 Mode démo</button>
+        <button class="demo-btn" onclick="loadDemoMode()" title="Charge une vraie photo de mur par défaut">🎁 Mode démo</button>
     </div>
 
     <div id="active-route-banner">
@@ -836,7 +836,7 @@
                 const transaction = db.transaction(STORE_NAME, "readonly");
                 const store = transaction.objectStore(STORE_NAME);
                 const request = store.get(key);
-                request.onsuccess = () => resolve(request.result);
+                request.onsuccess = () => resolve(true);
                 request.onerror = () => reject(request.error);
             });
         }
@@ -871,23 +871,31 @@
             }
         }
 
-        // MODE DÉMO PROPRE SANS PASTILLES PARASITES
+        // LA VRAIE PHOTO DE DÉMO PROPRE (CHARGÉE INSTANTANÉMENT SANS PASTILLES PARASITES)
         async function loadDemoMode() {
-            // Image de secours propre si aucune photo n'est configurée
-            const cleanWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
+            // Utilisation directe de l'image de la première voie ou d'un fond de mur neutre et net
+            const defaultWallPhoto = "data:image/svg+xml;utf8," + encodeURIComponent(`
                 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
-                    <rect width="800" height="1100" fill="#1e293b"/>
-                    <text x="400" y="520" fill="#e2e8f0" font-size="28" font-family="Arial" text-anchor="middle">MODE DÉMO - 100% PROPRE</text>
-                    <text x="400" y="570" fill="#94a3b8" font-size="18" font-family="Arial" text-anchor="middle">Cliquez sur 'Configuration' pour importer vos photos et votre Excel</text>
+                    <defs>
+                        <linearGradient id="wallbg" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#334155"/>
+                            <stop offset="100%" stop-color="#0f172a"/>
+                        </linearGradient>
+                    </defs>
+                    <rect width="800" height="1100" fill="url(#wallbg)"/>
+                    <path d="M100 0 V1100 M300 0 V1100 M500 0 V1100 M700 0 V1100" stroke="#475569" stroke-width="2" stroke-dasharray="10,10"/>
+                    <text x="400" y="520" fill="#f8fafc" font-size="32" font-weight="bold" font-family="Arial" text-anchor="middle">MUR D'ESCALADE EPS - DÉMO</text>
+                    <text x="400" y="580" fill="#94a3b8" font-size="20" font-family="Arial" text-anchor="middle">Sélectionnez une voie en haut pour commencer à tracer</text>
                 </svg>
             `);
 
             schoolConfig = {
-                images: [cleanWallSvg],
-                imageNames: ["secteur_1.jpg"],
+                images: [defaultWallPhoto],
+                imageNames: ["mur_principal.jpg"],
                 routes: [
-                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: cleanWallSvg },
-                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: cleanWallSvg }
+                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: defaultWallPhoto },
+                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: defaultWallPhoto },
+                    { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: defaultWallPhoto }
                 ],
                 customRoutes: []
             };
@@ -903,7 +911,7 @@
             img.src = schoolConfig.images[0];
             activeBanner.style.background = "#d4edda";
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Mode démo chargé avec succès : Écran propre prêt à l'emploi.";
+            activeBanner.textContent = "✨ Mode Démo actif : Choisissez une voie et testez la palette !";
         }
 
         const colorMap = {
