@@ -62,22 +62,16 @@
         }
 
         .palette-bar {
-            background: #fff;
+            background: #ffffff;
             padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            width: 200px;
+            gap: 12px;
+            width: 210px;
             text-align: left;
             flex-shrink: 0;
-        }
-        .palette-bar span {
-            font-weight: bold;
-            color: #333;
-            font-size: 0.9rem;
-            text-align: center;
         }
         
         .tool-btn {
@@ -149,23 +143,46 @@
         }
         .action-delete-btn:hover { background: #fecaca !important; }
 
+        /* Styles améliorés pour le relief et les fonds de sections */
         .sidebar-section {
-            background: #f8f9fa;
-            border: 1px solid #ced4da;
-            border-radius: 6px;
-            padding: 6px;
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+            border: 1px solid;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
+        .tools-section {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+        .update-section {
+            background: #f0fdf4;
+            border-color: #86efac;
+        }
+        .bloc-section {
+            background: #fffbeb;
+            border-color: #fde68a;
+        }
+        .indiv-section {
+            background: #f0f9ff;
+            border-color: #7dd3fc;
+        }
+
         .sidebar-section h3 {
             font-size: 0.75rem;
             margin: 0 0 4px 0;
-            color: #495057;
             text-align: center;
-            border-bottom: 2px solid #dee2e6;
-            padding-bottom: 2px;
+            border-bottom: 2px solid;
+            padding-bottom: 3px;
             text-transform: uppercase;
+            font-weight: bold;
         }
-        .sidebar-section h3.bloc-title { color: #d97706; border-color: #fde68a; }
-        .sidebar-section h3.indiv-title { color: #0284c7; border-color: #bae6fd; }
+        .tools-section h3 { color: #334155; border-color: #cbd5e1; }
+        .update-section h3 { color: #15803d; border-color: #bbf7d0; }
+        .bloc-section h3 { color: #d97706; border-color: #fde68a; }
+        .indiv-section h3 { color: #0284c7; border-color: #bae6fd; }
 
         .custom-list {
             display: flex;
@@ -211,7 +228,7 @@
             margin-left: 3px;
         }
         .add-custom-btn {
-            background: #e2e8f0;
+            background: #ffffff;
             color: #334155;
             border: 1px dashed #94a3b8;
             width: 100%;
@@ -221,7 +238,7 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .add-custom-btn:hover { background: #cbd5e1; }
+        .add-custom-btn:hover { background: #f1f5f9; }
 
         .selection-panel {
             background: #e7f5ff;
@@ -229,6 +246,7 @@
             padding: 6px;
             border-radius: 6px;
             display: none;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.06);
         }
         .selection-panel h4 {
             margin: 0 0 4px 0;
@@ -530,32 +548,38 @@
 
     <div class="workspace">
         <div class="palette-bar">
-            <span>Outils & Balises :</span>
-            <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
-            <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
-            <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
-            <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME (Repos)</button>
-            <button class="tool-btn" id="tool-lolotte" onclick="setTool('lolotte')">🦵 Lolotte</button>
-            <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
-            <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 Chang. Main (CM)</button>
-            <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 Chang. Pied (CP)</button>
-            <button class="tool-btn eraser-btn" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
-            <button class="tool-btn clear-all-btn" onclick="clearStickers()">🧹 Tout nettoyer</button>
-            <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
+            <!-- Zone Outils & Balises -->
+            <div class="sidebar-section tools-section">
+                <h3>Outils & Balises</h3>
+                <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
+                <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
+                <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
+                <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME (Repos)</button>
+                <button class="tool-btn" id="tool-lolotte" onclick="setTool('lolotte')">🦵 Lolotte</button>
+                <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
+                <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 Chang. Main (CM)</button>
+                <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 Chang. Pied (CP)</button>
+                <button class="tool-btn eraser-btn" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
+                <button class="tool-btn clear-all-btn" onclick="clearStickers()">🧹 Tout nettoyer</button>
+                <button class="tool-btn magic-btn" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
+            </div>
 
-            <div class="sidebar-section">
-                <h3 style="color: #15803d; border-color: #bbf7d0;">Mise à jour</h3>
+            <!-- Zone Mise à jour -->
+            <div class="sidebar-section update-section">
+                <h3>Mise à jour</h3>
                 <button class="tool-btn action-save-btn" onclick="saveCurrentRoute()" title="Écrase le tracé actuel avec vos modifications">💾 Enregistrer modifs</button>
                 <button class="tool-btn action-delete-btn" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
             </div>
 
-            <div class="sidebar-section">
+            <!-- Zone Exercices bloc -->
+            <div class="sidebar-section bloc-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
                 <button class="add-custom-btn" onclick="createCustomRoute('bloc')">+ Créer un Bloc</button>
             </div>
 
-            <div class="sidebar-section">
+            <!-- Zone Indiv. / Élèves -->
+            <div class="sidebar-section indiv-section">
                 <h3 class="indiv-title">Indiv. / Élèves</h3>
                 <div id="indiv-list" class="custom-list"></div>
                 <button class="add-custom-btn" onclick="createCustomRoute('individualise')">+ Créer un Élève</button>
@@ -613,7 +637,7 @@
                     <b>Outil de gestion des séances :</b><br>
                     Tableur automatisé pour le suivi des réussites et des cotations par élève.
                     <div style="margin-top: 8px; text-align: center;">
-                        <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="display: inline-block; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
+                        <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="display: inline-block; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
                     </div>
                 </div>
             </div>
