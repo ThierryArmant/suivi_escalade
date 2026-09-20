@@ -521,7 +521,7 @@
         </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="demo-btn" onclick="loadDemoMode()" title="Charge instantanément un mur de test pour essayer l'outil">🎁 Mode démo (Tester)</button>
+        <button class="demo-btn" onclick="loadDemoMode()" title="Charge instantanément un mur propre pour essayer l'outil">🎁 Mode démo</button>
     </div>
 
     <div id="active-route-banner">
@@ -804,11 +804,10 @@
 
         const DB_NAME = "EPS_Climbing_DB";
         const STORE_NAME = "configStore";
-        const DB_VERSION = 1;
 
         function openDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                const request = indexedDB.open(DB_NAME, 1);
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => resolve(request.result);
                 request.onupgradeneeded = (event) => {
@@ -842,54 +841,6 @@
             });
         }
 
-        const MASTER_KEY = "EPS_Climbing_Master_V2";
-
-        // MODE DÉMO PROPRE : Utilise la première vraie photo déjà enregistrée, sans faux cercles ni pastilles parasites
-        async function loadDemoMode() {
-            let savedConfig = null;
-            try { savedConfig = await getFromDB("school_config_master"); } catch(e) {}
-
-            // Si tu as déjà configuré tes vraies photos, on les garde, sinon on met une image neutre propre
-            let realImage = (savedConfig && savedConfig.images && savedConfig.images.length > 0) ? savedConfig.images[0] : "data:image/svg+xml;utf8," + encodeURIComponent(`
-                <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
-                    <rect width="800" height="1100" fill="#334155"/>
-                    <text x="400" y="550" fill="#e2e8f0" font-size="28" font-family="Arial" text-anchor="middle">Veuillez importer vos photos via 'Configuration'</text>
-                </svg>
-            `);
-
-            schoolConfig = {
-                images: [realImage],
-                imageNames: ["mur_principal.jpg"],
-                routes: [
-                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: realImage },
-                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: realImage },
-                    { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: realImage }
-                ],
-                customRoutes: [
-                    { id: "demo_c1", name: "Atelier Rétablissement", type: "bloc", color: "#d97706", imageSrc: realImage }
-                ]
-            };
-            
-            await saveConfig();
-            clearMarkersDOM();
-            activeMarkers = [];
-            selectMarker(null);
-            currentRouteId = null;
-            routeSelect.value = "";
-            populateRouteDropdown();
-            renderCustomLists();
-            img.src = schoolConfig.images[0];
-            activeBanner.style.background = "#d4edda";
-            activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Mode Test Actif : Écran propre. Sélectionnez une voie ou testez la palette.";
-        }
-
-        const colorMap = {
-            "jaune": "#FFD700", "bleu": "#00BFFF", "bleue": "#00BFFF",
-            "noir": "#212121", "noire": "#212121", "vert": "#32CD32", "verte": "#32CD32",
-            "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
-        };
-
         let schoolConfig = { images: [], imageNames: [], routes: [], customRoutes: [] };
 
         const container = document.getElementById('wall-container');
@@ -917,28 +868,61 @@
                 await saveToDB("school_config_master", schoolConfig);
             } catch (err) {
                 console.error(err);
-                alert("❌ Erreur lors de l'enregistrement de la base de données.");
             }
         }
 
+        // MODE DÉMO PROPRE SANS PASTILLES PARASITES
+        async function loadDemoMode() {
+            // Image de secours propre si aucune photo n'est configurée
+            const cleanWallSvg = "data:image/svg+xml;utf8," + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" width="800" height="1100" viewBox="0 0 800 1100">
+                    <rect width="800" height="1100" fill="#1e293b"/>
+                    <text x="400" y="520" fill="#e2e8f0" font-size="28" font-family="Arial" text-anchor="middle">MODE DÉMO - 100% PROPRE</text>
+                    <text x="400" y="570" fill="#94a3b8" font-size="18" font-family="Arial" text-anchor="middle">Cliquez sur 'Configuration' pour importer vos photos et votre Excel</text>
+                </svg>
+            `);
+
+            schoolConfig = {
+                images: [cleanWallSvg],
+                imageNames: ["secteur_1.jpg"],
+                routes: [
+                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: cleanWallSvg },
+                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: cleanWallSvg }
+                ],
+                customRoutes: []
+            };
+            
+            await saveConfig();
+            clearMarkersDOM();
+            activeMarkers = [];
+            selectMarker(null);
+            currentRouteId = null;
+            routeSelect.value = "";
+            populateRouteDropdown();
+            renderCustomLists();
+            img.src = schoolConfig.images[0];
+            activeBanner.style.background = "#d4edda";
+            activeBanner.style.color = "#155724";
+            activeBanner.textContent = "✨ Mode démo chargé avec succès : Écran propre prêt à l'emploi.";
+        }
+
+        const colorMap = {
+            "jaune": "#FFD700", "bleu": "#00BFFF", "bleue": "#00BFFF",
+            "noir": "#212121", "noire": "#212121", "vert": "#32CD32", "verte": "#32CD32",
+            "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
+        };
+
         async function initApp() {
             let savedConfig = null;
-            try { savedConfig = await getFromDB("school_config_master"); } catch(e) {}
+            try { 
+                savedConfig = await getFromDB("school_config_master"); 
+            } catch(e) { 
+                console.error(e); 
+            }
 
-            let preloaded = window.PRELOADED_CONFIG;
-
-            if (preloaded && savedConfig) {
-                let localTime = savedConfig.localUpdate || 0;
-                let preloadedTime = preloaded.exportDate || 0;
-                if (localTime > preloadedTime) {
-                    schoolConfig = savedConfig;
-                } else {
-                    schoolConfig = preloaded;
-                    await saveToDB("school_config_master", schoolConfig);
-                }
-            } else if (preloaded) {
-                schoolConfig = preloaded;
-                await saveToDB("school_config_master", schoolConfig);
+            if (window.PRELOADED_CONFIG) {
+                schoolConfig = window.PRELOADED_CONFIG;
+                await saveConfig();
             } else if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
             } else {
@@ -1079,7 +1063,6 @@
             }
 
             renderCustomLists();
-            
             hasUnsavedChanges = false;
             
             alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
@@ -1233,7 +1216,6 @@
                 return;
             }
             if (event.target.classList.contains('marker')) return;
-            
             if (currentTool === 'eraser') return;
 
             const rect = img.getBoundingClientRect();
