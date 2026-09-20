@@ -13,7 +13,7 @@
             font-family: Arial, sans-serif;
             background-color: #f4f4f9;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
             user-select: none;
         }
@@ -36,7 +36,7 @@
             border-radius: 5px;
             border: 1px solid #ccc;
         }
-        select { background-color: #fff; font-weight: bold; color: #007bff; }
+        select { background-color: #fff; font-weight: bold; color: #007bff; max-width: 100%; }
         button {
             background-color: #007bff;
             color: white;
@@ -51,13 +51,14 @@
         button.export-btn { background-color: #8b5cf6; }
         button.export-btn:hover { background-color: #7c3aed; }
 
+        /* Conteneur global en Flexbox adaptatif */
         .workspace {
             display: flex;
             justify-content: center;
             align-items: flex-start;
             gap: 15px;
-            flex-wrap: nowrap;
-            max-width: 1380px;
+            flex-wrap: wrap; /* Permet le passage à la ligne sur petit écran */
+            max-width: 1600px; /* Élargi pour les grands écrans */
             margin: 0 auto;
         }
 
@@ -69,7 +70,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            width: 195px;
+            width: 200px;
             text-align: left;
             flex-shrink: 0;
         }
@@ -79,6 +80,7 @@
             font-size: 0.9rem;
             text-align: center;
         }
+        
         .tool-btn {
             background: #f1f3f5;
             color: #333;
@@ -134,7 +136,6 @@
             border-color: #f87171 !important;
         }
 
-        /* Nouveaux boutons d'action tracé (sauvegarde/suppression) */
         .action-save-btn {
             background: #dcfce7 !important;
             color: #166534 !important;
@@ -250,15 +251,63 @@
             background: #3182ce;
         }
 
+        /* NOUVEAU : Colonne centrale dynamique pour l'image */
+        .center-col {
+            flex: 1 1 500px; /* Prend tout l'espace dispo, mini 500px avant de passer à la ligne */
+            display: flex;
+            justify-content: center;
+            max-width: 100%;
+        }
+
+        #wall-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 900px; /* L'image peut s'agrandir jusqu'à 900px ! */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        #wall-image {
+            display: block;
+            width: 100%; /* S'adapte à la largeur du conteneur */
+            height: auto; /* Conserve les proportions */
+            max-height: 85vh; /* Évite de dépasser la hauteur de l'écran par défaut */
+            object-fit: contain;
+        }
+
+        /* Colonne de droite agrandie */
         .right-sidebar {
-            width: 290px;
+            width: 350px; /* Élargi pour éviter que les liens se coupent */
             text-align: left;
             flex-shrink: 0;
-            max-height: 78vh;
+            max-height: 85vh;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+        }
+
+        /* RESPONSIVE DESIGN : Tablettes et Téléphones */
+        @media (max-width: 1100px) {
+            .workspace {
+                flex-direction: column;
+                align-items: center;
+            }
+            .palette-bar, .right-sidebar {
+                width: 100%;
+                max-width: 600px;
+                max-height: none; /* Désactive la limite de hauteur sur mobile */
+            }
+            .center-col {
+                width: 100%;
+                order: -1; /* Place l'image tout en haut sur téléphone */
+            }
+            #wall-image {
+                max-height: none; /* Sur mobile, l'image prend la place qu'il lui faut */
+            }
         }
 
         .institutional-zone {
@@ -412,22 +461,6 @@
             border: 1px solid #c3e6cb;
         }
 
-        #wall-container {
-            position: relative;
-            display: inline-block;
-            max-width: 100%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: crosshair;
-        }
-        #wall-image {
-            display: block;
-            width: 100%;
-            height: auto;
-            max-height: 70vh;
-        }
-
         .marker {
             position: absolute;
             transform: translate(-50%, -50%);
@@ -549,7 +582,8 @@
             </div>
         </div>
 
-        <div>
+        <!-- ZONE DYNAMIQUE POUR L'IMAGE -->
+        <div class="center-col">
             <div id="wall-container" onclick="placeMarker(event)">
                 <img id="wall-image" alt="Mur d'escalade">
             </div>
@@ -1491,7 +1525,6 @@
         function changeRoute() {
             if (hasUnsavedChanges) {
                 if (!confirm("⚠️ Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de tracé et les perdre ?")) {
-                    // Si l'utilisateur annule, on remet le select sur la voie précédente
                     routeSelect.value = currentRouteId || "";
                     return;
                 }
