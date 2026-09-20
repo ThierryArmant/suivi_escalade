@@ -1269,6 +1269,7 @@
             }
 
             const imageObj = new Image();
+            imageObj.crossOrigin = "Anonymous"; // Évite les soucis de cache
             imageObj.onload = function() {
                 const canvas = document.createElement('canvas');
                 canvas.width = imageObj.width;
@@ -1280,32 +1281,47 @@
                 const data = imgData.data;
 
                 for (let i = 0; i < data.length; i += 4) {
-                    let r = data[i]; let g = data[i + 1]; let b = data[i + 2];
-                    let max = Math.max(r, g, b); let min = Math.min(r, g, b);
-                    let diff = max - min; let lightness = (max + min) / 2;
-                    let saturation = diff === 0 ? 0 : diff / (1 - Math.abs(2 * lightness / 255 - 1)) / 255;
+                    let r = data[i]; 
+                    let g = data[i + 1]; 
+                    let b = data[i + 2];
                     
-                    let hue = 0;
+                    // Conversion mathématique précise en HSL (Teinte, Saturation, Lumière)
+                    let rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
+                    let max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
+                    let diff = max - min;
+                    
+                    let l = (max + min) / 2;
+                    let s = diff === 0 ? 0 : diff / (1 - Math.abs(2 * l - 1));
+                    let h = 0;
+                    
                     if (diff !== 0) {
-                        if (max === r) hue = ((g - b) / diff) % 6;
-                        else if (max === g) hue = (b - r) / diff + 2;
-                        else hue = (r - g) / diff + 4;
-                        hue = Math.round(hue * 60);
-                        if (hue < 0) hue += 360;
+                        if (max === rNorm) h = 60 * (((gNorm - bNorm) / diff) % 6);
+                        else if (max === gNorm) h = 60 * (((bNorm - rNorm) / diff) + 2);
+                        else h = 60 * (((rNorm - gNorm) / diff) + 4);
                     }
+                    if (h < 0) h += 360;
 
                     let match = false;
-                    if (colorName.includes("jaune") && hue >= 25 && hue <= 85 && saturation > 0.2 && lightness > 35) match = true;
-                    else if (colorName.includes("bleu") && hue >= 165 && hue <= 275 && saturation > 0.2) match = true;
-                    else if (colorName.includes("rouge") && (hue <= 25 || hue >= 325) && saturation > 0.2) match = true;
-                    else if (colorName.includes("vert") && hue >= 65 && hue <= 175 && saturation > 0.2) match = true;
-                    else if (colorName.includes("noir") && lightness < 45) match = true;
-                    else if (colorName.includes("violet") && hue >= 245 && hue <= 335 && saturation > 0.2) match = true;
+                    // Seuils ajustés pour capter la magnésie (s>0.25) et tolérer les ombres (l>0.15)
+                    if (colorName.includes("jaune") && h >= 35 && h <= 75 && s > 0.25 && l > 0.2) match = true;
+                    else if (colorName.includes("bleu") && h >= 175 && h <= 260 && s > 0.25 && l > 0.15) match = true;
+                    else if (colorName.includes("rouge") && (h <= 25 || h >= 335) && s > 0.25 && l > 0.15) match = true;
+                    else if (colorName.includes("vert") && h >= 70 && h <= 170 && s > 0.25 && l > 0.15) match = true;
+                    else if (colorName.includes("violet") && h >= 260 && h <= 335 && s > 0.25 && l > 0.15) match = true;
+                    else if (colorName.includes("noir") && l < 0.25 && s < 0.2) match = true;
 
                     if (!match) {
-                        let avg = 0.299 * r + 0.587 * g + 0.114 * b;
-                        let grey = Math.min(255, Math.max(0, avg * 0.75));
-                        data[i] = grey; data[i + 1] = grey; data[i + 2] = grey;
+                        // On crée un fond GRIS PASTEL (Luminance + éclaircissement)
+                        let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                        let grey = (luma * 0.4) + 140; // Rend le mur presque blanc/gris clair
+                        data[i] = grey; 
+                        data[i + 1] = grey; 
+                        data[i + 2] = grey;
+                    } else {
+                        // On booste de 20% l'éclat des prises trouvées pour contrer la magnésie
+                        data[i] = Math.min(255, r * 1.2);
+                        data[i + 1] = Math.min(255, g * 1.2);
+                        data[i + 2] = Math.min(255, b * 1.2);
                     }
                 }
                 ctx.putImageData(imgData, 0, 0);
