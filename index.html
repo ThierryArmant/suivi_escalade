@@ -247,7 +247,7 @@
             display: flex;
             flex-direction: column;
             gap: 3px;
-            max-height: 120px;
+            max-height: 250px; /* Agrandissement pour les thèmes */
             overflow-y: auto;
             margin-bottom: 4px;
         }
@@ -1156,6 +1156,10 @@
             blocListContainer.innerHTML = ''; 
             indivListContainer.innerHTML = '';
 
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+
+            let blocsParTheme = {};
+
             schoolConfig.customRoutes.forEach(r => {
                 const item = document.createElement('div');
                 item.className = 'custom-item';
@@ -1223,9 +1227,35 @@
                 if (r.type === 'individualise') {
                     indivListContainer.appendChild(item);
                 } else {
-                    blocListContainer.appendChild(item);
+                    let theme = r.theme || "Libre / Autre";
+                    if (!blocsParTheme[theme]) {
+                        blocsParTheme[theme] = [];
+                    }
+                    blocsParTheme[theme].push(item);
                 }
             });
+
+            // Affichage des blocs groupés par thèmes
+            for (let theme in blocsParTheme) {
+                let themeHeader = document.createElement('div');
+                themeHeader.style.fontSize = '0.65rem';
+                themeHeader.style.fontWeight = 'bold';
+                themeHeader.style.color = '#92400e';
+                themeHeader.style.background = '#fef3c7';
+                themeHeader.style.padding = '3px 6px';
+                themeHeader.style.marginTop = '6px';
+                themeHeader.style.marginBottom = '2px';
+                themeHeader.style.borderRadius = '4px';
+                themeHeader.style.textAlign = 'left';
+                themeHeader.style.textTransform = 'uppercase';
+                themeHeader.textContent = `📁 ${theme}`;
+                
+                blocListContainer.appendChild(themeHeader);
+
+                blocsParTheme[theme].forEach(item => {
+                    blocListContainer.appendChild(item);
+                });
+            }
         }
 
         function openConfigModal() { 
@@ -1511,7 +1541,7 @@
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
                 if (p.type === 'dot') {
-                    marker.style.borderColor = p.color; // Applique la couleur sur l'anneau
+                    marker.style.borderColor = p.color;
                 } else if (p.type === 'arrow') {
                     marker.innerHTML = '⬆️';
                 } else if (p.type === 'cross') {
