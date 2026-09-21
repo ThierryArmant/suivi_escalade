@@ -19,8 +19,18 @@
             text-align: center;
             user-select: none;
         }
-        h1 { color: #333; font-size: 1.5rem; margin-bottom: 5px; }
-        .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 15px; }
+        
+        h1 { 
+            color: #333; 
+            font-size: 1.5rem; 
+            margin-bottom: 5px; 
+        }
+        
+        .subtitle { 
+            color: #666; 
+            font-size: 0.9rem; 
+            margin-bottom: 15px; 
+        }
         
         .controls {
             margin-bottom: 15px;
@@ -31,27 +41,56 @@
             display: inline-block;
             max-width: 100%;
         }
-        select, button {
+        
+        select, button, input[type="text"] {
             padding: 8px 12px;
             margin: 4px;
             font-size: 0.95rem;
             border-radius: 5px;
             border: 1px solid #ccc;
         }
-        select { background-color: #fff; font-weight: bold; color: #007bff; max-width: 100%; }
+        
+        select { 
+            background-color: #fff; 
+            font-weight: bold; 
+            color: #007bff; 
+            max-width: 100%; 
+        }
+        
         button {
             background-color: #007bff;
             color: white;
             border: none;
             cursor: pointer;
         }
-        button:hover { background-color: #0056b3; }
-        button.config-btn { background-color: #6c757d; }
-        button.config-btn:hover { background-color: #5a6268; }
-        button.template-btn { background-color: #17a2b8; }
-        button.template-btn:hover { background-color: #138496; }
-        button.demo-btn { background-color: #8b5cf6; }
-        button.demo-btn:hover { background-color: #7c3aed; }
+        
+        button:hover { 
+            background-color: #0056b3; 
+        }
+        
+        button.config-btn { 
+            background-color: #6c757d; 
+        }
+        
+        button.config-btn:hover { 
+            background-color: #5a6268; 
+        }
+        
+        button.template-btn { 
+            background-color: #17a2b8; 
+        }
+        
+        button.template-btn:hover { 
+            background-color: #138496; 
+        }
+        
+        button.demo-btn { 
+            background-color: #8b5cf6; 
+        }
+        
+        button.demo-btn:hover { 
+            background-color: #7c3aed; 
+        }
 
         .workspace {
             display: flex;
@@ -63,7 +102,6 @@
             margin: 0 auto;
         }
 
-        /* Fond commun uniforme pour l'ensemble du panneau latéral */
         .palette-bar {
             background: #eef2f7;
             padding: 14px;
@@ -78,7 +116,6 @@
             flex-shrink: 0;
         }
         
-        /* Grille 2 colonnes pour les outils */
         .tools-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -103,13 +140,18 @@
             justify-content: center;
             flex-direction: column;
         }
-        .tool-btn:hover { background: #e2e6ea; }
+        
+        .tool-btn:hover { 
+            background: #e2e6ea; 
+        }
+        
         .tool-btn.active-tool {
             background: #007bff;
             color: white;
             border-color: #0056b3;
             box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
         }
+        
         .btn-full {
             grid-column: span 2;
             flex-direction: row;
@@ -122,6 +164,7 @@
             color: #6b21a8;
             border: 2px solid #d8b4fe;
         }
+        
         .magic-btn.active-magic {
             background: #9333ea;
             color: white;
@@ -134,20 +177,23 @@
             color: #e11d48 !important;
             border-color: #fda4af !important;
         }
+        
         .eraser-btn.active-tool {
             background: #e11d48 !important;
             color: white !important;
             border-color: #be123c !important;
             box-shadow: 0 0 8px rgba(225, 29, 72, 0.6) !important;
         }
+        
         .clear-all-btn {
             background: #fef2f2 !important;
             color: #991b1b !important;
             border-color: #fca5a5 !important;
         }
-        .clear-all-btn:hover {
-            background: #fee2e2 !important;
-            border-color: #f87171 !important;
+        
+        .clear-all-btn:hover { 
+            background: #fee2e2 !important; 
+            border-color: #f87171 !important; 
         }
 
         .action-save-btn {
@@ -156,16 +202,21 @@
             border-color: #86efac !important;
             margin-bottom: 4px;
         }
-        .action-save-btn:hover { background: #bbf7d0 !important; }
+        
+        .action-save-btn:hover { 
+            background: #bbf7d0 !important; 
+        }
         
         .action-delete-btn {
             background: #fee2e2 !important;
             color: #991b1b !important;
             border-color: #fca5a5 !important;
         }
-        .action-delete-btn:hover { background: #fecaca !important; }
+        
+        .action-delete-btn:hover { 
+            background: #fecaca !important; 
+        }
 
-        /* Zones intérieures en relief blanc sur fond commun */
         .sidebar-section {
             background: #ffffff;
             border-radius: 8px;
@@ -186,6 +237,7 @@
             text-transform: uppercase;
             font-weight: bold;
         }
+        
         .tools-section h3 { color: #334155; border-color: #cbd5e1; }
         .update-section h3 { color: #15803d; border-color: #bbf7d0; }
         .bloc-section h3 { color: #d97706; border-color: #fde68a; }
@@ -199,6 +251,7 @@
             overflow-y: auto;
             margin-bottom: 4px;
         }
+        
         .custom-item {
             background: #fff;
             border: 1px solid #cbd5e1;
@@ -211,6 +264,7 @@
             cursor: pointer;
             transition: background 0.15s;
         }
+        
         .custom-item span {
             flex: 1;
             text-align: left;
@@ -219,7 +273,11 @@
             text-overflow: ellipsis;
             cursor: pointer;
         }
-        .custom-item:hover { background: #e2e8f0; }
+        
+        .custom-item:hover { 
+            background: #e2e8f0; 
+        }
+        
         .custom-item.active-custom {
             background: #3182ce;
             color: white;
@@ -232,29 +290,34 @@
             align-items: center;
             gap: 4px;
         }
-        .qr-custom-btn {
-            background: #e0f2fe;
-            border: 1px solid #7dd3fc;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 2px 5px;
-            color: #0369a1;
-            transition: all 0.2s;
-        }
-        .qr-custom-btn:hover { background: #bae6fd; }
         
-        .delete-custom-btn {
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
+        .qr-custom-btn, .delete-custom-btn {
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.8rem;
             padding: 2px 5px;
-            color: #991b1b;
             transition: all 0.2s;
         }
-        .delete-custom-btn:hover { background: #fecaca; }
+        
+        .qr-custom-btn { 
+            background: #e0f2fe; 
+            border: 1px solid #7dd3fc; 
+            color: #0369a1; 
+        }
+        
+        .qr-custom-btn:hover { 
+            background: #bae6fd; 
+        }
+        
+        .delete-custom-btn { 
+            background: #fee2e2; 
+            border: 1px solid #fca5a5; 
+            color: #991b1b; 
+        }
+        
+        .delete-custom-btn:hover { 
+            background: #fecaca; 
+        }
 
         .add-custom-btn {
             background: #f8fafc;
@@ -267,7 +330,10 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .add-custom-btn:hover { background: #e2e8f0; }
+        
+        .add-custom-btn:hover { 
+            background: #e2e8f0; 
+        }
 
         .selection-panel {
             background: #e7f5ff;
@@ -277,23 +343,26 @@
             display: none;
             box-shadow: 0 3px 6px rgba(0,0,0,0.06);
         }
-        .selection-panel h4 {
-            margin: 0 0 4px 0;
-            font-size: 0.8rem;
-            color: #2b6cb0;
-            text-align: center;
+        
+        .selection-panel h4 { 
+            margin: 0 0 4px 0; 
+            font-size: 0.8rem; 
+            color: #2b6cb0; 
+            text-align: center; 
         }
-        .control-row {
-            display: flex;
-            gap: 3px;
-            margin-bottom: 3px;
-            justify-content: center;
+        
+        .control-row { 
+            display: flex; 
+            gap: 3px; 
+            margin-bottom: 3px; 
+            justify-content: center; 
         }
-        .control-row button {
-            padding: 4px 6px;
-            font-size: 0.75rem;
-            margin: 0;
-            background: #3182ce;
+        
+        .control-row button { 
+            padding: 4px 6px; 
+            font-size: 0.75rem; 
+            margin: 0; 
+            background: #3182ce; 
         }
 
         .center-col {
@@ -334,21 +403,21 @@
         }
 
         @media (max-width: 1100px) {
-            .workspace {
-                flex-direction: column;
-                align-items: center;
+            .workspace { 
+                flex-direction: column; 
+                align-items: center; 
             }
-            .palette-bar, .right-sidebar {
-                width: 100%;
-                max-width: 600px;
-                max-height: none;
+            .palette-bar, .right-sidebar { 
+                width: 100%; 
+                max-width: 600px; 
+                max-height: none; 
             }
-            .center-col {
-                width: 100%;
-                order: -1;
+            .center-col { 
+                width: 100%; 
+                order: -1; 
             }
-            #wall-image {
-                max-height: none;
+            #wall-image { 
+                max-height: none; 
             }
         }
 
@@ -359,6 +428,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border: 1px solid #cbd5e1;
         }
+        
         .institutional-zone h3 {
             font-size: 0.9rem;
             margin-top: 0;
@@ -367,6 +437,7 @@
             border-bottom: 2px solid #3b82f6;
             padding-bottom: 4px;
         }
+        
         .inst-item {
             font-size: 0.75rem;
             color: #334155;
@@ -377,23 +448,26 @@
             border-radius: 4px;
             border-left: 3px solid #3b82f6;
         }
-        .inst-item a {
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: bold;
+        
+        .inst-item a { 
+            color: #2563eb; 
+            text-decoration: none; 
+            font-weight: bold; 
         }
-        .inst-item a:hover { text-decoration: underline; }
-        .inst-list {
-            margin: 4px 0 0 15px;
-            padding: 0;
-            font-size: 0.72rem;
-            color: #475569;
+        
+        .inst-item a:hover { 
+            text-decoration: underline; 
         }
-        .inst-list li { margin-bottom: 3px; }
-        .appn-alert {
-            background: #eff6ff;
-            border-left-color: #f59e0b;
-            font-size: 0.73rem;
+        
+        .inst-list { 
+            margin: 4px 0 0 15px; 
+            padding: 0; 
+            font-size: 0.72rem; 
+            color: #475569; 
+        }
+        
+        .inst-list li { 
+            margin-bottom: 3px; 
         }
 
         .technical-zone {
@@ -403,6 +477,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border: 2px solid #bbf7d0;
         }
+        
         .technical-zone h3 {
             font-size: 0.9rem;
             margin-top: 0;
@@ -411,6 +486,7 @@
             border-bottom: 2px solid #22c55e;
             padding-bottom: 4px;
         }
+        
         .legend-category {
             font-size: 0.78rem;
             font-weight: bold;
@@ -421,134 +497,183 @@
             margin: 8px 0 5px 0;
             text-transform: uppercase;
         }
-        .legend-banner {
-            background: #fff;
-            border: 1px solid #bbf7d0;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            overflow: hidden;
-            transition: all 0.2s;
+        
+        .legend-banner { 
+            background: #fff; 
+            border: 1px solid #bbf7d0; 
+            border-radius: 6px; 
+            margin-bottom: 5px; 
+            overflow: hidden; 
         }
+        
         .legend-header {
-            padding: 6px 8px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            padding: 6px 8px; 
+            font-size: 0.8rem; 
+            font-weight: bold; 
             color: #14532d;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
             background: #f0fdf4;
         }
-        .legend-header:hover { background: #dcfce7; }
+        
+        .legend-header:hover { 
+            background: #dcfce7; 
+        }
+        
         .legend-body {
-            padding: 8px;
-            font-size: 0.74rem;
-            color: #374151;
+            padding: 8px; 
+            font-size: 0.74rem; 
+            color: #374151; 
             background: #fff;
-            border-top: 1px solid #bbf7d0;
-            display: none;
-            line-height: 1.3;
+            border-top: 1px solid #bbf7d0; 
+            display: none; 
+            line-height: 1.3; 
             text-align: center;
         }
-        .legend-banner.active .legend-body { display: block; }
-        .legend-banner.active .legend-header { background: #dcfce7; color: #166534; }
+        
+        .legend-banner.active .legend-body { 
+            display: block; 
+        }
+        
+        .legend-banner.active .legend-header { 
+            background: #dcfce7; 
+            color: #166534; 
+        }
         
         .legend-illustration {
-            width: 100%;
-            height: 85px;
-            background: #f8fafc;
-            border-radius: 4px;
+            width: 100%; 
+            height: 85px; 
+            background: #f8fafc; 
+            border-radius: 4px; 
             margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
             border: 1px solid #e2e8f0;
         }
 
-        #config-modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 1000;
-            justify-content: center;
+        /* Modals */
+        .modal-overlay {
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: rgba(0,0,0,0.6); 
+            z-index: 1000; 
+            justify-content: center; 
             align-items: center;
         }
+        
         .modal-content {
-            background: #fff;
-            padding: 25px;
-            border-radius: 10px;
-            max-width: 600px;
+            background: #fff; 
+            padding: 25px; 
+            border-radius: 10px; 
+            max-width: 500px; 
             width: 90%;
-            text-align: left;
-            max-height: 90vh;
-            overflow-y: auto;
+            text-align: left; 
+            max-height: 90vh; 
+            overflow-y: auto; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        .modal-content h2 { margin-top: 0; color: #007bff; font-size: 1.3rem; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
-        .form-group input[type="file"] { width: 100%; padding: 6px; box-sizing: border-box; }
-        .help-text { font-size: 0.8rem; color: #666; margin-top: 3px; }
+        
+        .modal-content h2 { 
+            margin-top: 0; 
+            color: #007bff; 
+            font-size: 1.3rem; 
+        }
+        
+        .form-group { 
+            margin-bottom: 15px; 
+        }
+        
+        .form-group label { 
+            display: block; 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+            font-size: 0.9rem; 
+        }
+        
+        .form-group input[type="file"], .form-group input[type="text"], .form-group select { 
+            width: 100%; 
+            box-sizing: border-box; 
+        }
+        
+        .help-text { 
+            font-size: 0.8rem; 
+            color: #666; 
+            margin-top: 3px; 
+        }
 
         #active-route-banner {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
+            background: #d4edda; 
+            color: #155724; 
+            padding: 10px; 
             border-radius: 6px;
-            margin: 0 auto 15px auto;
-            max-width: 650px;
-            font-weight: bold;
-            border: 1px solid #c3e6cb;
+            margin: 0 auto 15px auto; 
+            max-width: 650px; 
+            font-weight: bold; 
+            border: 1px solid #c3e6cb; 
+            line-height: 1.4;
         }
 
         .marker {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            cursor: grab;
+            position: absolute; 
+            transform: translate(-50%, -50%); 
+            cursor: grab; 
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
             transition: box-shadow 0.2s;
         }
-        .marker:active { cursor: grabbing; }
-        .marker.selected {
-            outline: 3px dashed #007bff;
-            outline-offset: 3px;
-            z-index: 50;
+        
+        .marker:active { 
+            cursor: grabbing; 
         }
+        
+        .marker.selected { 
+            outline: 3px dashed #007bff; 
+            outline-offset: 3px; 
+            z-index: 50; 
+        }
+        
+        /* CERCLE VIDE (Remplaçant la pastille pleine) */
         .marker.dot {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            border: 4px solid white; 
+            background-color: transparent !important;
+            box-shadow: 0 0 3px rgba(0,0,0,0.6), inset 0 0 3px rgba(0,0,0,0.6);
         }
-        .marker.arrow {
-            font-size: 26px;
-            color: #ffcc00;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+
+        .marker.arrow { 
+            font-size: 26px; 
+            color: #ffcc00; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); 
         }
+        
         .marker.cross {
-            font-size: 24px;
-            color: #dc3545;
+            font-size: 24px; 
+            color: #dc3545; 
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(255,255,255,0.7);
-            border-radius: 50%;
-            width: 24px;
+            background: rgba(255,255,255,0.7); 
+            border-radius: 50%; 
+            width: 24px; 
             height: 24px;
         }
         
-        /* Réduction de la taille des étiquettes (tags) sur le mur pour faciliter l'accumulation */
         .marker.tech-tag {
             padding: 2px 5px; 
-            border-radius: 4px;
+            border-radius: 4px; 
             font-size: 0.65rem; 
             color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4); 
+            white-space: nowrap; 
             border: 1px solid rgba(255,255,255,0.8);
         }
         
@@ -559,9 +684,9 @@
         .marker.tech-mg { background-color: #475569; color: white; border-color: #e2e8f0; }
         .marker.tech-md { background-color: #475569; color: white; border-color: #e2e8f0; }
         .marker.tech-jete { background-color: #ec4899; color: white; border-color: #fbcfe8; }
+        .marker.tech-pied { background-color: #f59e0b; color: white; border-color: #fcd34d; }
+        .marker.tech-joker { background-color: #10b981; color: white; border: 2px dashed #6ee7b7; }
         .marker.tech-pme { background-color: #2b6cb0; }
-        .marker.tech-lolotte { background-color: #805ad5; }
-        .marker.tech-drapeau { background-color: #dd6b20; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
     </style>
@@ -591,7 +716,7 @@
             <div class="sidebar-section tools-section">
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
-                    <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">● Pastille</button>
+                    <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
                     <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
                     <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
                     <button class="tool-btn" id="tool-sd" onclick="setTool('sd')">🏁 SD (Départ)</button>
@@ -601,9 +726,9 @@
                     <button class="tool-btn" id="tool-zone" onclick="setTool('zone')">🎯 Zone</button>
                     <button class="tool-btn" id="tool-top" onclick="setTool('top')">🏆 TOP</button>
                     
+                    <button class="tool-btn" id="tool-pied" onclick="setTool('pied')">👟 Pied</button>
+                    <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
                     <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME</button>
-                    <button class="tool-btn" id="tool-lolotte" onclick="setTool('lolotte')">🦵 Lolotte</button>
-                    <button class="tool-btn" id="tool-drapeau" onclick="setTool('drapeau')">🚩 Drapeau</button>
                     <button class="tool-btn" id="tool-jete" onclick="setTool('jete')">🚀 Jeté</button>
                     
                     <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 CM</button>
@@ -618,7 +743,7 @@
             <!-- Zone Mise à jour -->
             <div class="sidebar-section update-section">
                 <h3>Mise à jour</h3>
-                <button class="tool-btn action-save-btn btn-full" onclick="saveCurrentRoute()" title="Écrase le tracé actuel avec vos modifications">💾 Enregistrer modifs</button>
+                <button class="tool-btn action-save-btn btn-full" onclick="saveCurrentRoute()">💾 Enregistrer modifs</button>
                 <button class="tool-btn action-delete-btn btn-full" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
                 <button class="tool-btn btn-full" onclick="generateQRCode()" style="background:#e0f2fe!important; color:#0369a1!important; border-color:#7dd3fc!important; margin-top:5px;">📱 Afficher QR Code Actif</button>
             </div>
@@ -627,14 +752,14 @@
             <div class="sidebar-section bloc-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
-                <button class="add-custom-btn btn-full" onclick="createCustomRoute('bloc')">+ Créer un Bloc</button>
+                <button class="add-custom-btn btn-full" onclick="openCreateModal('bloc')">+ Créer un Bloc</button>
             </div>
 
             <!-- Zone Indiv. / Élèves -->
             <div class="sidebar-section indiv-section">
                 <h3 class="indiv-title">Indiv. / Élèves</h3>
                 <div id="indiv-list" class="custom-list"></div>
-                <button class="add-custom-btn btn-full" onclick="createCustomRoute('individualise')">+ Créer un Élève</button>
+                <button class="add-custom-btn btn-full" onclick="openCreateModal('individualise')">+ Créer un Élève</button>
             </div>
 
             <div id="selection-panel" class="selection-panel">
@@ -660,34 +785,12 @@
         </div>
 
         <div class="right-sidebar">
-            <div class="institutional-zone">
-                <h3>⚖️ Zone Institutionnelle</h3>
-                <div class="inst-item">
-                    <b>Textes & Références :</b>
-                    <ul class="inst-list">
-                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo16/MENE1711773C.htm" target="_blank">Exigence de la sécurité dans les activités physiques de pleine nature dans le second degré</a></li>
-                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/protocoles-de-securite-escalade-finalpdf-100674.pdf" target="_blank">Protocoles de sécurité dans les activités physiques de pleine nature : escalade</a></li>
-                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/ra16c4epsca2escaladend567455pdf-78324.pdf" target="_blank">repères d’évaluation en Escalade</a></li>
-                        <li><a href="https://www.pedagogie.ac-aix-marseille.fr/jcms/c_103401/fr/gestion-des-epi-dans-les-eple" target="_blank">Gestion des EPI</a></li>
-                    </ul>
-                </div>
-                <div class="inst-item">
-                    <b>Plateformes & Outils :</b><br>
-                    🌐 <a href="https://appli.ac-aix-marseille.fr/ipackeps/professeur/" target="_blank">Accéder à iPackEPS</a><br>
-                    🌐 <a href="https://assistant-ia-eps-aix-m.streamlit.app/" target="_blank">Accéder au HUB EPS</a>
-                </div>
-                <div class="inst-item appn-alert">
-                    <b>Attention Déclaration APPN IpackEPS :</b><br>
-                    Procédure obligatoire si la sortie comporte <b>au moins 1 relai</b>.
-                </div>
-            </div>
-
             <!-- ESPACE FICHE DE SUIVI ESCALADE -->
             <div class="institutional-zone" style="background: #eef2ff; border-color: #6366f1;">
                 <h3 style="color: #4f46e5; border-color: #818cf8;">📊 Fiche de suivi escalade</h3>
                 <div class="inst-item" style="border-left-color: #6366f1;">
                     <b>Outil de gestion des séances :</b><br>
-                    Tableur automatisé pour le suivi des réussites et des cotations par élève.
+                    Tableur automatisé pour le suivi des réussites et des cotations.
                     <div style="margin-top: 8px; text-align: center;">
                         <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="display: inline-block; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
                     </div>
@@ -695,37 +798,36 @@
             </div>
 
             <div class="technical-zone">
-                <h3>📖 Zone Technique & Bloc</h3>
+                <h3>📖 Zone Technique & Pédagogique</h3>
+                
+                <div class="legend-category">🎓 Éléments Pédagogiques</div>
+
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header">👟 Prise de Pied Imposée</div>
+                    <div class="legend-body">
+                        <strong>Pied exclusif :</strong> Balise indiquant que cette prise ne peut être utilisée *que* par les pieds. Force le travail des appuis.
+                    </div>
+                </div>
+
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header">🎁 Prise Facilitante (Joker)</div>
+                    <div class="legend-body">
+                        <strong>Joker :</strong> Prise bonus ou intermédiaire. Un élève en difficulté peut l'utiliser, un élève expert devra l'ignorer pour complexifier le bloc.
+                    </div>
+                </div>
+
                 <div class="legend-category">🏆 Validation du Bloc</div>
 
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🏆 Le TOP (Arrivée)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <path d="M 30 40 Q 60 20 90 40 Q 95 60 60 60 Q 25 60 30 40 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M 45 65 L 50 45 M 75 65 L 70 45" stroke="#ca8a04" stroke-width="4" stroke-linecap="round"/>
-                                <circle cx="50" cy="45" r="6" fill="#ca8a04"/>
-                                <circle cx="70" cy="45" r="6" fill="#ca8a04"/>
-                            </svg>
-                        </div>
-                        <strong>Le TOP :</strong> Prise finale du bloc. Elle doit être tenue et contrôlée à <b>2 mains</b> pendant environ 3 secondes pour valider la réussite.
+                        <strong>Le TOP :</strong> Prise finale du bloc. Elle doit être tenue et contrôlée à <b>2 mains</b> pendant 3 secondes pour valider la réussite.
                     </div>
                 </div>
 
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🎯 La ZONE (Bonus)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <circle cx="60" cy="42" r="25" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-dasharray="6"/>
-                                <path d="M 45 42 Q 60 30 75 42 Q 70 50 50 50 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <line x1="60" y1="5" x2="60" y2="15" stroke="#0ea5e9" stroke-width="3"/>
-                                <line x1="60" y1="70" x2="60" y2="80" stroke="#0ea5e9" stroke-width="3"/>
-                                <line x1="5" y1="42" x2="15" y2="42" stroke="#0ea5e9" stroke-width="3"/>
-                                <line x1="105" y1="42" x2="115" y2="42" stroke="#0ea5e9" stroke-width="3"/>
-                            </svg>
-                        </div>
                         <strong>La Zone :</strong> Prise intermédiaire du bloc. Si l'élève la valide, il obtient des points bonus même s'il ne parvient pas au TOP.
                     </div>
                 </div>
@@ -733,14 +835,6 @@
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🖐️ Départ (MG / MD)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <path d="M 20 40 Q 35 25 50 40 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M 70 50 Q 85 35 100 50 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <text x="35" y="65" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">MG</text>
-                                <text x="85" y="75" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">MD</text>
-                            </svg>
-                        </div>
                         <strong>Prises de Départ :</strong> Impose la position initiale exacte des mains (Main Gauche / Main Droite) pour commencer le bloc (SD).
                     </div>
                 </div>
@@ -750,62 +844,13 @@
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">📌 PME (Repos)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <rect x="15" y="10" width="8" height="65" fill="#94a3b8"/>
-                                <circle cx="60" cy="30" r="8" fill="#2b6cb0"/>
-                                <line x1="60" y1="38" x2="60" y2="58" stroke="#2b6cb0" stroke-width="5" stroke-linecap="round"/>
-                                <line x1="60" y1="42" x2="23" y2="35" stroke="#2b6cb0" stroke-width="4" stroke-linecap="round"/>
-                                <path d="M60 58 Q 45 70 30 65" fill="none" stroke="#2b6cb0" stroke-width="4" stroke-linecap="round"/>
-                            </svg>
-                        </div>
                         <strong>PME :</strong> Bassin collé à la paroi, bras tendus, genoux fléchis pour se relâcher.
-                    </div>
-                </div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🦵 Lolotte</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <rect x="15" y="10" width="8" height="65" fill="#94a3b8"/>
-                                <circle cx="65" cy="25" r="8" fill="#805ad5"/>
-                                <line x1="65" y1="33" x2="60" y2="55" stroke="#805ad5" stroke-width="5" stroke-linecap="round"/>
-                                <path d="M60 55 Q 40 45 25 50" fill="none" stroke="#805ad5" stroke-width="4" stroke-linecap="round"/>
-                                <path d="M60 55 Q 70 70 55 70" fill="none" stroke="#805ad5" stroke-width="4" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <strong>Lolotte :</strong> Rotation interne du genou pour ramener le bassin près du mur.
-                    </div>
-                </div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🚩 Drapeau</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <rect x="15" y="10" width="8" height="65" fill="#94a3b8"/>
-                                <circle cx="55" cy="25" r="8" fill="#dd6b20"/>
-                                <line x1="55" y1="33" x2="52" y2="55" stroke="#dd6b20" stroke-width="5" stroke-linecap="round"/>
-                                <line x1="52" y1="55" x2="25" y2="65" stroke="#dd6b20" stroke-width="4" stroke-linecap="round"/>
-                                <line x1="52" y1="55" x2="90" y2="45" stroke="#dd6b20" stroke-width="3" stroke-dasharray="3"/>
-                            </svg>
-                        </div>
-                        <strong>Drapeau :</strong> Jambe libre en opposition latérale pour contrer un déséquilibre.
                     </div>
                 </div>
 
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🔄 Chang. de Main (CM)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <circle cx="60" cy="42" r="20" fill="none" stroke="#0d9488" stroke-width="2"/>
-                                <path d="M45 42 L 75 42" stroke="#0d9488" stroke-width="3"/>
-                                <polygon points="75,42 68,38 68,46" fill="#0d9488"/>
-                                <text x="60" y="30" font-size="10" font-weight="bold" fill="#0d9488" text-anchor="middle">PERMUTATION</text>
-                            </svg>
-                        </div>
                         <strong>CM :</strong> Permutation des mains sur une même prise pour libérer l'emplacement.
                     </div>
                 </div>
@@ -813,14 +858,6 @@
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">👟 Chang. de Pied (CP)</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <rect x="35" y="55" width="50" height="12" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M50 35 L 50 55" stroke="#16a34a" stroke-width="4"/>
-                                <path d="M70 25 L 70 55" stroke="#15803d" stroke-width="4"/>
-                                <path d="M52 42 Q 60 35 68 42" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="2"/>
-                            </svg>
-                        </div>
                         <strong>CP :</strong> Substitution ou pivot des pieds sur la même prise pour réorienter le corps.
                     </div>
                 </div>
@@ -828,70 +865,7 @@
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🚀 Le Jeté</div>
                     <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <circle cx="30" cy="60" r="6" fill="#2563eb"/>
-                                <circle cx="90" cy="25" r="7" fill="#16a34a"/>
-                                <path d="M 36 55 Q 60 10 83 22" fill="none" stroke="#2563eb" stroke-width="3" stroke-dasharray="4"/>
-                                <polygon points="83,22 75,20 78,27" fill="#2563eb"/>
-                            </svg>
-                        </div>
                         <strong>Jeté :</strong> Mouvement dynamique avec élan et suspension aérienne vers une prise lointaine. Indiqué par la balise fusée.
-                    </div>
-                </div>
-
-                <div class="legend-category">🪨 Les Types de Prises</div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🪨 Le Bac</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <path d="M30 45 Q 60 20 90 45 Q 105 70 15 70 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="2"/>
-                                <path d="M40 45 Q 60 30 80 45" fill="none" stroke="#334155" stroke-width="3"/>
-                            </svg>
-                        </div>
-                        <strong>Bac :</strong> Prise creuse et confortable permettant une préhension globale sans fatigue.
-                    </div>
-                </div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">📏 La Réglette</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <rect x="25" y="40" width="70" height="12" rx="3" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M 45 28 L 45 40 M 60 28 L 60 40 M 75 28 L 75 40" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <strong>Réglette :</strong> Prise plate et horizontale sollicitant la force des doigts.
-                    </div>
-                </div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🤏 La Pince</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <ellipse cx="60" cy="42" rx="22" ry="16" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M 42 25 L 42 58 M 78 25 L 78 58" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
-                            </svg>
-                        </div>
-                        <strong>Pince :</strong> Prise serrée en tenaille par opposition entre le pouce et les doigts.
-                    </div>
-                </div>
-
-                <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🔄 L'Inversée</div>
-                    <div class="legend-body">
-                        <div class="legend-illustration">
-                            <svg viewBox="0 0 120 85" width="105" height="75">
-                                <path d="M35 35 L 60 60 L 85 35 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                                <path d="M60 20 L 60 45" stroke="#e11d48" stroke-width="4"/>
-                                <polygon points="60,45 56,37 64,37" fill="#e11d48"/>
-                            </svg>
-                        </div>
-                        <strong>Inversée :</strong> Prise orientée vers le bas nécessitant une traction vers le haut.
                     </div>
                 </div>
             </div>
@@ -900,25 +874,69 @@
 
     </div>
 
+    <!-- Modal de Création de Bloc Pédagogique -->
+    <div id="create-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="create-modal-title">Créer un Bloc</h2>
+            <input type="hidden" id="create-type">
+            
+            <div class="form-group">
+                <label>Nom :</label>
+                <input type="text" id="create-name" placeholder="Ex: Bloc Échauffement, ou Jean Dupont">
+            </div>
+            
+            <div id="bloc-options">
+                <div class="form-group">
+                    <label>Difficulté (Couleur du tracé) :</label>
+                    <select id="create-grade">
+                        <option value="Jaune">🟡 Jaune (Très facile)</option>
+                        <option value="Vert">🟢 Vert (Facile)</option>
+                        <option value="Bleu">🔵 Bleu (Moyen)</option>
+                        <option value="Rouge">🔴 Rouge (Difficile)</option>
+                        <option value="Noir">⚫ Noir (Expert)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Gabarit adapté :</label>
+                    <select id="create-height">
+                        <option value="Toutes tailles">Toutes tailles</option>
+                        <option value="< 1m60 (6ème/5ème)">< 1m60 (6ème/5ème)</option>
+                        <option value="> 1m60 (4ème/3ème)">> 1m60 (4ème/3ème)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Thème du parcours :</label>
+                    <select id="create-theme">
+                        <option value="Libre">Libre / Autre</option>
+                        <option value="Charger ses appuis pieds">Charger ses appuis pieds</option>
+                        <option value="Mouvement dynamique et coord.">Mouvement dynamique et coordination</option>
+                        <option value="Positionnement / Orientation">Position du corps / Orientation</option>
+                        <option value="Préhension différentes">Préhension de prises différentes</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 20px;">
+                <button onclick="document.getElementById('create-modal').style.display='none'" style="background-color: #6c757d; margin-right: 10px;">Annuler</button>
+                <button onclick="confirmCreateRoute()" style="background-color: #28a745;">Valider</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Configuration -->
-    <div id="config-modal">
+    <div id="config-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>⚙️ Configuration de l'établissement</h2>
             
             <div class="form-group">
                 <label for="wallImagesInput">1. Importer les photos des secteurs (Jusqu'à 20 photos) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
-                <div class="help-text">Le script liera automatiquement la photo aux voies si son nom contient le numéro des voies (ex: "voies 1 2 3.jpg").</div>
             </div>
 
             <div class="form-group">
-                <label>2. Modèle de tableau Excel :</label>
-                <button class="template-btn" onclick="downloadExcelTemplate()">📥 Télécharger le modèle Excel type</button>
-                <div class="help-text">Colonnes simples : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>.</div>
-            </div>
-
-            <div class="form-group">
-                <label for="excelInput">3. Importer le fichier Excel rempli (.xlsx ou .csv) :</label>
+                <label for="excelInput">2. Importer le fichier Excel rempli (.xlsx ou .csv) :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
             </div>
 
@@ -938,7 +956,7 @@
     </div>
 
     <!-- Modal QR Code -->
-    <div id="qr-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center;">
+    <div id="qr-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center;">
             <h2 id="qr-modal-title" style="color: #0369a1; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
             <p style="font-size: 0.9rem; color: #475569; margin-top: 0;">L'élève peut scanner ce code pour afficher ce tracé en lecture seule.</p>
@@ -959,6 +977,15 @@
 
         const DB_NAME = "EPS_Climbing_DB";
         const STORE_NAME = "configStore";
+
+        const blocColorMap = {
+            "Jaune": "#eab308",
+            "Vert": "#22c55e",
+            "Bleu": "#3b82f6",
+            "Rouge": "#ef4444",
+            "Noir": "#1f2937",
+            "Défaut": "#0284c7"
+        };
 
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -996,7 +1023,12 @@
             });
         }
 
-        let schoolConfig = { images: [], imageNames: [], routes: [], customRoutes: [] };
+        let schoolConfig = { 
+            images: [], 
+            imageNames: [], 
+            routes: [], 
+            customRoutes: [] 
+        };
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
@@ -1015,58 +1047,65 @@
             const allBanners = document.querySelectorAll('.legend-banner');
             const isOpen = element.classList.contains('active');
             allBanners.forEach(b => b.classList.remove('active'));
-            if (!isOpen) element.classList.add('active');
-        }
-
-        async function saveConfig() {
-            try {
-                await saveToDB("school_config_master", schoolConfig);
-            } catch (err) {
-                console.error(err);
+            if (!isOpen) {
+                element.classList.add('active');
             }
         }
 
-        // CHARGEMENT DIRECT DE LA PHOTO "voies 1 2 3.jpg" SITUÉE À LA RACINE GITHUB
+        async function saveConfig() {
+            try { 
+                await saveToDB("school_config_master", schoolConfig); 
+            } catch (err) { 
+                console.error(err); 
+            }
+        }
+
         async function loadDemoMode() {
             const demoPhotoUrl = "voies 1 2 3.jpg";
-
             schoolConfig = {
-                images: [demoPhotoUrl],
+                images: [demoPhotoUrl], 
                 imageNames: ["voies 1 2 3.jpg"],
                 routes: [
-                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoPhotoUrl },
-                    { id: "demo_r2", secteur: 1, voie: 2, cotation: "5B", couleur: "bleu", hexColor: "#00BFFF", imageSrc: demoPhotoUrl },
-                    { id: "demo_r3", secteur: 1, voie: 3, cotation: "6A", couleur: "rouge", hexColor: "#FF4500", imageSrc: demoPhotoUrl }
+                    { id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#FFD700", imageSrc: demoPhotoUrl }
                 ],
                 customRoutes: []
             };
-            
             await saveConfig();
-            clearMarkersDOM();
-            activeMarkers = [];
+            
+            clearMarkersDOM(); 
+            activeMarkers = []; 
             selectMarker(null);
-            currentRouteId = null;
+            
+            currentRouteId = null; 
             routeSelect.value = "";
-            populateRouteDropdown();
+            
+            populateRouteDropdown(); 
             renderCustomLists();
+            
             img.src = schoolConfig.images[0];
-            activeBanner.style.background = "#d4edda";
+            activeBanner.style.background = "#d4edda"; 
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Mode démo actif : Photo 'voies 1 2 3.jpg' chargée ! Sélectionnez une voie.";
+            activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie.";
         }
 
         const colorMap = {
-            "jaune": "#FFD700", "bleu": "#00BFFF", "bleue": "#00BFFF",
-            "noir": "#212121", "noire": "#212121", "vert": "#32CD32", "verte": "#32CD32",
-            "rouge": "#FF4500", "violet": "#9C27B0", "violette": "#9C27B0"
+            "jaune": "#eab308", 
+            "bleu": "#3b82f6", 
+            "bleue": "#3b82f6",
+            "noir": "#1f2937", 
+            "noire": "#1f2937", 
+            "vert": "#22c55e", 
+            "verte": "#22c55e",
+            "rouge": "#ef4444", 
+            "violet": "#9C27B0", 
+            "violette": "#9C27B0"
         };
 
         async function initApp() {
-            // NOUVEAU : DÉTECTION DU MODE ÉLÈVE (QR CODE)
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'eleve') {
                 setupStudentMode(urlParams);
-                return; // Arrête l'initialisation prof, on reste en mode élève
+                return;
             }
 
             let savedConfig = null;
@@ -1076,13 +1115,10 @@
                 console.error(e); 
             }
 
-            if (window.PRELOADED_CONFIG) {
-                schoolConfig = window.PRELOADED_CONFIG;
-                await saveConfig();
-            } else if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
+            if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
                 schoolConfig = savedConfig;
             } else {
-                await loadDemoMode();
+                await loadDemoMode(); 
                 return;
             }
 
@@ -1093,13 +1129,11 @@
             populateRouteDropdown();
             renderCustomLists();
 
-            if (schoolConfig.images && schoolConfig.images.length > 0) {
-                if (!currentRouteId) {
-                    img.src = schoolConfig.images[0];
-                    activeBanner.style.background = "#d4edda";
-                    activeBanner.style.color = "#155724";
-                    activeBanner.textContent = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
-                }
+            if (schoolConfig.images && schoolConfig.images.length > 0 && !currentRouteId) {
+                img.src = schoolConfig.images[0];
+                activeBanner.style.background = "#d4edda"; 
+                activeBanner.style.color = "#155724";
+                activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
             }
         }
 
@@ -1118,34 +1152,39 @@
         function renderCustomLists() {
             const blocListContainer = document.getElementById('bloc-list');
             const indivListContainer = document.getElementById('indiv-list');
-            blocListContainer.innerHTML = '';
+            
+            blocListContainer.innerHTML = ''; 
             indivListContainer.innerHTML = '';
-
-            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
 
             schoolConfig.customRoutes.forEach(r => {
                 const item = document.createElement('div');
                 item.className = 'custom-item';
-                if (r.id === currentRouteId) item.classList.add('active-custom');
+                if (r.id === currentRouteId) {
+                    item.classList.add('active-custom');
+                }
                 
-                item.onclick = (e) => { e.stopPropagation(); selectCustomRoute(r.id); };
+                item.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    selectCustomRoute(r.id); 
+                };
 
                 const textSpan = document.createElement('span');
                 textSpan.textContent = r.name;
-                textSpan.onclick = (e) => { e.stopPropagation(); selectCustomRoute(r.id); };
+                textSpan.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    selectCustomRoute(r.id); 
+                };
 
-                // Conteneur pour les boutons d'actions
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'custom-item-actions';
 
-                // BOUTON QR CODE DANS LA LISTE
                 const qrBtn = document.createElement('button');
                 qrBtn.className = 'qr-custom-btn';
                 qrBtn.textContent = '📱';
-                qrBtn.title = 'Afficher le QR Code de ce tracé';
-                qrBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    generateQRCode(r.id);
+                qrBtn.title = 'Afficher le QR Code';
+                qrBtn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    generateQRCode(r.id); 
                 };
 
                 const delBtn = document.createElement('button');
@@ -1157,21 +1196,20 @@
                     if (confirm(`Voulez-vous vraiment supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
                         localStorage.removeItem(`eps_route_${r.id}`);
-                        
                         schoolConfig.localUpdate = Date.now();
                         await saveConfig();
-
+                        
                         if (currentRouteId === r.id) {
-                            currentRouteId = null;
-                            clearMarkersDOM();
-                            activeMarkers = [];
+                            currentRouteId = null; 
+                            clearMarkersDOM(); 
+                            activeMarkers = []; 
                             selectMarker(null);
-                            if (schoolConfig.images && schoolConfig.images.length > 0) {
+                            if (schoolConfig.images.length > 0) {
                                 img.src = schoolConfig.images[0];
                             }
-                            activeBanner.style.background = "#d4edda";
+                            activeBanner.style.background = "#d4edda"; 
                             activeBanner.style.color = "#155724";
-                            activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
+                            activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
                         }
                         renderCustomLists();
                     }
@@ -1179,7 +1217,6 @@
 
                 actionsDiv.appendChild(qrBtn);
                 actionsDiv.appendChild(delBtn);
-
                 item.appendChild(textSpan);
                 item.appendChild(actionsDiv);
 
@@ -1191,8 +1228,14 @@
             });
         }
 
-        function openConfigModal() { document.getElementById('config-modal').style.display = 'flex'; }
-        function closeConfigModal() { document.getElementById('config-modal').style.display = 'none'; initApp(); }
+        function openConfigModal() { 
+            document.getElementById('config-modal').style.display = 'flex'; 
+        }
+        
+        function closeConfigModal() { 
+            document.getElementById('config-modal').style.display = 'none'; 
+            initApp(); 
+        }
 
         function setTool(tool) {
             currentTool = tool;
@@ -1200,61 +1243,85 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        async function createCustomRoute(type) {
-            let labelType = (type === 'individualise') ? "nom de l'élève" : "nom du bloc de travail";
-            let defaultName = type === 'individualise' ? `Élève ${schoolConfig.customRoutes.filter(r=>r.type==='individualise').length + 1}` : `Bloc ${schoolConfig.customRoutes.filter(r=>r.type!=='individualise').length + 1}`;
+        function openCreateModal(type) {
+            document.getElementById('create-type').value = type;
+            document.getElementById('create-name').value = "";
             
-            let customName = prompt(`Nom du ${labelType} :`, defaultName);
-            if (customName === null) return;
-            customName = customName.trim() === "" ? defaultName : customName.trim();
+            let title = type === 'individualise' ? "Créer un Élève" : "Créer un Bloc";
+            document.getElementById('create-modal-title').textContent = title;
+            document.getElementById('bloc-options').style.display = type === 'bloc' ? 'block' : 'none';
+            document.getElementById('create-modal').style.display = 'flex';
+        }
 
-            let activeImageSrc = "";
-            if (img.src && img.src !== window.location.href && img.src !== "") {
-                activeImageSrc = img.src;
-            } else if (schoolConfig.images && schoolConfig.images.length > 0) {
-                activeImageSrc = schoolConfig.images[0];
+        async function confirmCreateRoute() {
+            let type = document.getElementById('create-type').value;
+            let customName = document.getElementById('create-name').value.trim();
+            
+            if (!customName) {
+                alert("Veuillez entrer un nom.");
+                return;
             }
 
+            let activeImageSrc = (img.src && img.src !== window.location.href && img.src !== "") ? img.src : (schoolConfig.images[0] || "");
             const routeId = `custom_${Date.now()}`;
+            
+            let routeColor = blocColorMap["Défaut"];
+            let routeGrade = "", routeHeight = "", routeTheme = "";
+
+            if (type === 'bloc') {
+                routeGrade = document.getElementById('create-grade').value;
+                routeHeight = document.getElementById('create-height').value;
+                routeTheme = document.getElementById('create-theme').value;
+                
+                let baseColorName = routeGrade.split(' ')[0];
+                routeColor = blocColorMap[baseColorName] || blocColorMap["Défaut"];
+            } else {
+                routeColor = "#0284c7";
+            }
+
             const newRoute = {
-                id: routeId, name: customName, type: type,
-                color: (type === 'individualise') ? "#0284c7" : "#d97706",
-                imageSrc: activeImageSrc
+                id: routeId, 
+                name: customName, 
+                type: type,
+                color: routeColor, 
+                imageSrc: activeImageSrc,
+                grade: routeGrade, 
+                height: routeHeight, 
+                theme: routeTheme
             };
 
-            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
             schoolConfig.customRoutes.push(newRoute);
-            
             schoolConfig.localUpdate = Date.now();
             await saveConfig();
 
             if (activeMarkers.length > 0) {
-                const pointsToSave = activeMarkers.map(m => ({
-                    x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
+                const pointsToSave = activeMarkers.map(m => ({ 
+                    x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale 
                 }));
                 localStorage.setItem(`eps_route_${routeId}`, JSON.stringify(pointsToSave));
             }
 
+            document.getElementById('create-modal').style.display = 'none';
             renderCustomLists();
             hasUnsavedChanges = false;
             
-            alert(`✅ Parfait ! Le tracé "${customName}" a bien été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
+            alert(`✅ Parfait ! Le tracé "${customName}" a été sauvegardé.\nL'écran va être nettoyé pour votre prochain exercice.`);
             
-            clearMarkersDOM();
-            activeMarkers = [];
+            clearMarkersDOM(); 
+            activeMarkers = []; 
             selectMarker(null);
-            currentRouteId = null;
+            currentRouteId = null; 
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
-            activeBanner.style.background = "#d4edda";
+            activeBanner.style.background = "#d4edda"; 
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Tracé sauvegardé ! Sélectionnez une voie ou créez un nouveau bloc.";
+            activeBanner.innerHTML = "✨ Tracé sauvegardé ! Sélectionnez une voie ou créez un nouveau bloc.";
         }
 
         function selectCustomRoute(routeId) {
             if (hasUnsavedChanges) {
-                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de tracé et les perdre ?")) {
+                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer et les perdre ?")) {
                     return;
                 }
             }
@@ -1264,41 +1331,47 @@
             if (!found) return;
 
             currentRouteId = found.id;
-            currentRouteColor = (found.type === 'individualise') ? "#0284c7" : "#d97706";
+            currentRouteColor = found.color || "#d97706";
             
-            const targetImgSrc = found.imageSrc || (schoolConfig.images && schoolConfig.images[0]) || "";
-            if (targetImgSrc) img.src = targetImgSrc;
+            const targetImgSrc = found.imageSrc || schoolConfig.images[0] || "";
+            if (targetImgSrc) {
+                img.src = targetImgSrc;
+            }
             
-            isFilterActive = false;
-            const magicBtn = document.getElementById('magic-filter-btn');
-            if (magicBtn) magicBtn.classList.remove('active-magic');
+            isFilterActive = false; 
+            document.getElementById('magic-filter-btn').classList.remove('active-magic');
             selectMarker(null);
 
             let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
             let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
-
-            activeBanner.style.background = bannerBg;
+            
+            activeBanner.style.background = bannerBg; 
             activeBanner.style.color = bannerColor;
-            activeBanner.textContent = `🎯 ${found.type === 'individualise' ? 'Élève' : 'Bloc'} : ${found.name}`;
+
+            if (found.type === 'bloc') {
+                activeBanner.innerHTML = `🎯 <b>Bloc : ${found.name}</b><br><span style="font-size:0.8rem; font-weight:normal;">Niveau: ${found.grade.split(' ')[0] || '?'} | Gabarit: ${found.height || '?'} | Thème: ${found.theme || '?'}</span>`;
+            } else {
+                activeBanner.innerHTML = `🎯 <b>Élève : ${found.name}</b>`;
+            }
 
             renderCustomLists();
             loadRouteMarkers(currentRouteId);
         }
 
         function toggleColorFilter() {
-            if (!currentRouteId) {
-                alert("Veuillez d'abord sélectionner une voie ou un bloc !");
-                return;
+            if (!currentRouteId) { 
+                alert("Veuillez sélectionner une voie ou un bloc !"); 
+                return; 
             }
             isFilterActive = !isFilterActive;
             const btn = document.getElementById('magic-filter-btn');
             
-            if (isFilterActive) {
-                btn.classList.add('active-magic');
-                applyColorFilter();
-            } else {
-                btn.classList.remove('active-magic');
-                restoreOriginalImage();
+            if (isFilterActive) { 
+                btn.classList.add('active-magic'); 
+                applyColorFilter(); 
+            } else { 
+                btn.classList.remove('active-magic'); 
+                restoreOriginalImage(); 
             }
         }
 
@@ -1320,45 +1393,40 @@
             return found ? found.couleur.toLowerCase() : "";
         }
 
-        function restoreOriginalImage() {
-            let src = getBaseImageSource();
-            if (src) img.src = src;
+        function restoreOriginalImage() { 
+            let src = getBaseImageSource(); 
+            if (src) img.src = src; 
         }
 
         function applyColorFilter() {
-            let src = getBaseImageSource();
+            let src = getBaseImageSource(); 
             if (!src) return;
-
+            
             let colorName = getCurrentColorName();
             if (!colorName) {
-                alert("Ce filtre magique s'applique sur les voies officielles colorées (jaune, bleu, rouge, vert, noir, violet).");
-                isFilterActive = false;
-                document.getElementById('magic-filter-btn').classList.remove('active-magic');
+                alert("Ce filtre magique s'applique sur les voies officielles colorées.");
+                isFilterActive = false; 
+                document.getElementById('magic-filter-btn').classList.remove('active-magic'); 
                 return;
             }
-
-            const imageObj = new Image();
-            imageObj.crossOrigin = "Anonymous"; // Évite les soucis de cache
+            
+            const imageObj = new Image(); 
+            imageObj.crossOrigin = "Anonymous";
             imageObj.onload = function() {
-                const canvas = document.createElement('canvas');
-                canvas.width = imageObj.width;
+                const canvas = document.createElement('canvas'); 
+                canvas.width = imageObj.width; 
                 canvas.height = imageObj.height;
-                const ctx = canvas.getContext('2d');
+                const ctx = canvas.getContext('2d'); 
                 ctx.drawImage(imageObj, 0, 0);
-
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); 
                 const data = imgData.data;
 
                 for (let i = 0; i < data.length; i += 4) {
-                    let r = data[i]; 
-                    let g = data[i + 1]; 
-                    let b = data[i + 2];
-                    
-                    // Conversion mathématique précise en HSL (Teinte, Saturation, Lumière)
+                    let r = data[i], g = data[i + 1], b = data[i + 2];
                     let rNorm = r / 255, gNorm = g / 255, bNorm = b / 255;
                     let max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
-                    let diff = max - min;
-                    
+                    let diff = max - min; 
                     let l = (max + min) / 2;
                     let s = diff === 0 ? 0 : diff / (1 - Math.abs(2 * l - 1));
                     let h = 0;
@@ -1371,7 +1439,6 @@
                     if (h < 0) h += 360;
 
                     let match = false;
-                    // Seuils ajustés pour capter la magnésie (s>0.25) et tolérer les ombres (l>0.15)
                     if (colorName.includes("jaune") && h >= 35 && h <= 75 && s > 0.25 && l > 0.2) match = true;
                     else if (colorName.includes("bleu") && h >= 175 && h <= 260 && s > 0.25 && l > 0.15) match = true;
                     else if (colorName.includes("rouge") && (h <= 25 || h >= 335) && s > 0.25 && l > 0.15) match = true;
@@ -1380,45 +1447,47 @@
                     else if (colorName.includes("noir") && l < 0.25 && s < 0.2) match = true;
 
                     if (!match) {
-                        // On crée un fond GRIS PASTEL (Luminance + éclaircissement)
                         let luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-                        let grey = (luma * 0.4) + 140; // Rend le mur presque blanc/gris clair
+                        let grey = (luma * 0.4) + 140; 
                         data[i] = grey; 
                         data[i + 1] = grey; 
                         data[i + 2] = grey;
                     } else {
-                        // On booste de 20% l'éclat des prises trouvées pour contrer la magnésie
-                        data[i] = Math.min(255, r * 1.2);
-                        data[i + 1] = Math.min(255, g * 1.2);
+                        data[i] = Math.min(255, r * 1.2); 
+                        data[i + 1] = Math.min(255, g * 1.2); 
                         data[i + 2] = Math.min(255, b * 1.2);
                     }
                 }
-                ctx.putImageData(imgData, 0, 0);
+                ctx.putImageData(imgData, 0, 0); 
                 img.src = canvas.toDataURL('image/jpeg', 0.9);
             };
             imageObj.src = src;
         }
 
         function placeMarker(event) {
-            if (!currentRouteId) {
-                alert("Veuillez sélectionner une Voie ou un Bloc avant de dessiner !");
-                return;
+            if (!currentRouteId) { 
+                alert("Veuillez sélectionner une Voie ou un Bloc !"); 
+                return; 
             }
-            if (event.target.classList.contains('marker')) return;
-            if (currentTool === 'eraser') return;
+            if (event.target.classList.contains('marker') || currentTool === 'eraser') return;
 
             const rect = img.getBoundingClientRect();
             const x = ((event.clientX - rect.left) / rect.width) * 100;
             const y = ((event.clientY - rect.top) / rect.height) * 100;
+            
             if (x < 0 || x > 100 || y < 0 || y > 100) return;
 
-            const newMarkerData = {
-                x: x, y: y, type: currentTool, color: currentRouteColor, rotation: 0, scale: 1
-            };
-
-            activeMarkers.push(newMarkerData);
-            hasUnsavedChanges = true;
-            renderMarkers();
+            activeMarkers.push({ 
+                x: x, 
+                y: y, 
+                type: currentTool, 
+                color: currentRouteColor, 
+                rotation: 0, 
+                scale: 1 
+            });
+            
+            hasUnsavedChanges = true; 
+            renderMarkers(); 
             selectMarker(activeMarkers.length - 1);
         }
 
@@ -1427,8 +1496,7 @@
             activeMarkers.forEach((p, index) => {
                 const marker = document.createElement('div');
                 
-                // Inclut maintenant toutes les nouvelles balises techniques
-                if (['sd', 'top', 'zone', 'mg', 'md', 'jete', 'pme', 'lolotte', 'drapeau', 'cm', 'cp'].includes(p.type)) {
+                if (['sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
@@ -1437,41 +1505,44 @@
 
                 if (index === selectedMarkerIndex) marker.classList.add('selected');
 
-                marker.style.left = p.x + '%';
+                marker.style.left = p.x + '%'; 
                 marker.style.top = p.y + '%';
-                let rot = p.rotation || 0; let scl = p.scale || 1;
+                let rot = p.rotation || 0, scl = p.scale || 1;
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
-                if (p.type === 'dot') marker.style.backgroundColor = p.color;
-                else if (p.type === 'arrow') marker.innerHTML = '⬆️';
-                else if (p.type === 'cross') marker.innerHTML = '❌';
+                if (p.type === 'dot') {
+                    marker.style.borderColor = p.color; // Applique la couleur sur l'anneau
+                } else if (p.type === 'arrow') {
+                    marker.innerHTML = '⬆️';
+                } else if (p.type === 'cross') {
+                    marker.innerHTML = '❌';
+                }
 
                 marker.onpointerdown = (e) => {
                     if (currentTool === 'eraser') {
-                        e.stopPropagation();
+                        e.stopPropagation(); 
                         activeMarkers.splice(index, 1);
                         hasUnsavedChanges = true; 
-                        renderMarkers();
+                        renderMarkers(); 
                         selectMarker(null);
-                    } else {
-                        startDrag(e, index);
+                    } else { 
+                        startDrag(e, index); 
                     }
                 };
                 
-                container.appendChild(marker);
+                container.appendChild(marker); 
                 p.element = marker;
             });
         }
 
-        function clearMarkersDOM() {
-            const existingMarkers = container.querySelectorAll('.marker');
-            existingMarkers.forEach(el => el.remove());
+        function clearMarkersDOM() { 
+            container.querySelectorAll('.marker').forEach(el => el.remove()); 
         }
 
         function selectMarker(index) {
             selectedMarkerIndex = index;
             document.querySelectorAll('.marker').forEach((el, idx) => {
-                if (idx === index) el.classList.add('selected');
+                if (idx === index) el.classList.add('selected'); 
                 else el.classList.remove('selected');
             });
             selectionPanel.style.display = (index !== null && index >= 0 && currentTool !== 'eraser') ? 'block' : 'none';
@@ -1479,109 +1550,91 @@
 
         let draggingIndex = null;
         function startDrag(e, index) {
-            e.stopPropagation();
-            selectMarker(index);
+            e.stopPropagation(); 
+            selectMarker(index); 
             draggingIndex = index;
-
+            
             const onMove = (moveEvent) => {
                 if (draggingIndex === null) return;
                 const rect = img.getBoundingClientRect();
                 const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
                 const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
-
                 if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
-                    activeMarkers[draggingIndex].x = x;
+                    activeMarkers[draggingIndex].x = x; 
                     activeMarkers[draggingIndex].y = y;
                     hasUnsavedChanges = true; 
-                    renderMarkers();
+                    renderMarkers(); 
                     selectMarker(draggingIndex);
                 }
             };
-            const onUp = () => {
-                draggingIndex = null;
-                window.removeEventListener('pointermove', onMove);
-                window.removeEventListener('pointerup', onUp);
+            const onUp = () => { 
+                draggingIndex = null; 
+                window.removeEventListener('pointermove', onMove); 
+                window.removeEventListener('pointerup', onUp); 
             };
-            window.addEventListener('pointermove', onMove);
+            window.addEventListener('pointermove', onMove); 
             window.addEventListener('pointerup', onUp);
         }
 
         function rotateSelected(angleDelta) {
-            if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
+            if (selectedMarkerIndex === null) return;
             activeMarkers[selectedMarkerIndex].rotation = (activeMarkers[selectedMarkerIndex].rotation || 0) + angleDelta;
-            hasUnsavedChanges = true;
-            renderMarkers(); selectMarker(selectedMarkerIndex);
+            hasUnsavedChanges = true; 
+            renderMarkers(); 
+            selectMarker(selectedMarkerIndex);
         }
-
+        
         function scaleSelected(factor) {
-            if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
+            if (selectedMarkerIndex === null) return;
             let currentScale = activeMarkers[selectedMarkerIndex].scale || 1;
             activeMarkers[selectedMarkerIndex].scale = Math.max(0.5, Math.min(3, currentScale * factor));
-            hasUnsavedChanges = true;
-            renderMarkers(); selectMarker(selectedMarkerIndex);
+            hasUnsavedChanges = true; 
+            renderMarkers(); 
+            selectMarker(selectedMarkerIndex);
         }
-
+        
         function deleteSelected() {
-            if (selectedMarkerIndex === null || !activeMarkers[selectedMarkerIndex]) return;
+            if (selectedMarkerIndex === null) return;
             activeMarkers.splice(selectedMarkerIndex, 1);
-            hasUnsavedChanges = true;
-            selectMarker(null); renderMarkers();
-        }
-
-        function downloadExcelTemplate() {
-            const templateData = [
-                { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
-                { Secteur: 2, Voie: 2, Cotation: "6A", Couleur: "bleue" },
-                { Secteur: 3, Voie: 3, Cotation: "6B", Couleur: "noire" },
-                { Secteur: 4, Voie: 4, Cotation: "5B", Couleur: "verte" },
-                { Secteur: 5, Voie: 5, Cotation: "5C", Couleur: "rouge" }
-            ];
-            const worksheet = XLSX.utils.json_to_sheet(templateData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Voies EPS");
-            XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
+            hasUnsavedChanges = true; 
+            selectMarker(null); 
+            renderMarkers();
         }
 
         function handleImagesUpload(input) {
-            if (input.files.length > 20) {
-                alert("❌ Erreur : Le nombre de photos est limité à 20 maximum !");
-                input.value = ""; return;
+            if (input.files.length > 20) { 
+                alert("❌ Limite de 20 photos max !"); 
+                input.value = ""; 
+                return; 
             }
-
-            let loadedImages = [];
-            let loadedNames = [];
-            let filesProcessed = 0;
+            let loadedImages = [], loadedNames = [], filesProcessed = 0;
             const files = Array.from(input.files).sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-
+            
             files.forEach((file, index) => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const imgObj = new Image();
                     imgObj.onload = async function() {
                         const canvas = document.createElement('canvas');
-                        let width = imgObj.width; let height = imgObj.height;
-                        const maxWidth = 1200; 
-                        
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
+                        let width = imgObj.width, height = imgObj.height, maxWidth = 1200; 
+                        if (width > maxWidth) { 
+                            height = Math.round((height * maxWidth) / width); 
+                            width = maxWidth; 
                         }
-                        canvas.width = width; canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(imgObj, 0, 0, width, height);
+                        canvas.width = width; 
+                        canvas.height = height;
+                        canvas.getContext('2d').drawImage(imgObj, 0, 0, width, height);
                         
-                        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.80);
-                        
-                        loadedImages[index] = compressedDataUrl;
-                        loadedNames[index] = file.name;
+                        loadedImages[index] = canvas.toDataURL('image/jpeg', 0.80);
+                        loadedNames[index] = file.name; 
                         filesProcessed++;
                         
                         if (filesProcessed === files.length) {
-                            schoolConfig.images = loadedImages;
+                            schoolConfig.images = loadedImages; 
                             schoolConfig.imageNames = loadedNames;
-                            schoolConfig.localUpdate = Date.now();
+                            schoolConfig.localUpdate = Date.now(); 
                             await saveConfig();
-                            alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`);
+                            alert(`✅ ${loadedImages.length} photo(s) de secteurs enregistrée(s) avec succès !`); 
                             initApp();
                         }
                     };
@@ -1592,27 +1645,26 @@
         }
 
         function handleExcelUpload(input) {
-            if (typeof XLSX === 'undefined') {
-                alert("❌ Erreur : Module Excel introuvable. Vérifiez votre connexion Internet !");
-                input.value = ""; return;
+            if (typeof XLSX === 'undefined') { 
+                alert("❌ Module Excel introuvable."); 
+                input.value = ""; 
+                return; 
             }
-
-            const file = input.files[0];
+            const file = input.files[0]; 
             if (!file) return;
-
-            if (!schoolConfig.images || schoolConfig.images.length === 0) {
-                alert("❌ Veuillez d'abord importer les photos des secteurs avant le fichier Excel !");
-                input.value = ""; return;
+            if (!schoolConfig.images || schoolConfig.images.length === 0) { 
+                alert("❌ Importer d'abord les photos !"); 
+                input.value = ""; 
+                return; 
             }
 
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(worksheet);
-
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 let parsedRoutes = [];
+
                 rows.forEach((row, idx) => {
                     let secteurNum = parseInt(row.Secteur || row.secteur || 1);
                     let voieNum = row.Voie || row.voie || (idx + 1);
@@ -1620,190 +1672,185 @@
                     let couleurInput = (row.Couleur || row.couleur || "jaune").trim().toLowerCase();
                     let hexColor = colorMap[couleurInput] || "#FFD700";
                     
-                    let targetImage = "";
-                    let secteurNumStr = secteurNum.toString();
-                    let voieNumStr = voieNum.toString();
-                    let vNum = parseInt(voieNum);
+                    let targetImage = "", secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
                     
                     if (schoolConfig.imageNames && schoolConfig.imageNames.length === schoolConfig.images.length) {
                         let matchedIndex = schoolConfig.imageNames.findIndex(name => {
-                            let n = name.toLowerCase();
-                            let nums = n.match(/\d+/g) || [];
-                            
+                            let n = name.toLowerCase(), nums = n.match(/\d+/g) || [];
                             if (nums.includes(voieNumStr)) return true;
-                            
                             let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
-                            if (ranges) {
-                                for (let r of ranges) {
-                                    let bounds = r.match(/\d+/g);
-                                    if (bounds && bounds.length === 2) {
-                                        if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true;
-                                    }
-                                }
+                            if (ranges) { 
+                                for (let r of ranges) { 
+                                    let bounds = r.match(/\d+/g); 
+                                    if (bounds && bounds.length === 2) { 
+                                        if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true; 
+                                    } 
+                                } 
                             }
-                            
-                            if (n.includes("secteur " + secteurNumStr) || n.includes("secteur" + secteurNumStr) || n.includes("s" + secteurNumStr) || n.includes("mur " + secteurNumStr)) return true;
-                            
+                            if (n.includes("secteur " + secteurNumStr) || n.includes("s" + secteurNumStr)) return true;
                             if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
-
                             return false;
                         });
-                        
-                        if (matchedIndex !== -1) {
-                            targetImage = schoolConfig.images[matchedIndex];
-                        } else {
-                            let photoIndex = Math.max(0, secteurNum - 1);
-                            targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
-                        }
+                        targetImage = matchedIndex !== -1 ? schoolConfig.images[matchedIndex] : (schoolConfig.images[Math.max(0, secteurNum - 1)] || schoolConfig.images[0] || "");
                     } else {
-                        let photoIndex = Math.max(0, secteurNum - 1);
-                        targetImage = schoolConfig.images[photoIndex] || schoolConfig.images[0] || "";
+                        targetImage = schoolConfig.images[Math.max(0, secteurNum - 1)] || schoolConfig.images[0] || "";
                     }
 
-                    parsedRoutes.push({
-                        id: `route_excel_${idx}`, secteur: secteurNum, voie: voieNum, cotation: cotation,
-                        couleur: couleurInput, hexColor: hexColor, imageSrc: targetImage
+                    parsedRoutes.push({ 
+                        id: `route_excel_${idx}`, 
+                        secteur: secteurNum, 
+                        voie: voieNum, 
+                        cotation: cotation, 
+                        couleur: couleurInput, 
+                        hexColor: hexColor, 
+                        imageSrc: targetImage 
                     });
                 });
-
-                schoolConfig.routes = parsedRoutes;
-                schoolConfig.localUpdate = Date.now();
+                
+                schoolConfig.routes = parsedRoutes; 
+                schoolConfig.localUpdate = Date.now(); 
                 await saveConfig();
-                alert("✅ Fichier Excel importé avec succès ! L'association avec vos photos est terminée.");
+                alert("✅ Fichier Excel importé avec succès !"); 
                 initApp();
             };
             reader.readAsArrayBuffer(file);
         }
 
-        function ucFirst(string) { return string.charAt(0).toUpperCase() + string.slice(1); }
+        function ucFirst(string) { 
+            return string.charAt(0).toUpperCase() + string.slice(1); 
+        }
 
         function changeRoute() {
-            if (hasUnsavedChanges) {
-                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Voulez-vous vraiment changer de tracé et les perdre ?")) {
-                    routeSelect.value = currentRouteId || "";
-                    return;
-                }
+            if (hasUnsavedChanges) { 
+                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer ?")) { 
+                    routeSelect.value = currentRouteId || ""; 
+                    return; 
+                } 
             }
-
-            isFilterActive = false;
-            const magicBtn = document.getElementById('magic-filter-btn');
-            if (magicBtn) magicBtn.classList.remove('active-magic');
-            selectMarker(null);
+            isFilterActive = false; 
+            document.getElementById('magic-filter-btn').classList.remove('active-magic');
+            selectMarker(null); 
             renderCustomLists(); 
 
             const selectedId = routeSelect.value;
             if (!selectedId) {
-                currentRouteId = null;
-                activeBanner.style.background = "#d4edda"; activeBanner.style.color = "#155724";
-                activeBanner.textContent = "⚠️ Aucune voie sélectionnée.";
-                clearMarkersDOM(); activeMarkers = [];
+                currentRouteId = null; 
+                activeBanner.style.background = "#d4edda"; 
+                activeBanner.style.color = "#155724";
+                activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
+                clearMarkersDOM(); 
+                activeMarkers = []; 
                 hasUnsavedChanges = false;
-                if (schoolConfig.images && schoolConfig.images.length > 0) img.src = schoolConfig.images[0];
+                if (schoolConfig.images.length > 0) img.src = schoolConfig.images[0];
                 return;
             }
 
             let foundRoute = schoolConfig.routes.find(r => r.id === selectedId);
             if (foundRoute) {
-                currentRouteId = foundRoute.id;
+                currentRouteId = foundRoute.id; 
                 currentRouteColor = foundRoute.hexColor;
-                if (foundRoute.imageSrc) img.src = foundRoute.imageSrc;
+                if (foundRoute.imageSrc) {
+                    img.src = foundRoute.imageSrc;
+                }
                 
                 let bannerBg = foundRoute.hexColor;
-                let bannerText = (bannerBg === "#FFD700") ? "#000" : "#fff";
-                activeBanner.style.background = bannerBg; activeBanner.style.color = bannerText;
-                activeBanner.textContent = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
+                let bannerText = (bannerBg === "#FFD700" || bannerBg === "#eab308") ? "#000" : "#fff";
+                activeBanner.style.background = bannerBg; 
+                activeBanner.style.color = bannerText;
+                activeBanner.innerHTML = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
             }
             loadRouteMarkers(currentRouteId);
         }
 
         function loadRouteMarkers(routeId) {
-            clearMarkersDOM();
+            clearMarkersDOM(); 
             activeMarkers = [];
             const savedData = localStorage.getItem(`eps_route_${routeId}`);
             if (savedData) {
-                const points = JSON.parse(savedData);
-                activeMarkers = points.map(p => ({
-                    x: p.x, y: p.y, type: p.type || 'dot', color: p.color || currentRouteColor,
-                    rotation: p.rotation || 0, scale: p.scale || 1
+                activeMarkers = JSON.parse(savedData).map(p => ({
+                    x: p.x, 
+                    y: p.y, 
+                    type: p.type || 'dot', 
+                    color: p.color || currentRouteColor,
+                    rotation: p.rotation || 0, 
+                    scale: p.scale || 1
                 }));
             }
-            hasUnsavedChanges = false;
+            hasUnsavedChanges = false; 
             renderMarkers();
         }
 
         function saveCurrentRoute() {
-            if (!currentRouteId) {
-                alert("❌ Aucune voie ou bloc actif sélectionné !"); return;
+            if (!currentRouteId) { 
+                alert("❌ Aucun tracé actif !"); 
+                return; 
             }
             const pointsToSave = activeMarkers.map(m => ({ 
-                x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale
+                x: m.x, 
+                y: m.y, 
+                type: m.type, 
+                color: m.color, 
+                rotation: m.rotation, 
+                scale: m.scale 
             }));
             localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            hasUnsavedChanges = false; 
+            alert("✅ Modifications enregistrées avec succès !");
             
-            hasUnsavedChanges = false;
-            
-            alert("✅ Modifications enregistrées avec succès !\nL'image va être remise au propre.");
-            
-            clearMarkersDOM();
-            activeMarkers = [];
-            selectMarker(null);
-            currentRouteId = null;
+            clearMarkersDOM(); 
+            activeMarkers = []; 
+            selectMarker(null); 
+            currentRouteId = null; 
             routeSelect.value = "";
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
-            
-            activeBanner.style.background = "#d4edda";
+            activeBanner.style.background = "#d4edda"; 
             activeBanner.style.color = "#155724";
-            activeBanner.textContent = "✨ Modifications sauvegardées. Sélectionnez une voie ou créez un bloc.";
+            activeBanner.innerHTML = "✨ Modifications sauvegardées. Sélectionnez un tracé.";
         }
 
         function deleteCurrentRoute() {
-            if (!currentRouteId) {
-                alert("❌ Aucune voie active sélectionnée !"); return;
-            }
+            if (!currentRouteId) return;
             if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
                 localStorage.removeItem(`eps_route_${currentRouteId}`);
-                selectMarker(null);
-                activeMarkers = [];
-                hasUnsavedChanges = false;
-                renderMarkers();
+                selectMarker(null); 
+                activeMarkers = []; 
+                hasUnsavedChanges = false; 
+                renderMarkers(); 
                 alert("🗑️ Tracé supprimé !");
             }
         }
 
-        function clearStickers() {
-            selectMarker(null);
-            activeMarkers = [];
-            hasUnsavedChanges = true;
-            renderMarkers();
+        function clearStickers() { 
+            selectMarker(null); 
+            activeMarkers = []; 
+            hasUnsavedChanges = true; 
+            renderMarkers(); 
         }
 
-        // --- FONCTIONS D'IMPORT / EXPORT EN ÉQUIPE ---
         function exportData() {
-            if (!schoolConfig.customRoutes || schoolConfig.customRoutes.length === 0) {
-                alert("Aucun bloc ou élève à exporter !"); return;
+            if (!schoolConfig.customRoutes || schoolConfig.customRoutes.length === 0) { 
+                alert("Aucun bloc à exporter !"); 
+                return; 
             }
-            let exportObj = {
-                customRoutes: schoolConfig.customRoutes,
-                markers: {}
+            let exportObj = { 
+                customRoutes: schoolConfig.customRoutes, 
+                markers: {} 
             };
-            // Récupère les balises de chaque bloc
-            schoolConfig.customRoutes.forEach(r => {
-                let data = localStorage.getItem('eps_route_' + r.id);
-                if (data) exportObj.markers[r.id] = JSON.parse(data);
+            schoolConfig.customRoutes.forEach(r => { 
+                let data = localStorage.getItem('eps_route_' + r.id); 
+                if (data) exportObj.markers[r.id] = JSON.parse(data); 
             });
-
-            // Crée le fichier téléchargeable
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
-            let downloadAnchorNode = document.createElement('a');
+            let downloadAnchorNode = document.createElement('a'); 
             downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "blocs_equipe_eps.json");
+            downloadAnchorNode.setAttribute("download", "blocs_equipe_eps.json"); 
             document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
+            downloadAnchorNode.click(); 
             downloadAnchorNode.remove();
         }
 
         async function importData(input) {
-            let file = input.files[0];
+            let file = input.files[0]; 
             if (!file) return;
             let reader = new FileReader();
             reader.onload = async function(e) {
@@ -1812,133 +1859,139 @@
                     if (imported.customRoutes && imported.markers) {
                         let newCount = 0;
                         imported.customRoutes.forEach(nr => {
-                            // Vérifie si le bloc existe déjà pour ne pas faire de doublons
-                            let exists = schoolConfig.customRoutes.find(cr => cr.id === nr.id);
-                            if (!exists) {
+                            if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
                                 schoolConfig.customRoutes.push(nr);
                                 localStorage.setItem('eps_route_' + nr.id, JSON.stringify(imported.markers[nr.id]));
                                 newCount++;
                             }
                         });
                         if (newCount > 0) {
-                            schoolConfig.localUpdate = Date.now();
-                            await saveConfig();
+                            schoolConfig.localUpdate = Date.now(); 
+                            await saveConfig(); 
                             renderCustomLists();
-                            alert(`✅ Importation réussie : ${newCount} nouveau(x) bloc(s) ajouté(s) !`);
-                        } else {
-                            alert("ℹ️ Ces blocs étaient déjà présents sur votre appareil.");
+                            alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !`);
+                        } else { 
+                            alert("ℹ️ Ces blocs étaient déjà présents."); 
                         }
                     }
-                } catch(err) {
-                    alert("❌ Erreur lors de la lecture du fichier. Assurez-vous que c'est bien un fichier .json d'export.");
+                } catch(err) { 
+                    alert("❌ Erreur de lecture."); 
                 }
-                input.value = ""; // Réinitialise l'input
+                input.value = ""; 
             };
             reader.readAsText(file);
         }
 
-        // --- FONCTIONS QR CODE ÉLÈVE ---
         function generateQRCode(routeId = null) {
-            let targetMarkers = [];
-            let targetImage = "";
-            let targetName = "le Bloc";
+            let targetMarkers = [], targetImage = "", targetName = "le Bloc";
+            let qTheme = "?", qGrade = "?", qHeight = "?";
 
             if (routeId) {
-                // Le professeur clique sur l'icône téléphone dans la liste
                 const found = schoolConfig.customRoutes.find(r => r.id === routeId);
                 if (!found) return;
+                targetName = found.name; 
+                qTheme = found.theme || "?"; 
+                qGrade = found.grade || "?"; 
+                qHeight = found.height || "?";
                 
-                targetName = found.name;
                 const savedData = localStorage.getItem(`eps_route_${routeId}`);
-                
-                if (!savedData || JSON.parse(savedData).length === 0) {
-                    alert("❌ Ce tracé est vide. Ajoutez des balises et enregistrez d'abord.");
-                    return;
+                if (!savedData || JSON.parse(savedData).length === 0) { 
+                    alert("❌ Ce tracé est vide."); 
+                    return; 
                 }
                 
-                targetMarkers = JSON.parse(savedData);
+                targetMarkers = JSON.parse(savedData); 
                 targetImage = found.imageSrc || (schoolConfig.images[0] || "");
             } else {
-                // Le professeur clique sur le bouton principal (voie actuellement affichée)
-                if (!currentRouteId || activeMarkers.length === 0) {
-                    alert("❌ Veuillez d'abord créer ou sélectionner un bloc avec des balises.");
-                    return;
+                if (!currentRouteId || activeMarkers.length === 0) { 
+                    alert("❌ Veuillez sélectionner un bloc."); 
+                    return; 
                 }
-                targetMarkers = activeMarkers;
+                targetMarkers = activeMarkers; 
                 targetImage = img.src;
                 
                 const found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
-                if(found) targetName = found.name;
+                if(found) { 
+                    targetName = found.name; 
+                    qTheme = found.theme || "?"; 
+                    qGrade = found.grade || "?"; 
+                    qHeight = found.height || "?"; 
+                }
             }
 
-            // On compresse les données des balises pour garder un lien court
-            const miniMarkers = targetMarkers.map(m => ({
-                x: Math.round(m.x * 10) / 10,
-                y: Math.round(m.y * 10) / 10,
-                t: m.type || m.t,
-                c: m.color || m.c
+            const miniMarkers = targetMarkers.map(m => ({ 
+                x: Math.round(m.x * 10) / 10, 
+                y: Math.round(m.y * 10) / 10, 
+                t: m.type || m.t, 
+                c: m.color || m.c 
             }));
-
-            const dataStr = encodeURIComponent(JSON.stringify(miniMarkers));
             
-            // On récupère l'image de fond
-            let bgParam = "default";
-            if (targetImage && !targetImage.startsWith('data:image')) {
-                bgParam = encodeURIComponent(targetImage);
-            }
+            const payload = { 
+                m: miniMarkers, 
+                n: targetName, 
+                g: qGrade.split(' ')[0], 
+                h: qHeight, 
+                t: qTheme 
+            };
+            
+            const dataStr = encodeURIComponent(JSON.stringify(payload));
+            let bgParam = (targetImage && !targetImage.startsWith('data:image')) ? encodeURIComponent(targetImage) : "default";
 
-            // Création du lien avec toutes les infos encodées
             const shareUrl = window.location.origin + window.location.pathname + "?mode=eleve&bg=" + bgParam + "&route=" + dataStr;
 
-            // Génération du visuel du QR Code
             document.getElementById('qrcode-container').innerHTML = "";
-            new QRCode(document.getElementById('qrcode-container'), {
-                text: shareUrl,
-                width: 220,
-                height: 220,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.L
+            new QRCode(document.getElementById('qrcode-container'), { 
+                text: shareUrl, 
+                width: 220, 
+                height: 220, 
+                colorDark : "#0f172a", 
+                colorLight : "#ffffff", 
+                correctLevel : QRCode.CorrectLevel.L 
             });
-
+            
             document.getElementById('qr-modal-title').textContent = `📱 Scanner : ${targetName}`;
             document.getElementById('qr-modal').style.display = "flex";
         }
 
         function setupStudentMode(params) {
-            // Nettoyage de l'écran pour l'élève (On cache les menus profs)
             document.querySelector('.palette-bar').style.display = 'none';
             document.querySelector('.controls').style.display = 'none';
             document.querySelector('.right-sidebar').style.display = 'none';
             
-            // Adaptation de la bannière
             const banner = document.getElementById('active-route-banner');
-            banner.textContent = "📱 Mode Élève : Consultez votre tracé";
-            banner.style.background = "#e0f2fe";
-            banner.style.color = "#0369a1";
+            banner.style.background = "#e0f2fe"; 
+            banner.style.color = "#0369a1"; 
             banner.style.maxWidth = "900px";
 
-            // Chargement du mur
             const bg = params.get('bg');
-            if (bg && bg !== "default") {
-                img.src = decodeURIComponent(bg);
-            } else {
-                img.src = "voies 1 2 3.jpg"; // Image de secours
-            }
+            img.src = (bg && bg !== "default") ? decodeURIComponent(bg) : "voies 1 2 3.jpg";
 
-            // Placement des balises sans possibilité de modification
             const routeData = params.get('route');
             if (routeData) {
                 try {
-                    const markers = JSON.parse(decodeURIComponent(routeData));
-                    activeMarkers = markers.map(m => ({
-                        x: m.x, y: m.y, type: m.t, color: m.c, rotation: 0, scale: 1
+                    const parsed = JSON.parse(decodeURIComponent(routeData));
+                    let markersList = [];
+                    
+                    if (Array.isArray(parsed)) {
+                        markersList = parsed; 
+                        banner.innerHTML = "📱 <b>Mode Élève : Consultez votre tracé</b>";
+                    } else {
+                        markersList = parsed.m; 
+                        banner.innerHTML = `📱 <b>Bloc : ${parsed.n}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${parsed.g} | Gabarit: ${parsed.h} | Thème: ${parsed.t}</span>`;
+                    }
+
+                    activeMarkers = markersList.map(m => ({ 
+                        x: m.x, 
+                        y: m.y, 
+                        type: m.t, 
+                        color: m.c, 
+                        rotation: 0, 
+                        scale: 1 
                     }));
                     renderMarkers();
-                    // Bloque l'interaction : l'élève ne peut pas déplacer les balises
                     document.getElementById('wall-container').style.pointerEvents = 'none';
-                } catch(e) {
-                    console.error("Erreur de lecture du QR Code", e);
+                } catch(e) { 
+                    console.error("Erreur QR Code", e); 
                 }
             }
         }
