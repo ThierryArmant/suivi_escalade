@@ -73,7 +73,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            width: 230px; /* Légèrement élargi pour la grille 2 colonnes */
+            width: 230px;
             text-align: left;
             flex-shrink: 0;
         }
@@ -698,7 +698,6 @@
                 <h3>📖 Zone Technique & Bloc</h3>
                 <div class="legend-category">🏆 Validation du Bloc</div>
 
-                <!-- NOUVELLE LÉGENDE : LE TOP -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🏆 Le TOP (Arrivée)</div>
                     <div class="legend-body">
@@ -714,7 +713,6 @@
                     </div>
                 </div>
 
-                <!-- NOUVELLE LÉGENDE : LA ZONE -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🎯 La ZONE (Bonus)</div>
                     <div class="legend-body">
@@ -732,7 +730,6 @@
                     </div>
                 </div>
 
-                <!-- NOUVELLE LÉGENDE : MAINS DE DÉPART -->
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🖐️ Départ (MG / MD)</div>
                     <div class="legend-body">
@@ -923,6 +920,15 @@
             <div class="form-group">
                 <label for="excelInput">3. Importer le fichier Excel rempli (.xlsx ou .csv) :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            <div class="form-group">
+                <label>🔄 Partage en équipe (Import / Export) :</label>
+                <button class="template-btn" style="background-color: #0284c7; color: white; width: 100%; margin-bottom: 10px;" onclick="exportData()">📤 Exporter mes blocs (.json)</button>
+                <br>
+                <label for="importInput" style="font-weight: normal; font-size: 0.8rem;">📥 Importer les blocs d'un collègue :</label>
+                <input type="file" id="importInput" accept=".json" onchange="importData(this)">
             </div>
 
             <div style="text-align: right; margin-top: 20px;">
@@ -1771,8 +1777,67 @@
             renderMarkers();
         }
 
-        // --- FONCTIONS QR CODE ÉLÈVE ---
+        // --- FONCTIONS D'IMPORT / EXPORT EN ÉQUIPE ---
+        function exportData() {
+            if (!schoolConfig.customRoutes || schoolConfig.customRoutes.length === 0) {
+                alert("Aucun bloc ou élève à exporter !"); return;
+            }
+            let exportObj = {
+                customRoutes: schoolConfig.customRoutes,
+                markers: {}
+            };
+            // Récupère les balises de chaque bloc
+            schoolConfig.customRoutes.forEach(r => {
+                let data = localStorage.getItem('eps_route_' + r.id);
+                if (data) exportObj.markers[r.id] = JSON.parse(data);
+            });
 
+            // Crée le fichier téléchargeable
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+            let downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "blocs_equipe_eps.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        async function importData(input) {
+            let file = input.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    let imported = JSON.parse(e.target.result);
+                    if (imported.customRoutes && imported.markers) {
+                        let newCount = 0;
+                        imported.customRoutes.forEach(nr => {
+                            // Vérifie si le bloc existe déjà pour ne pas faire de doublons
+                            let exists = schoolConfig.customRoutes.find(cr => cr.id === nr.id);
+                            if (!exists) {
+                                schoolConfig.customRoutes.push(nr);
+                                localStorage.setItem('eps_route_' + nr.id, JSON.stringify(imported.markers[nr.id]));
+                                newCount++;
+                            }
+                        });
+                        if (newCount > 0) {
+                            schoolConfig.localUpdate = Date.now();
+                            await saveConfig();
+                            renderCustomLists();
+                            alert(`✅ Importation réussie : ${newCount} nouveau(x) bloc(s) ajouté(s) !`);
+                        } else {
+                            alert("ℹ️ Ces blocs étaient déjà présents sur votre appareil.");
+                        }
+                    }
+                } catch(err) {
+                    alert("❌ Erreur lors de la lecture du fichier. Assurez-vous que c'est bien un fichier .json d'export.");
+                }
+                input.value = ""; // Réinitialise l'input
+            };
+            reader.readAsText(file);
+        }
+
+        // --- FONCTIONS QR CODE ÉLÈVE ---
         function generateQRCode(routeId = null) {
             let targetMarkers = [];
             let targetImage = "";
