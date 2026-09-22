@@ -247,7 +247,7 @@
             display: flex;
             flex-direction: column;
             gap: 3px;
-            max-height: 250px; /* Agrandissement pour les thèmes */
+            max-height: 250px;
             overflow-y: auto;
             margin-bottom: 4px;
         }
@@ -468,6 +468,12 @@
         
         .inst-list li { 
             margin-bottom: 3px; 
+        }
+        
+        .appn-alert {
+            background: #eff6ff;
+            border-left-color: #f59e0b;
+            font-size: 0.73rem;
         }
 
         .technical-zone {
@@ -785,8 +791,32 @@
         </div>
 
         <div class="right-sidebar">
+            
+            <!-- ZONE INSTITUTIONNELLE RESTAURÉE -->
+            <div class="institutional-zone">
+                <h3>⚖️ Zone Institutionnelle</h3>
+                <div class="inst-item">
+                    <b>Textes & Références :</b>
+                    <ul class="inst-list">
+                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo16/MENE1711773C.htm" target="_blank">Exigence de la sécurité dans les activités physiques de pleine nature dans le second degré</a></li>
+                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/protocoles-de-securite-escalade-finalpdf-100674.pdf" target="_blank">Protocoles de sécurité dans les activités physiques de pleine nature : escalade</a></li>
+                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/ra16c4epsca2escaladend567455pdf-78324.pdf" target="_blank">repères d’évaluation en Escalade</a></li>
+                        <li><a href="https://www.pedagogie.ac-aix-marseille.fr/jcms/c_103401/fr/gestion-des-epi-dans-les-eple" target="_blank">Gestion des EPI</a></li>
+                    </ul>
+                </div>
+                <div class="inst-item">
+                    <b>Plateformes & Outils :</b><br>
+                    🌐 <a href="https://appli.ac-aix-marseille.fr/ipackeps/professeur/" target="_blank">Accéder à iPackEPS</a><br>
+                    🌐 <a href="https://assistant-ia-eps-aix-m.streamlit.app/" target="_blank">Accéder au HUB EPS</a>
+                </div>
+                <div class="inst-item appn-alert">
+                    <b>Attention Déclaration APPN IpackEPS :</b><br>
+                    Procédure obligatoire si la sortie comporte <b>au moins 1 relai</b>.
+                </div>
+            </div>
+
             <!-- ESPACE FICHE DE SUIVI ESCALADE -->
-            <div class="institutional-zone" style="background: #eef2ff; border-color: #6366f1;">
+            <div class="institutional-zone" style="background: #eef2ff; border-color: #6366f1; margin-top: 12px;">
                 <h3 style="color: #4f46e5; border-color: #818cf8;">📊 Fiche de suivi escalade</h3>
                 <div class="inst-item" style="border-left-color: #6366f1;">
                     <b>Outil de gestion des séances :</b><br>
@@ -797,7 +827,7 @@
                 </div>
             </div>
 
-            <div class="technical-zone">
+            <div class="technical-zone" style="margin-top: 12px;">
                 <h3>📖 Zone Technique & Pédagogique</h3>
                 
                 <div class="legend-category">🎓 Éléments Pédagogiques</div>
@@ -1541,7 +1571,7 @@
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
                 if (p.type === 'dot') {
-                    marker.style.borderColor = p.color;
+                    marker.style.borderColor = p.color; // Applique la couleur sur l'anneau
                 } else if (p.type === 'arrow') {
                     marker.innerHTML = '⬆️';
                 } else if (p.type === 'cross') {
