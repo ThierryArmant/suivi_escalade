@@ -84,11 +84,11 @@
             font-weight: bold; 
         }
         
-        /* MENUS DÉROULANTS : SÉLECTION MUR/VOIE EN JAUNE */
+        /* MENUS DÉROULANTS : SÉLECTION MUR/VOIE EN JAUNE CANARI */
         select { 
-            background-color: #fef3c7 !important; 
-            color: #92400e !important; 
-            border: 2px solid #f59e0b !important; 
+            background-color: #fffde7 !important; /* Fond jaune pastel lumineux */
+            color: #1e293b !important; /* Texte très foncé pour un contraste parfait */
+            border: 3px solid #ffea00 !important; /* Bordure JAUNE CANARI vif */
             max-width: 100%; 
             cursor: pointer;
         }
@@ -544,7 +544,7 @@
     <div class="controls">
         <div class="controls-group">
             <select id="routeSelect" onchange="changeRoute()">
-                <option value="">-- Choisir une voie --</option>
+                <option value="">-- Choisir une Voie --</option>
             </select>
             <select id="blocWallSelect" onchange="changeBlocWall()">
                 <option value="">-- Choix du mur de blocs --</option>
@@ -744,7 +744,7 @@
             <div id="bloc-options">
                 <div class="form-group">
                     <label>Difficulté (Couleur du tracé) :</label>
-                    <select id="create-grade" style="border: 2px solid #cbd5e1;">
+                    <select id="create-grade" style="border: 2px solid #cbd5e1 !important; background-color: #fff !important; color: #333 !important;">
                         <option value="Jaune">🟡 Jaune (Très facile)</option>
                         <option value="Vert">🟢 Vert (Facile)</option>
                         <option value="Bleu">🔵 Bleu (Moyen)</option>
@@ -754,7 +754,7 @@
                 </div>
                 <div class="form-group">
                     <label>Gabarit adapté :</label>
-                    <select id="create-height" style="border: 2px solid #cbd5e1;">
+                    <select id="create-height" style="border: 2px solid #cbd5e1 !important; background-color: #fff !important; color: #333 !important;">
                         <option value="Toutes tailles">Toutes tailles</option>
                         <option value="< 1m60 (6ème/5ème)">< 1m60 (6ème/5ème)</option>
                         <option value="> 1m60 (4ème/3ème)">> 1m60 (4ème/3ème)</option>
@@ -762,7 +762,7 @@
                 </div>
                 <div class="form-group">
                     <label>Thème du parcours :</label>
-                    <select id="create-theme" style="border: 2px solid #cbd5e1;">
+                    <select id="create-theme" style="border: 2px solid #cbd5e1 !important; background-color: #fff !important; color: #333 !important;">
                         <option value="Libre">Libre / Autre</option>
                         <option value="Charger ses appuis pieds">Charger ses appuis pieds</option>
                         <option value="Mouvement dynamique et coord.">Mouvement dynamique et coordination</option>
@@ -942,8 +942,8 @@
             renderCustomLists();
             
             img.src = schoolConfig.images[0];
-            activeBanner.style.background = "#dcfce7"; 
-            activeBanner.style.color = "#166534";
+            activeBanner.style.background = "#fffde7"; 
+            activeBanner.style.color = "#1f2937";
             activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie ou créez un bloc.";
         }
 
@@ -979,14 +979,14 @@
             if (schoolConfig.images.length > 0 && !currentRouteId) {
                 img.src = schoolConfig.images[0];
                 document.getElementById('wall-container').style.maxWidth = '800px';
-                activeBanner.style.background = "#dcfce7"; 
-                activeBanner.style.color = "#166534";
+                activeBanner.style.background = "#fffde7"; 
+                activeBanner.style.color = "#1f2937";
                 activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
             }
         }
 
         function populateRouteDropdown() {
-            routeSelect.innerHTML = '<option value="">-- Choisir une voie --</option>';
+            routeSelect.innerHTML = '<option value="">-- Choisir une Voie --</option>';
             schoolConfig.routes.forEach(r => {
                 const opt = document.createElement('option');
                 opt.value = r.id;
@@ -1086,8 +1086,8 @@
                             document.getElementById('routeSelect').value = ""; 
                             document.getElementById('blocWallSelect').value = "";
                             
-                            activeBanner.style.background = "#fff3cd"; 
-                            activeBanner.style.color = "#856404";
+                            activeBanner.style.background = "#fffde7"; 
+                            activeBanner.style.color = "#1f2937";
                             activeBanner.innerHTML = "⚠️ Aucun tracé sélectionné.";
                         }
                         renderCustomLists();
@@ -1110,20 +1110,20 @@
                 }
             });
 
-            // CRÉATION DES DOSSIERS DE THÈMES DANS LA LISTE
+            // CRÉATION DES DOSSIERS DE THÈMES DANS LA LISTE EN JAUNE CANARI
             for (let theme in blocsParTheme) {
                 let themeHeader = document.createElement('div');
                 themeHeader.style.fontSize = '0.7rem'; 
                 themeHeader.style.fontWeight = 'bold';
-                themeHeader.style.color = '#92400e'; 
-                themeHeader.style.background = '#fef3c7';
+                themeHeader.style.color = '#1f2937'; 
+                themeHeader.style.background = '#fffce8';
                 themeHeader.style.padding = '4px 8px'; 
                 themeHeader.style.marginTop = '8px';
                 themeHeader.style.marginBottom = '4px'; 
                 themeHeader.style.borderRadius = '4px';
                 themeHeader.style.textAlign = 'left'; 
                 themeHeader.style.textTransform = 'uppercase';
-                themeHeader.style.borderLeft = '3px solid #f59e0b';
+                themeHeader.style.borderLeft = '4px solid #ffea00';
                 themeHeader.textContent = `📁 ${theme}`;
                 
                 blocListContainer.appendChild(themeHeader);
@@ -1157,8 +1157,8 @@
             
             if (select.value === "") {
                 document.getElementById('wall-container').style.maxWidth = '800px';
-                activeBanner.style.background = "#fff3cd"; 
-                activeBanner.style.color = "#856404";
+                activeBanner.style.background = "#fffde7"; 
+                activeBanner.style.color = "#1f2937";
                 activeBanner.innerHTML = "⚠️ Aucun mur ou voie sélectionné.";
                 clearMarkersDOM(); 
                 activeMarkers = []; 
@@ -1187,8 +1187,8 @@
             let imgName = schoolConfig.imageNames[currentImageIndex] || "Photo sans nom";
             let cleanName = imgName.replace(/\.[^/.]+$/, ""); 
             
-            activeBanner.style.background = "#fef3c7"; 
-            activeBanner.style.color = "#92400e";
+            activeBanner.style.background = "#fffde7"; 
+            activeBanner.style.color = "#1f2937";
             activeBanner.innerHTML = `📸 <b>Mur Libre : ${cleanName}</b><br><span style="font-size:0.85rem; font-weight:normal;">Cliquez sur "+ Créer un Bloc" pour dessiner sur cette zone.</span>`;
         }
 
@@ -1292,8 +1292,8 @@
 
             document.getElementById('wall-container').style.maxWidth = '1300px';
 
-            let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
-            let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
+            let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fffde7";
+            let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#1f2937";
             
             activeBanner.style.background = bannerBg; 
             activeBanner.style.color = bannerColor;
@@ -1733,8 +1733,8 @@
             if (!selectedId) {
                 currentRouteId = null; 
                 document.getElementById('wall-container').style.maxWidth = '800px'; 
-                activeBanner.style.background = "#fff3cd"; 
-                activeBanner.style.color = "#856404";
+                activeBanner.style.background = "#fffde7"; 
+                activeBanner.style.color = "#1f2937";
                 activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
                 
                 clearMarkersDOM(); 
