@@ -376,11 +376,13 @@
             position: relative;
             display: inline-block;
             width: 100%;
-            max-width: 900px;
+            /* Modification dynamique via JS, avec animation CSS fluide */
+            max-width: 800px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             border-radius: 8px;
             overflow: hidden;
             cursor: crosshair;
+            transition: max-width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         #wall-image {
@@ -708,6 +710,9 @@
             <option value="">-- Choisir une voie officielle --</option>
         </select>
 
+        <!-- BOUTON : Permet d'afficher les photos librement -->
+        <button class="template-btn" onclick="cycleImages()" style="background-color: #f59e0b; color: white;">📸 Voir murs de Bloc</button>
+
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo réelle du mur par défaut">🎁 Mode démo</button>
     </div>
@@ -791,7 +796,6 @@
         </div>
 
         <div class="right-sidebar">
-            
             <!-- ZONE INSTITUTIONNELLE RESTAURÉE -->
             <div class="institutional-zone">
                 <h3>⚖️ Zone Institutionnelle</h3>
@@ -997,6 +1001,7 @@
 
     <script>
         let hasUnsavedChanges = false;
+        let currentImageIndex = 0; 
 
         window.addEventListener('beforeunload', function (e) {
             if (hasUnsavedChanges) {
@@ -1108,6 +1113,7 @@
             
             currentRouteId = null; 
             routeSelect.value = "";
+            document.getElementById('wall-container').style.maxWidth = '800px'; // Mode Voie par défaut
             
             populateRouteDropdown(); 
             renderCustomLists();
@@ -1161,6 +1167,7 @@
 
             if (schoolConfig.images && schoolConfig.images.length > 0 && !currentRouteId) {
                 img.src = schoolConfig.images[0];
+                document.getElementById('wall-container').style.maxWidth = '800px';
                 activeBanner.style.background = "#d4edda"; 
                 activeBanner.style.color = "#155724";
                 activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
@@ -1241,6 +1248,7 @@
                             if (schoolConfig.images.length > 0) {
                                 img.src = schoolConfig.images[0];
                             }
+                            document.getElementById('wall-container').style.maxWidth = '800px';
                             activeBanner.style.background = "#d4edda"; 
                             activeBanner.style.color = "#155724";
                             activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
@@ -1301,6 +1309,42 @@
             currentTool = tool;
             document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
+        }
+
+        function cycleImages() {
+            if (hasUnsavedChanges) { 
+                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer ?")) { 
+                    return; 
+                } 
+            }
+
+            if (!schoolConfig.images || schoolConfig.images.length === 0) {
+                alert("Aucune photo importée ! Allez dans Configuration.");
+                return;
+            }
+            
+            currentImageIndex = (currentImageIndex + 1) % schoolConfig.images.length;
+            img.src = schoolConfig.images[currentImageIndex];
+            
+            currentRouteId = null;
+            routeSelect.value = "";
+            clearMarkersDOM(); 
+            activeMarkers = []; 
+            selectMarker(null);
+            isFilterActive = false; 
+            document.getElementById('magic-filter-btn').classList.remove('active-magic');
+            document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
+            hasUnsavedChanges = false;
+            
+            // Animation : On élargit l'image pour le mode Bloc Libre
+            document.getElementById('wall-container').style.maxWidth = '1300px';
+            
+            let imgName = schoolConfig.imageNames[currentImageIndex] || "Photo sans nom";
+            let cleanName = imgName.replace(/\.[^/.]+$/, ""); 
+            
+            activeBanner.style.background = "#fef3c7"; 
+            activeBanner.style.color = "#92400e";
+            activeBanner.innerHTML = `📸 <b>Mur Libre : ${cleanName}</b><br><span style="font-size:0.8rem; font-weight:normal;">Cliquez sur "+ Créer un Bloc" pour dessiner sur cette zone.</span>`;
         }
 
         function openCreateModal(type) {
@@ -1372,6 +1416,7 @@
             selectMarker(null);
             currentRouteId = null; 
             routeSelect.value = "";
+            document.getElementById('wall-container').style.maxWidth = '800px'; // Reset mode voie après sauvegarde
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
             activeBanner.style.background = "#d4edda"; 
@@ -1401,6 +1446,9 @@
             isFilterActive = false; 
             document.getElementById('magic-filter-btn').classList.remove('active-magic');
             selectMarker(null);
+
+            // Animation : On élargit l'image pour l'affichage d'un BLOC
+            document.getElementById('wall-container').style.maxWidth = '1300px';
 
             let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
             let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
@@ -1525,8 +1573,8 @@
         }
 
         function placeMarker(event) {
-            if (!currentRouteId) { 
-                alert("Veuillez sélectionner une Voie ou un Bloc !"); 
+            if (!currentRouteId && document.getElementById('wall-container').style.maxWidth !== '1300px') { 
+                alert("Veuillez sélectionner une Voie ou un Bloc (ou cliquez d'abord sur '+ Créer un bloc') !"); 
                 return; 
             }
             if (event.target.classList.contains('marker') || currentTool === 'eraser') return;
@@ -1571,7 +1619,7 @@
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
                 if (p.type === 'dot') {
-                    marker.style.borderColor = p.color; // Applique la couleur sur l'anneau
+                    marker.style.borderColor = p.color; 
                 } else if (p.type === 'arrow') {
                     marker.innerHTML = '⬆️';
                 } else if (p.type === 'cross') {
@@ -1795,6 +1843,7 @@
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null; 
+                document.getElementById('wall-container').style.maxWidth = '800px'; // Animation rétractation
                 activeBanner.style.background = "#d4edda"; 
                 activeBanner.style.color = "#155724";
                 activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
@@ -1812,6 +1861,9 @@
                 if (foundRoute.imageSrc) {
                     img.src = foundRoute.imageSrc;
                 }
+                
+                // Animation : Rétractation de l'image pour l'affichage d'une VOIE
+                document.getElementById('wall-container').style.maxWidth = '800px';
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700" || bannerBg === "#eab308") ? "#000" : "#fff";
@@ -1862,6 +1914,7 @@
             selectMarker(null); 
             currentRouteId = null; 
             routeSelect.value = "";
+            document.getElementById('wall-container').style.maxWidth = '800px';
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             activeBanner.style.background = "#d4edda"; 
             activeBanner.style.color = "#155724";
@@ -2025,6 +2078,9 @@
 
             const bg = params.get('bg');
             img.src = (bg && bg !== "default") ? decodeURIComponent(bg) : "voies 1 2 3.jpg";
+
+            // En mode élève, l'écran doit s'élargir au maximum pour bien lire
+            document.getElementById('wall-container').style.maxWidth = '100%';
 
             const routeData = params.get('route');
             if (routeData) {
