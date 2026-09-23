@@ -335,36 +335,6 @@
             background: #e2e8f0; 
         }
 
-        .selection-panel {
-            background: #e7f5ff;
-            border: 2px solid #3182ce;
-            padding: 6px;
-            border-radius: 6px;
-            display: none;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.06);
-        }
-        
-        .selection-panel h4 { 
-            margin: 0 0 4px 0; 
-            font-size: 0.8rem; 
-            color: #2b6cb0; 
-            text-align: center; 
-        }
-        
-        .control-row { 
-            display: flex; 
-            gap: 3px; 
-            margin-bottom: 3px; 
-            justify-content: center; 
-        }
-        
-        .control-row button { 
-            padding: 4px 6px; 
-            font-size: 0.75rem; 
-            margin: 0; 
-            background: #3182ce; 
-        }
-
         .center-col {
             flex: 1 1 500px;
             display: flex;
@@ -376,8 +346,7 @@
             position: relative;
             display: inline-block;
             width: 100%;
-            /* Modification dynamique via JS, avec animation CSS fluide */
-            max-width: 800px; 
+            max-width: 800px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             border-radius: 8px;
             overflow: hidden;
@@ -391,6 +360,58 @@
             height: auto;
             max-height: 85vh;
             object-fit: contain;
+        }
+
+        /* NOUVEAU MENU FLOTTANT */
+        .selection-panel {
+            position: absolute;
+            background: #e7f5ff;
+            border: 2px solid #3182ce;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            width: 160px;
+            cursor: default;
+        }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #bae6fd;
+            padding-bottom: 4px;
+        }
+        .panel-header h4 {
+            margin: 0;
+            font-size: 0.85rem;
+            color: #2b6cb0;
+        }
+        .close-panel-btn {
+            background: none !important;
+            border: none !important;
+            color: #e53e3e !important;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 0 !important;
+            cursor: pointer;
+            margin: 0 !important;
+        }
+        .close-panel-btn:hover {
+            color: #c53030 !important;
+        }
+        .control-row { 
+            display: flex; 
+            gap: 4px; 
+            margin-bottom: 4px; 
+            justify-content: center; 
+        }
+        .control-row button { 
+            padding: 4px 6px; 
+            font-size: 0.75rem; 
+            margin: 0; 
+            background: #3182ce; 
         }
 
         .right-sidebar {
@@ -649,12 +670,22 @@
             z-index: 50; 
         }
         
-        /* CERCLE VIDE (Remplaçant la pastille pleine) */
+        /* CERCLE VIDE (Normal) */
         .marker.dot {
             width: 32px;
             height: 32px;
             border-radius: 50%;
             border: 4px solid white; 
+            background-color: transparent !important;
+            box-shadow: 0 0 3px rgba(0,0,0,0.6), inset 0 0 3px rgba(0,0,0,0.6);
+        }
+        
+        /* PETIT CERCLE VIDE (Nouveau) */
+        .marker.dot-small {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 3px solid white; 
             background-color: transparent !important;
             box-shadow: 0 0 3px rgba(0,0,0,0.6), inset 0 0 3px rgba(0,0,0,0.6);
         }
@@ -710,8 +741,10 @@
             <option value="">-- Choisir une voie officielle --</option>
         </select>
 
-        <!-- BOUTON : Permet d'afficher les photos librement -->
-        <button class="template-btn" onclick="cycleImages()" style="background-color: #f59e0b; color: white;">📸 Voir murs de Bloc</button>
+        <label for="blocWallSelect" style="margin-left: 15px;">Ou créer un Bloc :</label>
+        <select id="blocWallSelect" onchange="changeBlocWall()" style="background-color: #fef3c7; color: #92400e; border-color: #f59e0b;">
+            <option value="">-- Murs importés --</option>
+        </select>
 
         <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo réelle du mur par défaut">🎁 Mode démo</button>
@@ -728,22 +761,27 @@
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
+                    <button class="tool-btn" id="tool-dot-small" onclick="setTool('dot-small')">⚪ P'tit Cercle</button>
+                    
                     <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
                     <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
-                    <button class="tool-btn" id="tool-sd" onclick="setTool('sd')">🏁 SD (Départ)</button>
                     
+                    <button class="tool-btn" id="tool-sd" onclick="setTool('sd')">🏁 Départ(SD)</button>
+                    <button class="tool-btn" id="tool-top" onclick="setTool('top')">🏆 TOP</button>
+
                     <button class="tool-btn" id="tool-mg" onclick="setTool('mg')">🖐️ MG</button>
                     <button class="tool-btn" id="tool-md" onclick="setTool('md')">🤚 MD</button>
-                    <button class="tool-btn" id="tool-zone" onclick="setTool('zone')">🎯 Zone</button>
-                    <button class="tool-btn" id="tool-top" onclick="setTool('top')">🏆 TOP</button>
                     
+                    <button class="tool-btn" id="tool-zone" onclick="setTool('zone')">🎯 Zone</button>
                     <button class="tool-btn" id="tool-pied" onclick="setTool('pied')">👟 Pied</button>
+                    
                     <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
                     <button class="tool-btn" id="tool-pme" onclick="setTool('pme')">📌 PME</button>
-                    <button class="tool-btn" id="tool-jete" onclick="setTool('jete')">🚀 Jeté</button>
                     
                     <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 CM</button>
                     <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 CP</button>
+                    
+                    <button class="tool-btn btn-full" id="tool-jete" onclick="setTool('jete')">🚀 Jeté</button>
                     
                     <button class="tool-btn eraser-btn btn-full" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
                     <button class="tool-btn clear-all-btn btn-full" onclick="clearStickers()">🧹 Tout nettoyer</button>
@@ -772,31 +810,35 @@
                 <div id="indiv-list" class="custom-list"></div>
                 <button class="add-custom-btn btn-full" onclick="openCreateModal('individualise')">+ Créer un Élève</button>
             </div>
-
-            <div id="selection-panel" class="selection-panel">
-                <h4>🎯 Élément actif</h4>
-                <div class="control-row">
-                    <button onclick="rotateSelected(-15)" title="Pivoter gauche">↺</button>
-                    <button onclick="rotateSelected(15)" title="Pivoter droite">↻</button>
-                </div>
-                <div class="control-row">
-                    <button onclick="scaleSelected(1.25)" title="Agrandir">🔍+</button>
-                    <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
-                </div>
-                <div class="control-row">
-                    <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Suppr.</button>
-                </div>
-            </div>
         </div>
 
         <div class="center-col">
             <div id="wall-container" onclick="placeMarker(event)">
                 <img id="wall-image" alt="Mur d'escalade">
+                
+                <!-- LE MENU FLOTTANT DE MODIFICATION -->
+                <div id="selection-panel" class="selection-panel" onclick="event.stopPropagation();">
+                    <div class="panel-header">
+                        <h4>🎯 Modifier</h4>
+                        <button onclick="closeSelectionPanel()" class="close-panel-btn">✖</button>
+                    </div>
+                    <div class="control-row">
+                        <button onclick="rotateSelected(-15)" title="Pivoter gauche">↺ Pivoter</button>
+                        <button onclick="rotateSelected(15)" title="Pivoter droite">↻ Pivoter</button>
+                    </div>
+                    <div class="control-row">
+                        <button onclick="scaleSelected(1.25)" title="Agrandir">🔍+</button>
+                        <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
+                    </div>
+                    <div class="control-row" style="margin-top: 5px;">
+                        <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Supprimer</button>
+                    </div>
+                </div>
+
             </div>
         </div>
 
         <div class="right-sidebar">
-            <!-- ZONE INSTITUTIONNELLE RESTAURÉE -->
             <div class="institutional-zone">
                 <h3>⚖️ Zone Institutionnelle</h3>
                 <div class="inst-item">
@@ -903,9 +945,7 @@
                     </div>
                 </div>
             </div>
-
         </div>
-
     </div>
 
     <!-- Modal de Création de Bloc Pédagogique -->
@@ -1069,7 +1109,6 @@
         const img = document.getElementById('wall-image');
         const routeSelect = document.getElementById('routeSelect');
         const activeBanner = document.getElementById('active-route-banner');
-        const selectionPanel = document.getElementById('selection-panel');
 
         let currentRouteId = null;
         let currentRouteColor = "#FFD700";
@@ -1113,9 +1152,10 @@
             
             currentRouteId = null; 
             routeSelect.value = "";
-            document.getElementById('wall-container').style.maxWidth = '800px'; // Mode Voie par défaut
+            document.getElementById('wall-container').style.maxWidth = '800px'; 
             
-            populateRouteDropdown(); 
+            populateRouteDropdown();
+            populateBlocWallDropdown(); 
             renderCustomLists();
             
             img.src = schoolConfig.images[0];
@@ -1163,6 +1203,7 @@
             if (!schoolConfig.imageNames) schoolConfig.imageNames = [];
 
             populateRouteDropdown();
+            populateBlocWallDropdown();
             renderCustomLists();
 
             if (schoolConfig.images && schoolConfig.images.length > 0 && !currentRouteId) {
@@ -1182,6 +1223,19 @@
                     opt.value = r.id;
                     opt.textContent = `Voie ${r.voie} (${r.cotation} - ${ucFirst(r.couleur)}) [Secteur ${r.secteur}]`;
                     routeSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function populateBlocWallDropdown() {
+            const blocSelect = document.getElementById('blocWallSelect');
+            blocSelect.innerHTML = '<option value="">-- Murs importés --</option>';
+            if (schoolConfig.imageNames && schoolConfig.imageNames.length > 0) {
+                schoolConfig.imageNames.forEach((name, index) => {
+                    const opt = document.createElement('option');
+                    opt.value = index;
+                    opt.textContent = `📸 ${name.replace(/\.[^/.]+$/, "")}`;
+                    blocSelect.appendChild(opt);
                 });
             }
         }
@@ -1244,14 +1298,16 @@
                             currentRouteId = null; 
                             clearMarkersDOM(); 
                             activeMarkers = []; 
-                            selectMarker(null);
+                            closeSelectionPanel();
                             if (schoolConfig.images.length > 0) {
                                 img.src = schoolConfig.images[0];
                             }
                             document.getElementById('wall-container').style.maxWidth = '800px';
+                            document.getElementById('routeSelect').value = "";
+                            document.getElementById('blocWallSelect').value = "";
                             activeBanner.style.background = "#d4edda"; 
                             activeBanner.style.color = "#155724";
-                            activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
+                            activeBanner.innerHTML = "⚠️ Aucun tracé sélectionné.";
                         }
                         renderCustomLists();
                     }
@@ -1273,7 +1329,6 @@
                 }
             });
 
-            // Affichage des blocs groupés par thèmes
             for (let theme in blocsParTheme) {
                 let themeHeader = document.createElement('div');
                 themeHeader.style.fontSize = '0.65rem';
@@ -1311,32 +1366,42 @@
             document.getElementById(`tool-${tool}`).classList.add('active-tool');
         }
 
-        function cycleImages() {
+        function changeBlocWall() {
             if (hasUnsavedChanges) { 
                 if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer ?")) { 
                     return; 
                 } 
             }
 
-            if (!schoolConfig.images || schoolConfig.images.length === 0) {
-                alert("Aucune photo importée ! Allez dans Configuration.");
+            const select = document.getElementById('blocWallSelect');
+            const selectedIndex = select.value;
+
+            if (selectedIndex === "") {
+                document.getElementById('wall-container').style.maxWidth = '800px';
+                activeBanner.style.background = "#d4edda"; 
+                activeBanner.style.color = "#155724";
+                activeBanner.innerHTML = "⚠️ Aucun mur ou voie sélectionné.";
+                clearMarkersDOM(); 
+                activeMarkers = []; 
+                hasUnsavedChanges = false;
+                currentRouteId = null;
+                document.getElementById('routeSelect').value = "";
                 return;
             }
-            
-            currentImageIndex = (currentImageIndex + 1) % schoolConfig.images.length;
+
+            document.getElementById('routeSelect').value = "";
+            currentImageIndex = parseInt(selectedIndex);
             img.src = schoolConfig.images[currentImageIndex];
             
             currentRouteId = null;
-            routeSelect.value = "";
             clearMarkersDOM(); 
             activeMarkers = []; 
-            selectMarker(null);
+            closeSelectionPanel();
             isFilterActive = false; 
             document.getElementById('magic-filter-btn').classList.remove('active-magic');
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             hasUnsavedChanges = false;
             
-            // Animation : On élargit l'image pour le mode Bloc Libre
             document.getElementById('wall-container').style.maxWidth = '1300px';
             
             let imgName = schoolConfig.imageNames[currentImageIndex] || "Photo sans nom";
@@ -1413,10 +1478,13 @@
             
             clearMarkersDOM(); 
             activeMarkers = []; 
-            selectMarker(null);
+            closeSelectionPanel();
             currentRouteId = null; 
-            routeSelect.value = "";
-            document.getElementById('wall-container').style.maxWidth = '800px'; // Reset mode voie après sauvegarde
+            
+            document.getElementById('routeSelect').value = "";
+            document.getElementById('blocWallSelect').value = "";
+            
+            document.getElementById('wall-container').style.maxWidth = '800px'; 
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
             activeBanner.style.background = "#d4edda"; 
@@ -1431,7 +1499,9 @@
                 }
             }
 
-            routeSelect.value = ""; 
+            document.getElementById('routeSelect').value = "";
+            document.getElementById('blocWallSelect').value = "";
+            
             const found = schoolConfig.customRoutes.find(r => r.id === routeId);
             if (!found) return;
 
@@ -1445,9 +1515,8 @@
             
             isFilterActive = false; 
             document.getElementById('magic-filter-btn').classList.remove('active-magic');
-            selectMarker(null);
+            closeSelectionPanel();
 
-            // Animation : On élargit l'image pour l'affichage d'un BLOC
             document.getElementById('wall-container').style.maxWidth = '1300px';
 
             let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
@@ -1572,7 +1641,39 @@
             imageObj.src = src;
         }
 
+        // --- GESTION DU MENU FLOTTANT ---
+        function closeSelectionPanel() {
+            document.getElementById('selection-panel').style.display = 'none';
+            selectMarker(null);
+        }
+
+        function openFloatingMenu(index, event) {
+            selectMarker(index);
+            const panel = document.getElementById('selection-panel');
+            panel.style.display = 'block';
+
+            // Calcul de la position par rapport au conteneur du mur
+            const rect = container.getBoundingClientRect();
+            let x = event.clientX - rect.left + 15; // Décalage pour ne pas être sous la souris
+            let y = event.clientY - rect.top + 15;
+
+            // Empêche le menu de sortir par la droite ou le bas
+            if (x + panel.offsetWidth > rect.width) x = rect.width - panel.offsetWidth - 10;
+            if (y + panel.offsetHeight > rect.height) y = rect.height - panel.offsetHeight - 10;
+
+            panel.style.left = x + 'px';
+            panel.style.top = y + 'px';
+        }
+
         function placeMarker(event) {
+            const panel = document.getElementById('selection-panel');
+            
+            // Si le menu flottant est ouvert, un clic n'importe où le ferme (et on ne pose pas de balise)
+            if (panel.style.display === 'block') {
+                closeSelectionPanel();
+                return; 
+            }
+
             if (!currentRouteId && document.getElementById('wall-container').style.maxWidth !== '1300px') { 
                 alert("Veuillez sélectionner une Voie ou un Bloc (ou cliquez d'abord sur '+ Créer un bloc') !"); 
                 return; 
@@ -1618,7 +1719,7 @@
                 let rot = p.rotation || 0, scl = p.scale || 1;
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
-                if (p.type === 'dot') {
+                if (p.type === 'dot' || p.type === 'dot-small') {
                     marker.style.borderColor = p.color; 
                 } else if (p.type === 'arrow') {
                     marker.innerHTML = '⬆️';
@@ -1626,16 +1727,23 @@
                     marker.innerHTML = '❌';
                 }
 
+                // Drag and drop au clic prolongé
                 marker.onpointerdown = (e) => {
                     if (currentTool === 'eraser') {
                         e.stopPropagation(); 
                         activeMarkers.splice(index, 1);
                         hasUnsavedChanges = true; 
                         renderMarkers(); 
-                        selectMarker(null);
+                        closeSelectionPanel();
                     } else { 
                         startDrag(e, index); 
                     }
+                };
+
+                // Ouverture du menu flottant au DOUBLE CLIC
+                marker.ondblclick = (e) => {
+                    e.stopPropagation();
+                    openFloatingMenu(index, e);
                 };
                 
                 container.appendChild(marker); 
@@ -1653,7 +1761,6 @@
                 if (idx === index) el.classList.add('selected'); 
                 else el.classList.remove('selected');
             });
-            selectionPanel.style.display = (index !== null && index >= 0 && currentTool !== 'eraser') ? 'block' : 'none';
         }
 
         let draggingIndex = null;
@@ -1705,7 +1812,7 @@
             if (selectedMarkerIndex === null) return;
             activeMarkers.splice(selectedMarkerIndex, 1);
             hasUnsavedChanges = true; 
-            selectMarker(null); 
+            closeSelectionPanel(); 
             renderMarkers();
         }
 
@@ -1838,12 +1945,15 @@
             isFilterActive = false; 
             document.getElementById('magic-filter-btn').classList.remove('active-magic');
             selectMarker(null); 
+            closeSelectionPanel();
+            
+            document.getElementById('blocWallSelect').value = "";
             renderCustomLists(); 
 
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null; 
-                document.getElementById('wall-container').style.maxWidth = '800px'; // Animation rétractation
+                document.getElementById('wall-container').style.maxWidth = '800px'; 
                 activeBanner.style.background = "#d4edda"; 
                 activeBanner.style.color = "#155724";
                 activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
@@ -1862,7 +1972,6 @@
                     img.src = foundRoute.imageSrc;
                 }
                 
-                // Animation : Rétractation de l'image pour l'affichage d'une VOIE
                 document.getElementById('wall-container').style.maxWidth = '800px';
                 
                 let bannerBg = foundRoute.hexColor;
@@ -1912,8 +2021,10 @@
             clearMarkersDOM(); 
             activeMarkers = []; 
             selectMarker(null); 
+            closeSelectionPanel();
             currentRouteId = null; 
             routeSelect.value = "";
+            document.getElementById('blocWallSelect').value = "";
             document.getElementById('wall-container').style.maxWidth = '800px';
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             activeBanner.style.background = "#d4edda"; 
@@ -1937,6 +2048,7 @@
             selectMarker(null); 
             activeMarkers = []; 
             hasUnsavedChanges = true; 
+            closeSelectionPanel();
             renderMarkers(); 
         }
 
@@ -2079,7 +2191,6 @@
             const bg = params.get('bg');
             img.src = (bg && bg !== "default") ? decodeURIComponent(bg) : "voies 1 2 3.jpg";
 
-            // En mode élève, l'écran doit s'élargir au maximum pour bien lire
             document.getElementById('wall-container').style.maxWidth = '100%';
 
             const routeData = params.get('route');
