@@ -11,87 +11,100 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
     <style>
+        /* =========================================
+           NOUVEAU DESIGN : CONTRASTE & EXTÉRIEUR
+           ========================================= */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            /* Dégradé Pro sport : Bleu nuit vers ardoise sombre */
+            background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
             margin: 0;
             padding: 15px;
             text-align: center;
             user-select: none;
+            min-height: 100vh;
         }
         
         h1 { 
-            color: #333; 
-            font-size: 1.5rem; 
+            color: #ffffff; 
+            font-size: 1.8rem; 
             margin-bottom: 5px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); /* Ombre pour lisibilité au soleil */
         }
         
         .subtitle { 
-            color: #666; 
-            font-size: 0.9rem; 
+            color: #cbd5e1; 
+            font-size: 0.95rem; 
             margin-bottom: 15px; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
         
+        /* BARRE DE CONTROLE DU HAUT (Tableau de bord) */
         .controls {
-            margin-bottom: 15px;
-            background: #fff;
-            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            background: #ffffff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border: 2px solid #94a3b8;
+            margin: 0 auto 20px auto;
+            max-width: 1600px;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 5px 10px;
             border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            display: inline-block;
-            max-width: 100%;
+        }
+
+        /* Sous-bloc : Mise à jour très visible */
+        .controls-group.actions-group {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .controls-group.actions-group span {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #475569;
+            text-transform: uppercase;
         }
         
         select, button, input[type="text"] {
             padding: 8px 12px;
-            margin: 4px;
             font-size: 0.95rem;
             border-radius: 5px;
             border: 1px solid #ccc;
+            font-weight: bold;
         }
         
-        select { 
-            background-color: #fff; 
-            font-weight: bold; 
-            color: #007bff; 
-            max-width: 100%; 
-        }
+        select { background-color: #fff; color: #007bff; max-width: 100%; cursor: pointer;}
         
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        
-        button:hover { 
-            background-color: #0056b3; 
-        }
-        
-        button.config-btn { 
-            background-color: #6c757d; 
-        }
-        
-        button.config-btn:hover { 
-            background-color: #5a6268; 
-        }
-        
-        button.template-btn { 
-            background-color: #17a2b8; 
-        }
-        
-        button.template-btn:hover { 
-            background-color: #138496; 
-        }
-        
-        button.demo-btn { 
-            background-color: #8b5cf6; 
-        }
-        
-        button.demo-btn:hover { 
-            background-color: #7c3aed; 
-        }
+        button { cursor: pointer; transition: all 0.2s; }
+        .config-btn { background-color: #475569; color: white; }
+        .config-btn:hover { background-color: #334155; }
+        .demo-btn { background-color: #8b5cf6; color: white; border: none; }
+        .demo-btn:hover { background-color: #7c3aed; }
+        .template-btn { background-color: #f59e0b; color: white; border: none; }
+        .template-btn:hover { background-color: #d97706; }
 
+        /* Boutons d'action rapides (Haut) */
+        .action-btn { font-size: 0.85rem; padding: 6px 12px; border: 2px solid; }
+        .btn-save { background: #dcfce7; color: #166534; border-color: #86efac; }
+        .btn-save:hover { background: #bbf7d0; }
+        .btn-delete { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .btn-delete:hover { background: #fecaca; }
+        .btn-qr { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+        .btn-qr:hover { background: #bae6fd; }
+
+        /* ESPACE DE TRAVAIL */
         .workspace {
             display: flex;
             justify-content: center;
@@ -102,126 +115,36 @@
             margin: 0 auto;
         }
 
-        .palette-bar {
-            background: #eef2f7;
+        /* PANNEAUX LATÉRAUX (Blancs avec fortes ombres) */
+        .palette-bar, .right-sidebar {
+            background: #ffffff;
             padding: 14px;
             border-radius: 12px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-            border: 1px solid #cbd5e1;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            border: 2px solid #94a3b8;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            width: 230px;
+        }
+
+        .palette-bar {
+            width: 240px;
             text-align: left;
-            flex-shrink: 0;
         }
         
-        .tools-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
+        .right-sidebar {
+            width: 350px;
+            text-align: left;
+            max-height: 85vh;
+            overflow-y: auto;
         }
 
-        .tool-btn {
-            background: #f1f3f5;
-            color: #333;
-            border: 2px solid #ccc;
-            padding: 5px 2px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.72rem;
-            transition: all 0.2s;
-            text-align: center;
-            width: 100%;
-            box-sizing: border-box;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-        
-        .tool-btn:hover { 
-            background: #e2e6ea; 
-        }
-        
-        .tool-btn.active-tool {
-            background: #007bff;
-            color: white;
-            border-color: #0056b3;
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-        }
-        
-        .btn-full {
-            grid-column: span 2;
-            flex-direction: row;
-            padding: 6px 8px;
-            font-size: 0.8rem;
-        }
-
-        .magic-btn {
-            background: #f3e8ff;
-            color: #6b21a8;
-            border: 2px solid #d8b4fe;
-        }
-        
-        .magic-btn.active-magic {
-            background: #9333ea;
-            color: white;
-            border-color: #7e22ce;
-            box-shadow: 0 0 8px rgba(147, 51, 234, 0.6);
-        }
-        
-        .eraser-btn {
-            background: #ffe4e6 !important;
-            color: #e11d48 !important;
-            border-color: #fda4af !important;
-        }
-        
-        .eraser-btn.active-tool {
-            background: #e11d48 !important;
-            color: white !important;
-            border-color: #be123c !important;
-            box-shadow: 0 0 8px rgba(225, 29, 72, 0.6) !important;
-        }
-        
-        .clear-all-btn {
-            background: #fef2f2 !important;
-            color: #991b1b !important;
-            border-color: #fca5a5 !important;
-        }
-        
-        .clear-all-btn:hover { 
-            background: #fee2e2 !important; 
-            border-color: #f87171 !important; 
-        }
-
-        .action-save-btn {
-            background: #dcfce7 !important;
-            color: #166534 !important;
-            border-color: #86efac !important;
-            margin-bottom: 4px;
-        }
-        
-        .action-save-btn:hover { 
-            background: #bbf7d0 !important; 
-        }
-        
-        .action-delete-btn {
-            background: #fee2e2 !important;
-            color: #991b1b !important;
-            border-color: #fca5a5 !important;
-        }
-        
-        .action-delete-btn:hover { 
-            background: #fecaca !important; 
-        }
-
+        /* Sections internes aux panneaux */
         .sidebar-section {
-            background: #ffffff;
+            background: #f8fafc;
             border-radius: 8px;
-            padding: 8px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+            padding: 10px;
             border: 1px solid #cbd5e1;
             display: flex;
             flex-direction: column;
@@ -229,112 +152,83 @@
         }
 
         .sidebar-section h3 {
-            font-size: 0.75rem;
-            margin: 0 0 4px 0;
+            font-size: 0.8rem;
+            margin: 0 0 6px 0;
             text-align: center;
-            border-bottom: 2px solid;
-            padding-bottom: 3px;
+            border-bottom: 3px solid;
+            padding-bottom: 4px;
             text-transform: uppercase;
-            font-weight: bold;
+            font-weight: 900;
         }
         
         .tools-section h3 { color: #334155; border-color: #cbd5e1; }
-        .update-section h3 { color: #15803d; border-color: #bbf7d0; }
-        .bloc-section h3 { color: #d97706; border-color: #fde68a; }
-        .indiv-section h3 { color: #0284c7; border-color: #bae6fd; }
+        .bloc-section h3 { color: #d97706; border-color: #fcd34d; }
+        .indiv-section h3 { color: #0284c7; border-color: #7dd3fc; }
 
-        .custom-list {
+        /* Grille d'outils */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .tool-btn {
+            background: #ffffff;
+            color: #333;
+            border: 2px solid #cbd5e1;
+            padding: 6px 2px;
+            border-radius: 6px;
+            font-size: 0.72rem;
             display: flex;
+            align-items: center;
+            justify-content: center;
             flex-direction: column;
-            gap: 3px;
-            max-height: 250px;
-            overflow-y: auto;
-            margin-bottom: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .tool-btn:hover { background: #f1f5f9; border-color:#94a3b8; }
+        .tool-btn.active-tool {
+            background: #2563eb;
+            color: white;
+            border-color: #1d4ed8;
+            box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+        }
+        
+        .btn-full { grid-column: span 2; flex-direction: row; padding: 6px 8px; font-size: 0.8rem; }
+        
+        .magic-btn { background: #fdf4ff; color: #701a75; border-color: #f0abfc; }
+        .magic-btn.active-magic { background: #c026d3; color: white; border-color: #a21caf; box-shadow: 0 0 8px rgba(192, 38, 211, 0.6); }
+        
+        .eraser-btn { background: #fff1f2 !important; color: #be123c !important; border-color: #fda4af !important; }
+        .eraser-btn.active-tool { background: #e11d48 !important; color: white !important; border-color: #be123c !important; }
+        .clear-all-btn { background: #fef2f2 !important; color: #991b1b !important; border-color: #fca5a5 !important; }
+
+        /* Listes de blocs */
+        .custom-list {
+            display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto; margin-bottom: 4px;
         }
         
         .custom-item {
-            background: #fff;
-            border: 1px solid #cbd5e1;
-            padding: 4px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: background 0.15s;
+            background: #ffffff; border: 1px solid #cbd5e1; padding: 5px 8px; border-radius: 6px;
+            font-size: 0.78rem; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: all 0.15s; font-weight: bold; color: #334155;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        
-        .custom-item span {
-            flex: 1;
-            text-align: left;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            cursor: pointer;
-        }
-        
-        .custom-item:hover { 
-            background: #e2e8f0; 
-        }
-        
-        .custom-item.active-custom {
-            background: #3182ce;
-            color: white;
-            border-color: #2b6cb0;
-            font-weight: bold;
-        }
+        .custom-item:hover { background: #f1f5f9; border-color: #94a3b8; }
+        .custom-item.active-custom { background: #2563eb; color: white; border-color: #1d4ed8; }
 
-        .custom-item-actions {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .qr-custom-btn, .delete-custom-btn {
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 2px 5px;
-            transition: all 0.2s;
-        }
-        
-        .qr-custom-btn { 
-            background: #e0f2fe; 
-            border: 1px solid #7dd3fc; 
-            color: #0369a1; 
-        }
-        
-        .qr-custom-btn:hover { 
-            background: #bae6fd; 
-        }
-        
-        .delete-custom-btn { 
-            background: #fee2e2; 
-            border: 1px solid #fca5a5; 
-            color: #991b1b; 
-        }
-        
-        .delete-custom-btn:hover { 
-            background: #fecaca; 
-        }
+        .custom-item-actions { display: flex; align-items: center; gap: 4px; }
+        .qr-custom-btn, .delete-custom-btn { border-radius: 4px; font-size: 0.8rem; padding: 2px 5px; border-width: 2px;}
+        .qr-custom-btn { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+        .delete-custom-btn { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 
         .add-custom-btn {
-            background: #f8fafc;
-            color: #334155;
-            border: 1px dashed #94a3b8;
-            width: 100%;
-            padding: 6px;
-            font-size: 0.75rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
+            background: #ffffff; color: #0f172a; border: 2px dashed #94a3b8; width: 100%;
+            padding: 8px; font-size: 0.8rem; border-radius: 6px;
         }
-        
-        .add-custom-btn:hover { 
-            background: #e2e8f0; 
-        }
+        .add-custom-btn:hover { background: #f1f5f9; border-color: #64748b; }
 
+        /* CONTENEUR CENTRAL DU MUR */
         .center-col {
             flex: 1 1 500px;
             display: flex;
@@ -347,387 +241,121 @@
             display: inline-block;
             width: 100%;
             max-width: 800px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); /* Ombre portée impressionnante */
+            border-radius: 10px;
+            border: 4px solid #ffffff; /* Cadre photo blanc */
             overflow: hidden;
             cursor: crosshair;
             transition: max-width 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            background: #000;
         }
 
         #wall-image {
             display: block;
             width: 100%;
             height: auto;
-            max-height: 85vh;
+            max-height: 82vh;
             object-fit: contain;
         }
 
-        /* NOUVEAU MENU FLOTTANT */
+        /* MENU FLOTTANT */
         .selection-panel {
             position: absolute;
-            background: #e7f5ff;
-            border: 2px solid #3182ce;
+            background: #ffffff;
+            border: 3px solid #2563eb;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 10px;
             display: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
             z-index: 100;
-            width: 160px;
+            width: 170px;
             cursor: default;
         }
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #bae6fd;
-            padding-bottom: 4px;
-        }
-        .panel-header h4 {
-            margin: 0;
-            font-size: 0.85rem;
-            color: #2b6cb0;
-        }
-        .close-panel-btn {
-            background: none !important;
-            border: none !important;
-            color: #e53e3e !important;
-            font-weight: bold;
-            font-size: 1rem;
-            padding: 0 !important;
-            cursor: pointer;
-            margin: 0 !important;
-        }
-        .close-panel-btn:hover {
-            color: #c53030 !important;
-        }
-        .control-row { 
-            display: flex; 
-            gap: 4px; 
-            margin-bottom: 4px; 
-            justify-content: center; 
-        }
-        .control-row button { 
-            padding: 4px 6px; 
-            font-size: 0.75rem; 
-            margin: 0; 
-            background: #3182ce; 
-        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 2px solid #bfdbfe; padding-bottom: 4px;}
+        .panel-header h4 { margin: 0; font-size: 0.85rem; color: #1e3a8a; font-weight: 900;}
+        .close-panel-btn { background: none!important; border: none!important; color: #ef4444!important; font-weight: bold; font-size: 1.1rem; padding: 0!important; margin: 0!important;}
+        .control-row { display: flex; gap: 4px; margin-bottom: 4px; justify-content: center; }
+        .control-row button { padding: 4px 6px; font-size: 0.75rem; border-radius: 4px; background: #2563eb; color: white; border: none;}
 
-        .right-sidebar {
-            width: 350px;
-            text-align: left;
-            flex-shrink: 0;
-            max-height: 85vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        @media (max-width: 1100px) {
-            .workspace { 
-                flex-direction: column; 
-                align-items: center; 
-            }
-            .palette-bar, .right-sidebar { 
-                width: 100%; 
-                max-width: 600px; 
-                max-height: none; 
-            }
-            .center-col { 
-                width: 100%; 
-                order: -1; 
-            }
-            #wall-image { 
-                max-height: none; 
-            }
+        /* Bannières et zone Technique */
+        #active-route-banner {
+            background: #ffffff; color: #1e293b; padding: 12px; border-radius: 8px;
+            margin: 0 auto 15px auto; max-width: 800px; font-weight: bold; 
+            border: 2px solid #94a3b8; line-height: 1.4; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
         .institutional-zone {
-            background: #fff;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            border: 1px solid #cbd5e1;
+            background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;
         }
+        .institutional-zone h3 { font-size: 0.9rem; margin-top: 0; color: #1e3a8a; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 4px;}
+        .inst-item { font-size: 0.75rem; color: #334155; margin-bottom: 6px; line-height: 1.3; background: #f8fafc; padding: 6px; border-radius: 4px; border-left: 4px solid #3b82f6; }
+        .inst-item a { color: #2563eb; font-weight: bold; }
         
-        .institutional-zone h3 {
-            font-size: 0.9rem;
-            margin-top: 0;
-            color: #1e3a8a;
-            text-align: center;
-            border-bottom: 2px solid #3b82f6;
-            padding-bottom: 4px;
-        }
-        
-        .inst-item {
-            font-size: 0.75rem;
-            color: #334155;
-            margin-bottom: 6px;
-            line-height: 1.3;
-            background: #f8fafc;
-            padding: 5px;
-            border-radius: 4px;
-            border-left: 3px solid #3b82f6;
-        }
-        
-        .inst-item a { 
-            color: #2563eb; 
-            text-decoration: none; 
-            font-weight: bold; 
-        }
-        
-        .inst-item a:hover { 
-            text-decoration: underline; 
-        }
-        
-        .inst-list { 
-            margin: 4px 0 0 15px; 
-            padding: 0; 
-            font-size: 0.72rem; 
-            color: #475569; 
-        }
-        
-        .inst-list li { 
-            margin-bottom: 3px; 
-        }
-        
-        .appn-alert {
-            background: #eff6ff;
-            border-left-color: #f59e0b;
-            font-size: 0.73rem;
-        }
+        .technical-zone { background: #f0fdf4; padding: 12px; border-radius: 8px; border: 2px solid #bbf7d0; }
+        .technical-zone h3 { font-size: 0.9rem; margin-top: 0; color: #15803d; text-align: center; border-bottom: 2px solid #22c55e; padding-bottom: 4px;}
+        .legend-category { font-size: 0.78rem; font-weight: bold; color: #166534; background: #dcfce7; padding: 4px 8px; border-radius: 4px; margin: 8px 0 5px 0; text-transform: uppercase;}
+        .legend-banner { background: #fff; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 5px; overflow: hidden; }
+        .legend-header { padding: 6px 8px; font-size: 0.8rem; font-weight: bold; color: #14532d; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4;}
+        .legend-body { padding: 8px; font-size: 0.74rem; color: #374151; display: none; text-align: center; border-top: 1px solid #bbf7d0;}
+        .legend-banner.active .legend-body { display: block; }
+        .legend-illustration { width: 100%; height: 85px; background: #f8fafc; border-radius: 4px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;}
 
-        .technical-zone {
-            background: #f0fdf4;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            border: 2px solid #bbf7d0;
-        }
-        
-        .technical-zone h3 {
-            font-size: 0.9rem;
-            margin-top: 0;
-            color: #15803d;
-            text-align: center;
-            border-bottom: 2px solid #22c55e;
-            padding-bottom: 4px;
-        }
-        
-        .legend-category {
-            font-size: 0.78rem;
-            font-weight: bold;
-            color: #166534;
-            background: #dcfce7;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin: 8px 0 5px 0;
-            text-transform: uppercase;
-        }
-        
-        .legend-banner { 
-            background: #fff; 
-            border: 1px solid #bbf7d0; 
-            border-radius: 6px; 
-            margin-bottom: 5px; 
-            overflow: hidden; 
-        }
-        
-        .legend-header {
-            padding: 6px 8px; 
-            font-size: 0.8rem; 
-            font-weight: bold; 
-            color: #14532d;
-            cursor: pointer; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: #f0fdf4;
-        }
-        
-        .legend-header:hover { 
-            background: #dcfce7; 
-        }
-        
-        .legend-body {
-            padding: 8px; 
-            font-size: 0.74rem; 
-            color: #374151; 
-            background: #fff;
-            border-top: 1px solid #bbf7d0; 
-            display: none; 
-            line-height: 1.3; 
-            text-align: center;
-        }
-        
-        .legend-banner.active .legend-body { 
-            display: block; 
-        }
-        
-        .legend-banner.active .legend-header { 
-            background: #dcfce7; 
-            color: #166534; 
-        }
-        
-        .legend-illustration {
-            width: 100%; 
-            height: 85px; 
-            background: #f8fafc; 
-            border-radius: 4px; 
-            margin-bottom: 5px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border: 1px solid #e2e8f0;
-        }
-
-        /* Modals */
-        .modal-overlay {
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.6); 
-            z-index: 1000; 
-            justify-content: center; 
-            align-items: center;
-        }
-        
-        .modal-content {
-            background: #fff; 
-            padding: 25px; 
-            border-radius: 10px; 
-            max-width: 500px; 
-            width: 90%;
-            text-align: left; 
-            max-height: 90vh; 
-            overflow-y: auto; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
-        
-        .modal-content h2 { 
-            margin-top: 0; 
-            color: #007bff; 
-            font-size: 1.3rem; 
-        }
-        
-        .form-group { 
-            margin-bottom: 15px; 
-        }
-        
-        .form-group label { 
-            display: block; 
-            font-weight: bold; 
-            margin-bottom: 5px; 
-            font-size: 0.9rem; 
-        }
-        
-        .form-group input[type="file"], .form-group input[type="text"], .form-group select { 
-            width: 100%; 
-            box-sizing: border-box; 
-        }
-        
-        .help-text { 
-            font-size: 0.8rem; 
-            color: #666; 
-            margin-top: 3px; 
-        }
-
-        #active-route-banner {
-            background: #d4edda; 
-            color: #155724; 
-            padding: 10px; 
-            border-radius: 6px;
-            margin: 0 auto 15px auto; 
-            max-width: 650px; 
-            font-weight: bold; 
-            border: 1px solid #c3e6cb; 
-            line-height: 1.4;
-        }
-
+        /* BALISES SUR LE MUR */
         .marker {
-            position: absolute; 
-            transform: translate(-50%, -50%); 
-            cursor: grab; 
-            display: flex;
-            align-items: center; 
-            justify-content: center; 
-            font-weight: bold; 
-            transition: box-shadow 0.2s;
+            position: absolute; transform: translate(-50%, -50%); cursor: grab; display: flex;
+            align-items: center; justify-content: center; font-weight: bold; transition: box-shadow 0.2s;
         }
+        .marker:active { cursor: grabbing; }
+        .marker.selected { outline: 3px dashed #007bff; outline-offset: 3px; z-index: 50; }
         
-        .marker:active { 
-            cursor: grabbing; 
-        }
-        
-        .marker.selected { 
-            outline: 3px dashed #007bff; 
-            outline-offset: 3px; 
-            z-index: 50; 
-        }
-        
-        /* CERCLE VIDE (Normal) */
         .marker.dot {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 4px solid white; 
-            background-color: transparent !important;
-            box-shadow: 0 0 3px rgba(0,0,0,0.6), inset 0 0 3px rgba(0,0,0,0.6);
+            width: 32px; height: 32px; border-radius: 50%; border: 4px solid white; 
+            background-color: transparent !important; box-shadow: 0 0 4px rgba(0,0,0,0.8), inset 0 0 4px rgba(0,0,0,0.8);
         }
-        
-        /* PETIT CERCLE VIDE (Nouveau) */
         .marker.dot-small {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: 3px solid white; 
-            background-color: transparent !important;
-            box-shadow: 0 0 3px rgba(0,0,0,0.6), inset 0 0 3px rgba(0,0,0,0.6);
+            width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; 
+            background-color: transparent !important; box-shadow: 0 0 3px rgba(0,0,0,0.8), inset 0 0 3px rgba(0,0,0,0.8);
         }
-
-        .marker.arrow { 
-            font-size: 26px; 
-            color: #ffcc00; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8); 
-        }
-        
-        .marker.cross {
-            font-size: 24px; 
-            color: #dc3545; 
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(255,255,255,0.7); 
-            border-radius: 50%; 
-            width: 24px; 
-            height: 24px;
-        }
+        .marker.arrow { font-size: 26px; color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .marker.cross { font-size: 24px; color: #dc3545; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px;}
         
         .marker.tech-tag {
-            padding: 2px 5px; 
-            border-radius: 4px; 
-            font-size: 0.65rem; 
-            color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4); 
-            white-space: nowrap; 
-            border: 1px solid rgba(255,255,255,0.8);
+            padding: 2px 5px; border-radius: 4px; font-size: 0.65rem; color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6); white-space: nowrap; border: 1px solid rgba(255,255,255,0.9);
         }
         
-        /* Couleurs pour toutes les balises techniques */
         .marker.tech-sd { background-color: #1e293b; color: #fbbf24; border-color: #fbbf24; }
         .marker.tech-top { background-color: #ca8a04; color: white; border-color: #fef08a; }
         .marker.tech-zone { background-color: #0ea5e9; color: white; border-color: #bae6fd; }
-        .marker.tech-mg { background-color: #475569; color: white; border-color: #e2e8f0; }
-        .marker.tech-md { background-color: #475569; color: white; border-color: #e2e8f0; }
-        .marker.tech-jete { background-color: #ec4899; color: white; border-color: #fbcfe8; }
-        .marker.tech-pied { background-color: #f59e0b; color: white; border-color: #fcd34d; }
-        .marker.tech-joker { background-color: #10b981; color: white; border: 2px dashed #6ee7b7; }
+        .marker.tech-mg { background-color: #475569; }
+        .marker.tech-md { background-color: #475569; }
+        .marker.tech-jete { background-color: #ec4899; }
+        .marker.tech-pied { background-color: #f59e0b; }
+        .marker.tech-joker { background-color: #10b981; border: 2px dashed #6ee7b7; }
         .marker.tech-pme { background-color: #2b6cb0; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
+
+        /* Modals */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.8); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #ffffff; padding: 25px; border-radius: 12px; max-width: 500px; width: 90%;
+            text-align: left; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 2px solid #cbd5e1;
+        }
+        .modal-content h2 { margin-top: 0; color: #1e3a8a; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;}
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #334155; }
+        .form-group input, .form-group select { width: 100%; box-sizing: border-box; }
+        .help-text { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+
+        @media (max-width: 1100px) {
+            .workspace { flex-direction: column; align-items: center; }
+            .palette-bar, .right-sidebar { width: 100%; max-width: 800px; max-height: none; }
+            .center-col { width: 100%; order: -1; }
+        }
     </style>
 </head>
 <body>
@@ -735,19 +363,32 @@
     <h1>🧗 Bloc'Note EPS</h1>
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
     
+    <!-- TABLEAU DE BORD DU HAUT -->
     <div class="controls">
-        <label for="routeSelect">Sélectionner une Voie :</label>
-        <select id="routeSelect" onchange="changeRoute()">
-            <option value="">-- Choisir une voie officielle --</option>
-        </select>
+        <!-- Sélecteurs de Murs -->
+        <div class="controls-group">
+            <select id="routeSelect" onchange="changeRoute()">
+                <option value="">-- Choisir une Voie Officielle --</option>
+            </select>
 
-        <label for="blocWallSelect" style="margin-left: 15px;">Ou créer un Bloc :</label>
-        <select id="blocWallSelect" onchange="changeBlocWall()" style="background-color: #fef3c7; color: #92400e; border-color: #f59e0b;">
-            <option value="">-- Murs importés --</option>
-        </select>
+            <select id="blocWallSelect" onchange="changeBlocWall()" style="background-color: #fef3c7; color: #92400e; border-color: #f59e0b;">
+                <option value="">-- Ou Choisir un Mur Libre --</option>
+            </select>
+        </div>
 
-        <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-        <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo réelle du mur par défaut">🎁 Mode démo</button>
+        <!-- Boutons de Mise à jour (Transférés ici) -->
+        <div class="controls-group actions-group">
+            <span>Mise à jour :</span>
+            <button class="action-btn btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
+            <button class="action-btn btn-delete" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
+            <button class="action-btn btn-qr" onclick="generateQRCode()">📱 QR Code</button>
+        </div>
+
+        <!-- Configuration générale -->
+        <div class="controls-group">
+            <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
+            <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo réelle du mur par défaut">🎁 Démo</button>
+        </div>
     </div>
 
     <div id="active-route-banner">
@@ -781,23 +422,13 @@
                     <button class="tool-btn" id="tool-cm" onclick="setTool('cm')">🔄 CM</button>
                     <button class="tool-btn" id="tool-cp" onclick="setTool('cp')">👟 CP</button>
                     
-                    <button class="tool-btn btn-full" id="tool-jete" onclick="setTool('jete')">🚀 Jeté</button>
-                    
                     <button class="tool-btn eraser-btn btn-full" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
                     <button class="tool-btn clear-all-btn btn-full" onclick="clearStickers()">🧹 Tout nettoyer</button>
                     <button class="tool-btn magic-btn btn-full" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
                 </div>
             </div>
 
-            <!-- Zone Mise à jour -->
-            <div class="sidebar-section update-section">
-                <h3>Mise à jour</h3>
-                <button class="tool-btn action-save-btn btn-full" onclick="saveCurrentRoute()">💾 Enregistrer modifs</button>
-                <button class="tool-btn action-delete-btn btn-full" onclick="deleteCurrentRoute()">🗑️ Supprimer tracé</button>
-                <button class="tool-btn btn-full" onclick="generateQRCode()" style="background:#e0f2fe!important; color:#0369a1!important; border-color:#7dd3fc!important; margin-top:5px;">📱 Afficher QR Code Actif</button>
-            </div>
-
-            <!-- Zone Exercices bloc -->
+            <!-- Zone Exercices bloc (Remontée juste sous les outils) -->
             <div class="sidebar-section bloc-section">
                 <h3 class="bloc-title">Exercices bloc</h3>
                 <div id="bloc-list" class="custom-list"></div>
@@ -834,7 +465,6 @@
                         <button onclick="deleteSelected()" style="background: #e53e3e; width: 100%;">🗑️ Supprimer</button>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -844,9 +474,9 @@
                 <div class="inst-item">
                     <b>Textes & Références :</b>
                     <ul class="inst-list">
-                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo16/MENE1711773C.htm" target="_blank">Exigence de la sécurité dans les activités physiques de pleine nature dans le second degré</a></li>
-                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/protocoles-de-securite-escalade-finalpdf-100674.pdf" target="_blank">Protocoles de sécurité dans les activités physiques de pleine nature : escalade</a></li>
-                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/ra16c4epsca2escaladend567455pdf-78324.pdf" target="_blank">repères d’évaluation en Escalade</a></li>
+                        <li><a href="https://www.education.gouv.fr/bo/17/Hebdo16/MENE1711773C.htm" target="_blank">Sécurité dans les APPN dans le 2nd degré</a></li>
+                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/protocoles-de-securite-escalade-finalpdf-100674.pdf" target="_blank">Protocoles de sécurité APPN : escalade</a></li>
+                        <li><a href="https://eduscol.education.gouv.fr/sites/default/files/document/ra16c4epsca2escaladend567455pdf-78324.pdf" target="_blank">Repères d’évaluation en Escalade</a></li>
                         <li><a href="https://www.pedagogie.ac-aix-marseille.fr/jcms/c_103401/fr/gestion-des-epi-dans-les-eple" target="_blank">Gestion des EPI</a></li>
                     </ul>
                 </div>
@@ -856,24 +486,23 @@
                     🌐 <a href="https://assistant-ia-eps-aix-m.streamlit.app/" target="_blank">Accéder au HUB EPS</a>
                 </div>
                 <div class="inst-item appn-alert">
-                    <b>Attention Déclaration APPN IpackEPS :</b><br>
-                    Procédure obligatoire si la sortie comporte <b>au moins 1 relai</b>.
+                    <b>Déclaration APPN IpackEPS :</b> Obligatoire si la sortie comporte <b>au moins 1 relai</b>.
                 </div>
             </div>
 
             <!-- ESPACE FICHE DE SUIVI ESCALADE -->
-            <div class="institutional-zone" style="background: #eef2ff; border-color: #6366f1; margin-top: 12px;">
-                <h3 style="color: #4f46e5; border-color: #818cf8;">📊 Fiche de suivi escalade</h3>
-                <div class="inst-item" style="border-left-color: #6366f1;">
+            <div class="institutional-zone" style="background: #eff6ff; border-color: #60a5fa;">
+                <h3 style="color: #2563eb; border-color: #93c5fd;">📊 Fiche de suivi escalade</h3>
+                <div class="inst-item" style="border-left-color: #3b82f6;">
                     <b>Outil de gestion des séances :</b><br>
                     Tableur automatisé pour le suivi des réussites et des cotations.
                     <div style="margin-top: 8px; text-align: center;">
-                        <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="display: inline-block; background: #4f46e5; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
+                        <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="display: inline-block; background: #2563eb; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
                     </div>
                 </div>
             </div>
 
-            <div class="technical-zone" style="margin-top: 12px;">
+            <div class="technical-zone">
                 <h3>📖 Zone Technique & Pédagogique</h3>
                 
                 <div class="legend-category">🎓 Éléments Pédagogiques</div>
@@ -962,7 +591,7 @@
             <div id="bloc-options">
                 <div class="form-group">
                     <label>Difficulté (Couleur du tracé) :</label>
-                    <select id="create-grade">
+                    <select id="create-grade" style="border: 2px solid #cbd5e1;">
                         <option value="Jaune">🟡 Jaune (Très facile)</option>
                         <option value="Vert">🟢 Vert (Facile)</option>
                         <option value="Bleu">🔵 Bleu (Moyen)</option>
@@ -973,7 +602,7 @@
                 
                 <div class="form-group">
                     <label>Gabarit adapté :</label>
-                    <select id="create-height">
+                    <select id="create-height" style="border: 2px solid #cbd5e1;">
                         <option value="Toutes tailles">Toutes tailles</option>
                         <option value="< 1m60 (6ème/5ème)">< 1m60 (6ème/5ème)</option>
                         <option value="> 1m60 (4ème/3ème)">> 1m60 (4ème/3ème)</option>
@@ -982,7 +611,7 @@
                 
                 <div class="form-group">
                     <label>Thème du parcours :</label>
-                    <select id="create-theme">
+                    <select id="create-theme" style="border: 2px solid #cbd5e1;">
                         <option value="Libre">Libre / Autre</option>
                         <option value="Charger ses appuis pieds">Charger ses appuis pieds</option>
                         <option value="Mouvement dynamique et coord.">Mouvement dynamique et coordination</option>
@@ -992,9 +621,9 @@
                 </div>
             </div>
 
-            <div style="text-align: right; margin-top: 20px;">
-                <button onclick="document.getElementById('create-modal').style.display='none'" style="background-color: #6c757d; margin-right: 10px;">Annuler</button>
-                <button onclick="confirmCreateRoute()" style="background-color: #28a745;">Valider</button>
+            <div style="text-align: right; margin-top: 25px;">
+                <button onclick="document.getElementById('create-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
+                <button onclick="confirmCreateRoute()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Valider</button>
             </div>
         </div>
     </div>
@@ -1002,29 +631,29 @@
     <!-- Modal de Configuration -->
     <div id="config-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2>⚙️ Configuration de l'établissement</h2>
+            <h2>⚙️ Configuration</h2>
             
             <div class="form-group">
-                <label for="wallImagesInput">1. Importer les photos des secteurs (Jusqu'à 20 photos) :</label>
-                <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)">
+                <label>1. Importer les photos des murs (Max 20) :</label>
+                <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
             </div>
 
             <div class="form-group">
-                <label for="excelInput">2. Importer le fichier Excel rempli (.xlsx ou .csv) :</label>
-                <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)">
+                <label>2. Importer le fichier Excel (.xlsx ou .csv) :</label>
+                <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
             </div>
 
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
+            <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
             <div class="form-group">
                 <label>🔄 Partage en équipe (Import / Export) :</label>
-                <button class="template-btn" style="background-color: #0284c7; color: white; width: 100%; margin-bottom: 10px;" onclick="exportData()">📤 Exporter mes blocs (.json)</button>
-                <br>
-                <label for="importInput" style="font-weight: normal; font-size: 0.8rem;">📥 Importer les blocs d'un collègue :</label>
-                <input type="file" id="importInput" accept=".json" onchange="importData(this)">
+                <button class="template-btn" style="background-color: #2563eb; color: white; width: 100%; margin-bottom: 12px; padding: 10px; font-weight: bold;" onclick="exportData()">📤 Exporter mes blocs (.json)</button>
+                
+                <label style="font-weight: normal; font-size: 0.85rem; color: #475569;">📥 Importer les blocs d'un collègue :</label>
+                <input type="file" id="importInput" accept=".json" onchange="importData(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
             </div>
 
             <div style="text-align: right; margin-top: 20px;">
-                <button onclick="closeConfigModal()" style="background-color: #28a745;">Valider et Fermer</button>
+                <button onclick="closeConfigModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
     </div>
@@ -1032,10 +661,10 @@
     <!-- Modal QR Code -->
     <div id="qr-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center;">
-            <h2 id="qr-modal-title" style="color: #0369a1; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
-            <p style="font-size: 0.9rem; color: #475569; margin-top: 0;">L'élève peut scanner ce code pour afficher ce tracé en lecture seule.</p>
-            <div id="qrcode-container" style="display: flex; justify-content: center; margin: 20px 0; padding: 15px; background: #fff; border-radius: 8px; border: 2px dashed #cbd5e1;"></div>
-            <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #64748b; color: white; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Fermer</button>
+            <h2 id="qr-modal-title" style="color: #1e3a8a; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
+            <p style="font-size: 0.95rem; color: #475569; margin-top: 0;">L'élève scanne ce code pour afficher le tracé en plein écran.</p>
+            <div id="qrcode-container" style="display: flex; justify-content: center; margin: 25px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 3px dashed #cbd5e1;"></div>
+            <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #475569; color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">Fermer</button>
         </div>
     </div>
 
@@ -1159,9 +788,9 @@
             renderCustomLists();
             
             img.src = schoolConfig.images[0];
-            activeBanner.style.background = "#d4edda"; 
-            activeBanner.style.color = "#155724";
-            activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie.";
+            activeBanner.style.background = "#dcfce7"; 
+            activeBanner.style.color = "#166534";
+            activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie ou créez un bloc.";
         }
 
         const colorMap = {
@@ -1209,14 +838,14 @@
             if (schoolConfig.images && schoolConfig.images.length > 0 && !currentRouteId) {
                 img.src = schoolConfig.images[0];
                 document.getElementById('wall-container').style.maxWidth = '800px';
-                activeBanner.style.background = "#d4edda"; 
-                activeBanner.style.color = "#155724";
+                activeBanner.style.background = "#dcfce7"; 
+                activeBanner.style.color = "#166534";
                 activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
             }
         }
 
         function populateRouteDropdown() {
-            routeSelect.innerHTML = '<option value="">-- Choisir une voie officielle --</option>';
+            routeSelect.innerHTML = '<option value="">-- Choisir une Voie Officielle --</option>';
             if (schoolConfig.routes && schoolConfig.routes.length > 0) {
                 schoolConfig.routes.forEach(r => {
                     const opt = document.createElement('option');
@@ -1229,7 +858,7 @@
 
         function populateBlocWallDropdown() {
             const blocSelect = document.getElementById('blocWallSelect');
-            blocSelect.innerHTML = '<option value="">-- Murs importés --</option>';
+            blocSelect.innerHTML = '<option value="">-- Ou Choisir un Mur Libre --</option>';
             if (schoolConfig.imageNames && schoolConfig.imageNames.length > 0) {
                 schoolConfig.imageNames.forEach((name, index) => {
                     const opt = document.createElement('option');
@@ -1273,6 +902,18 @@
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'custom-item-actions';
 
+                if (r.type === 'bloc') {
+                    const colorIndicator = document.createElement('div');
+                    colorIndicator.style.width = '14px';
+                    colorIndicator.style.height = '14px';
+                    colorIndicator.style.borderRadius = '50%';
+                    colorIndicator.style.backgroundColor = r.color;
+                    colorIndicator.style.border = '1px solid rgba(0,0,0,0.2)';
+                    colorIndicator.style.marginRight = '2px';
+                    colorIndicator.title = r.grade ? "Niveau : " + r.grade.split(' ')[0] : "Difficulté";
+                    actionsDiv.appendChild(colorIndicator);
+                }
+
                 const qrBtn = document.createElement('button');
                 qrBtn.className = 'qr-custom-btn';
                 qrBtn.textContent = '📱';
@@ -1305,8 +946,8 @@
                             document.getElementById('wall-container').style.maxWidth = '800px';
                             document.getElementById('routeSelect').value = "";
                             document.getElementById('blocWallSelect').value = "";
-                            activeBanner.style.background = "#d4edda"; 
-                            activeBanner.style.color = "#155724";
+                            activeBanner.style.background = "#fff3cd"; 
+                            activeBanner.style.color = "#856404";
                             activeBanner.innerHTML = "⚠️ Aucun tracé sélectionné.";
                         }
                         renderCustomLists();
@@ -1331,16 +972,17 @@
 
             for (let theme in blocsParTheme) {
                 let themeHeader = document.createElement('div');
-                themeHeader.style.fontSize = '0.65rem';
+                themeHeader.style.fontSize = '0.7rem';
                 themeHeader.style.fontWeight = 'bold';
                 themeHeader.style.color = '#92400e';
                 themeHeader.style.background = '#fef3c7';
-                themeHeader.style.padding = '3px 6px';
-                themeHeader.style.marginTop = '6px';
-                themeHeader.style.marginBottom = '2px';
+                themeHeader.style.padding = '4px 8px';
+                themeHeader.style.marginTop = '8px';
+                themeHeader.style.marginBottom = '4px';
                 themeHeader.style.borderRadius = '4px';
                 themeHeader.style.textAlign = 'left';
                 themeHeader.style.textTransform = 'uppercase';
+                themeHeader.style.borderLeft = '3px solid #f59e0b';
                 themeHeader.textContent = `📁 ${theme}`;
                 
                 blocListContainer.appendChild(themeHeader);
@@ -1378,8 +1020,8 @@
 
             if (selectedIndex === "") {
                 document.getElementById('wall-container').style.maxWidth = '800px';
-                activeBanner.style.background = "#d4edda"; 
-                activeBanner.style.color = "#155724";
+                activeBanner.style.background = "#fff3cd"; 
+                activeBanner.style.color = "#856404";
                 activeBanner.innerHTML = "⚠️ Aucun mur ou voie sélectionné.";
                 clearMarkersDOM(); 
                 activeMarkers = []; 
@@ -1409,7 +1051,7 @@
             
             activeBanner.style.background = "#fef3c7"; 
             activeBanner.style.color = "#92400e";
-            activeBanner.innerHTML = `📸 <b>Mur Libre : ${cleanName}</b><br><span style="font-size:0.8rem; font-weight:normal;">Cliquez sur "+ Créer un Bloc" pour dessiner sur cette zone.</span>`;
+            activeBanner.innerHTML = `📸 <b>Mur Libre : ${cleanName}</b><br><span style="font-size:0.85rem; font-weight:normal;">Cliquez sur "+ Créer un Bloc" pour dessiner sur cette zone.</span>`;
         }
 
         function openCreateModal(type) {
@@ -1478,7 +1120,7 @@
             
             clearMarkersDOM(); 
             activeMarkers = []; 
-            closeSelectionPanel();
+            selectMarker(null);
             currentRouteId = null; 
             
             document.getElementById('routeSelect').value = "";
@@ -1487,8 +1129,8 @@
             document.getElementById('wall-container').style.maxWidth = '800px'; 
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
-            activeBanner.style.background = "#d4edda"; 
-            activeBanner.style.color = "#155724";
+            activeBanner.style.background = "#dcfce7"; 
+            activeBanner.style.color = "#166534";
             activeBanner.innerHTML = "✨ Tracé sauvegardé ! Sélectionnez une voie ou créez un nouveau bloc.";
         }
 
@@ -1526,7 +1168,7 @@
             activeBanner.style.color = bannerColor;
 
             if (found.type === 'bloc') {
-                activeBanner.innerHTML = `🎯 <b>Bloc : ${found.name}</b><br><span style="font-size:0.8rem; font-weight:normal;">Niveau: ${found.grade.split(' ')[0] || '?'} | Gabarit: ${found.height || '?'} | Thème: ${found.theme || '?'}</span>`;
+                activeBanner.innerHTML = `🎯 <b>Bloc : ${found.name}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${found.grade.split(' ')[0] || '?'} | Gabarit: ${found.height || '?'} | Thème: ${found.theme || '?'}</span>`;
             } else {
                 activeBanner.innerHTML = `🎯 <b>Élève : ${found.name}</b>`;
             }
@@ -1641,7 +1283,6 @@
             imageObj.src = src;
         }
 
-        // --- GESTION DU MENU FLOTTANT ---
         function closeSelectionPanel() {
             document.getElementById('selection-panel').style.display = 'none';
             selectMarker(null);
@@ -1652,12 +1293,10 @@
             const panel = document.getElementById('selection-panel');
             panel.style.display = 'block';
 
-            // Calcul de la position par rapport au conteneur du mur
             const rect = container.getBoundingClientRect();
-            let x = event.clientX - rect.left + 15; // Décalage pour ne pas être sous la souris
+            let x = event.clientX - rect.left + 15; 
             let y = event.clientY - rect.top + 15;
 
-            // Empêche le menu de sortir par la droite ou le bas
             if (x + panel.offsetWidth > rect.width) x = rect.width - panel.offsetWidth - 10;
             if (y + panel.offsetHeight > rect.height) y = rect.height - panel.offsetHeight - 10;
 
@@ -1668,7 +1307,6 @@
         function placeMarker(event) {
             const panel = document.getElementById('selection-panel');
             
-            // Si le menu flottant est ouvert, un clic n'importe où le ferme (et on ne pose pas de balise)
             if (panel.style.display === 'block') {
                 closeSelectionPanel();
                 return; 
@@ -1727,7 +1365,6 @@
                     marker.innerHTML = '❌';
                 }
 
-                // Drag and drop au clic prolongé
                 marker.onpointerdown = (e) => {
                     if (currentTool === 'eraser') {
                         e.stopPropagation(); 
@@ -1740,7 +1377,6 @@
                     }
                 };
 
-                // Ouverture du menu flottant au DOUBLE CLIC
                 marker.ondblclick = (e) => {
                     e.stopPropagation();
                     openFloatingMenu(index, e);
@@ -1954,8 +1590,8 @@
             if (!selectedId) {
                 currentRouteId = null; 
                 document.getElementById('wall-container').style.maxWidth = '800px'; 
-                activeBanner.style.background = "#d4edda"; 
-                activeBanner.style.color = "#155724";
+                activeBanner.style.background = "#fff3cd"; 
+                activeBanner.style.color = "#856404";
                 activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
                 clearMarkersDOM(); 
                 activeMarkers = []; 
@@ -2027,8 +1663,8 @@
             document.getElementById('blocWallSelect').value = "";
             document.getElementById('wall-container').style.maxWidth = '800px';
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
-            activeBanner.style.background = "#d4edda"; 
-            activeBanner.style.color = "#155724";
+            activeBanner.style.background = "#dcfce7"; 
+            activeBanner.style.color = "#166534";
             activeBanner.innerHTML = "✨ Modifications sauvegardées. Sélectionnez un tracé.";
         }
 
