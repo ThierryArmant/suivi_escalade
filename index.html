@@ -86,9 +86,9 @@
         
         /* MENUS DÉROULANTS : SÉLECTION MUR/VOIE EN JAUNE CANARI */
         select { 
-            background-color: #fffde7 !important; /* Fond jaune pastel lumineux */
-            color: #1e293b !important; /* Texte très foncé pour un contraste parfait */
-            border: 3px solid #ffea00 !important; /* Bordure JAUNE CANARI vif */
+            background-color: #fffde7 !important; 
+            color: #1e293b !important; 
+            border: 3px solid #ffea00 !important; 
             max-width: 100%; 
             cursor: pointer;
         }
@@ -292,7 +292,7 @@
         .clear-all-btn { background: #fef2f2 !important; color: #991b1b !important; border-color: #fca5a5 !important; }
 
         /* =========================================
-           LISTE DES BLOCS / THÈMES
+           LISTE DES BLOCS / THÈMES (Nouveau Menu Déroulant)
            ========================================= */
         .custom-list { 
             display: flex; 
@@ -301,6 +301,40 @@
             max-height: 250px; 
             overflow-y: auto; 
             margin-bottom: 4px; 
+        }
+
+        /* En-tête des thèmes (cliquable) */
+        .theme-header {
+            font-size: 0.72rem;
+            font-weight: bold;
+            color: #1f2937;
+            background: #fffce8;
+            padding: 6px 8px;
+            margin-top: 8px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            text-align: left;
+            text-transform: uppercase;
+            border-left: 4px solid #ffea00;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .theme-header:hover {
+            background: #fef08a;
+        }
+
+        /* Conteneur des blocs à l'intérieur d'un thème */
+        .theme-content {
+            display: none; /* Rétracté par défaut */
+            flex-direction: column;
+            gap: 4px;
+            padding-left: 4px;
+            margin-bottom: 4px;
         }
 
         .custom-item { 
@@ -555,6 +589,7 @@
             <span>Mise à jour :</span>
             <button class="action-btn btn-save" onclick="saveCurrentRoute()">💾 Enregistrer</button>
             <button class="action-btn btn-delete" onclick="deleteCurrentRoute()">🗑️ Supprimer</button>
+            <!-- Bouton QR Code supprimé car doublon -->
         </div>
 
         <div class="controls-group">
@@ -942,8 +977,8 @@
             renderCustomLists();
             
             img.src = schoolConfig.images[0];
-            activeBanner.style.background = "#fffde7"; 
-            activeBanner.style.color = "#1f2937";
+            activeBanner.style.background = "#dcfce7"; 
+            activeBanner.style.color = "#166534";
             activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie ou créez un bloc.";
         }
 
@@ -979,8 +1014,8 @@
             if (schoolConfig.images.length > 0 && !currentRouteId) {
                 img.src = schoolConfig.images[0];
                 document.getElementById('wall-container').style.maxWidth = '800px';
-                activeBanner.style.background = "#fffde7"; 
-                activeBanner.style.color = "#1f2937";
+                activeBanner.style.background = "#dcfce7"; 
+                activeBanner.style.color = "#166534";
                 activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
             }
         }
@@ -1012,6 +1047,8 @@
             
             blocListContainer.innerHTML = ''; 
             indivListContainer.innerHTML = '';
+
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
 
             let blocsParTheme = {};
 
@@ -1110,24 +1147,51 @@
                 }
             });
 
-            // CRÉATION DES DOSSIERS DE THÈMES DANS LA LISTE EN JAUNE CANARI
+            // CRÉATION DES DOSSIERS DE THÈMES DANS LA LISTE (ACCORDÉON)
             for (let theme in blocsParTheme) {
                 let themeHeader = document.createElement('div');
-                themeHeader.style.fontSize = '0.7rem'; 
-                themeHeader.style.fontWeight = 'bold';
-                themeHeader.style.color = '#1f2937'; 
-                themeHeader.style.background = '#fffce8';
-                themeHeader.style.padding = '4px 8px'; 
-                themeHeader.style.marginTop = '8px';
-                themeHeader.style.marginBottom = '4px'; 
-                themeHeader.style.borderRadius = '4px';
-                themeHeader.style.textAlign = 'left'; 
-                themeHeader.style.textTransform = 'uppercase';
-                themeHeader.style.borderLeft = '4px solid #ffea00';
-                themeHeader.textContent = `📁 ${theme}`;
+                themeHeader.className = 'theme-header';
                 
+                let titleSpan = document.createElement('span');
+                titleSpan.textContent = `📁 ${theme}`;
+                
+                let iconSpan = document.createElement('span');
+                iconSpan.textContent = '▶'; 
+                
+                themeHeader.appendChild(titleSpan);
+                themeHeader.appendChild(iconSpan);
+
+                let themeContent = document.createElement('div');
+                themeContent.className = 'theme-content';
+                
+                let hasActiveRoute = false;
+                
+                blocsParTheme[theme].forEach(item => {
+                    themeContent.appendChild(item);
+                    if(item.classList.contains('active-custom')) {
+                        hasActiveRoute = true;
+                    }
+                });
+                
+                // Si un bloc du thème est actif, le menu s'ouvre tout seul
+                if (hasActiveRoute) {
+                    themeContent.style.display = 'flex';
+                    iconSpan.textContent = '▼';
+                }
+
+                // Action de plier/déplier au clic
+                themeHeader.onclick = () => {
+                    if (themeContent.style.display === 'none' || themeContent.style.display === '') {
+                        themeContent.style.display = 'flex';
+                        iconSpan.textContent = '▼';
+                    } else {
+                        themeContent.style.display = 'none';
+                        iconSpan.textContent = '▶';
+                    }
+                };
+
                 blocListContainer.appendChild(themeHeader);
-                blocsParTheme[theme].forEach(item => blocListContainer.appendChild(item));
+                blocListContainer.appendChild(themeContent);
             }
         }
 
@@ -1292,8 +1356,8 @@
 
             document.getElementById('wall-container').style.maxWidth = '1300px';
 
-            let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fffde7";
-            let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#1f2937";
+            let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
+            let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
             
             activeBanner.style.background = bannerBg; 
             activeBanner.style.color = bannerColor;
