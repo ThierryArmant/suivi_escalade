@@ -1275,7 +1275,16 @@
                 const secteurs = new Set(realRoutes.map(r => r.secteur)).size;
                 const file = schoolConfig.excelName ? `« ${escapeHtml(schoolConfig.excelName)} »` : "Fichier Excel";
                 const when = schoolConfig.excelDate ? ` (importé le ${escapeHtml(schoolConfig.excelDate)})` : "";
-                setStatus('excel-status', true, `✅ ${file} en mémoire${when}<br><span>${realRoutes.length} voie(s) sur ${secteurs} secteur(s), à retrouver dans le menu « Choisir une Voie ».</span>`);
+                // Détail par secteur, pour savoir ce qui est déjà enregistré avant d'ajouter
+                const bySecteur = {};
+                realRoutes.forEach(r => {
+                    const couleur = r.couleur === 'tp' ? 'TP' : (r.couleur ? ucFirst(String(r.couleur)) : '');
+                    (bySecteur[r.secteur] = bySecteur[r.secteur] || []).push(escapeHtml((couleur + ' ' + r.cotation).trim()));
+                });
+                const detail = Object.keys(bySecteur).sort((x, y) => x - y)
+                    .map(k => `<b>Secteur ${escapeHtml(k)}</b> : ${bySecteur[k].join(', ')}`).join('<br>');
+                setStatus('excel-status', true, `✅ ${file} en mémoire${when}<br><span>${realRoutes.length} voie(s) sur ${secteurs} secteur(s), à retrouver dans le menu « Choisir une Voie ».</span>`
+                    + `<details style="margin-top: 4px;"><summary style="cursor: pointer; font-size: 0.8rem;">Voir les voies enregistrées</summary><span>${detail}</span></details>`);
             } else {
                 setStatus('excel-status', false, "Aucun fichier Excel importé.");
             }
