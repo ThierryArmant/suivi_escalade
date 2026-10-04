@@ -627,6 +627,9 @@
             border-radius: 3px; border: 1px solid #ffffff; white-space: nowrap; 
         }
         .marker.limb.right::after { background: #dc2626; }
+        .marker.limb.any { border-color: #ea580c; }
+        .marker.limb.any::after { background: #ea580c; }
+        .limb-icon.any { border-color: #ea580c; }
         .limb-icon { display: inline-block; width: 13px; height: 13px; border: 3px solid #16a34a; vertical-align: -2px; margin-right: 3px; background: transparent; }
         .limb-icon.hand { border-radius: 50%; }
         .limb-icon.foot { width: 15px; height: 10px; border-radius: 2px; }
@@ -778,6 +781,7 @@
 
                     <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche : rectangle vert"><span class="limb-icon foot"></span>PG</button>
                     <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit : rectangle rouge"><span class="limb-icon foot right"></span>PD</button>
+                    <button class="tool-btn btn-full" id="tool-pied" onclick="setTool('pied')" title="Prise de pied, gauche ou droit : rectangle orange"><span class="limb-icon foot any"></span>Pied (gauche ou droit)</button>
                     
                     <div id="zone-wrap" style="position: relative; display: flex;" onmouseenter="showZoneChoices()" onmouseleave="hideZoneChoices()">
                         <button class="tool-btn" id="tool-zone" style="flex: 1;" onclick="setTool(isZone(currentTool) ? currentTool : 'zone'); showZoneChoices()">🎯 Zone</button>
@@ -965,8 +969,8 @@
                     <div class="legend-body"><strong>Cercle vide = main.</strong> Vert : main gauche (MG). Rouge : main droite (MD). La prise reste visible dans le cercle. Sert aussi à imposer la position des mains au départ.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header"><span><span class="limb-icon foot"></span>PG &nbsp; <span class="limb-icon foot right"></span>PD — les pieds</span></div>
-                    <div class="legend-body"><strong>Rectangle vide = pied.</strong> Vert : pied gauche (PG). Rouge : pied droit (PD). Force le travail des appuis.</div>
+                    <div class="legend-header"><span><span class="limb-icon foot"></span>PG &nbsp; <span class="limb-icon foot right"></span>PD &nbsp; <span class="limb-icon foot any"></span>Pied — les pieds</span></div>
+                    <div class="legend-body"><strong>Rectangle vide = pied.</strong> Vert : pied gauche (PG). Rouge : pied droit (PD). Orange : pied au choix, gauche ou droit. Force le travail des appuis.</div>
                 </div>
                 </div>
                 <div class="legend-group lg-validation">
@@ -1786,6 +1790,22 @@
             return /bloc/i.test(String(name || ""));
         }
 
+        // Numéro de voie écrit dans le nom d'un exercice (« … voie 5 », « … voies 8-9 »), sinon rien
+        function voieNumber(name) {
+            const found = /voies?\s*(\d+)/i.exec(String(name || ""));
+            return found ? parseInt(found[1], 10) : null;
+        }
+
+        // Range les exercices par numéro de voie croissant ; ceux sans numéro gardent leur ordre, à la suite
+        function sortByVoie(routes) {
+            return routes.map((r, index) => ({ r: r, index: index, voie: voieNumber(r.name) })).sort((a, b) => {
+                if (a.voie === null && b.voie === null) return a.index - b.index;
+                if (a.voie === null) return 1;
+                if (b.voie === null) return -1;
+                return a.voie - b.voie || a.index - b.index;
+            }).map(o => o.r);
+        }
+
         function renderCustomLists() {
             updateConfigStatus();
             const blocListContainer = document.getElementById('bloc-list');
@@ -1797,8 +1817,10 @@
             if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
 
             let blocsParTheme = {};
+            // Les thèmes gardent leur ordre habituel ; seuls les exercices sont triés par voie à l'intérieur
+            schoolConfig.customRoutes.forEach(r => { if (r.type === 'bloc') blocsParTheme[r.theme || "Libre / Autre"] = []; });
 
-            schoolConfig.customRoutes.forEach(r => {
+            sortByVoie(schoolConfig.customRoutes).forEach(r => {
                 const item = document.createElement('div');
                 item.className = 'custom-item';
                 
@@ -2051,7 +2073,7 @@
             'md':         ["Main droite (cercle rouge)", "Prends cette prise avec la main droite. Cercle = main, rouge = droite."],
             'pg':         ["Pied gauche (rectangle vert)", "Pose le pied gauche sur cette prise. Rectangle = pied, vert = gauche."],
             'pd':         ["Pied droit (rectangle rouge)", "Pose le pied droit sur cette prise. Rectangle = pied, rouge = droite."],
-            'pied':       ["Prise de pied", "Cette prise est réservée aux pieds : pas de main dessus."],
+            'pied':       ["Prise de pied (rectangle orange)", "Pose un pied sur cette prise, le gauche ou le droit. Rectangle = pied, cercle = main."],
             'joker':      ["Joker", "Prise d'aide. Si tu es à l'aise, essaie de réussir sans elle."],
             'cm':         ["Changement de main", "Sur cette prise, remplace une main par l'autre."],
             'cp':         ["Changement de pied", "Sur cette prise, remplace un pied par l'autre."],
@@ -2829,11 +2851,15 @@
                     marker.className = 'marker tech-tag tech-zone';
                     marker.textContent = number ? `ZONE ${number}` : 'ZONE';
                     marker.style.backgroundColor = ZONE_COLORS[number];
+                } else if (p.type === 'pied') {
+                    // Pied sans côté imposé : rectangle vide orange
+                    marker.className = 'marker limb foot any';
+                    marker.dataset.label = 'PIED';
                 } else if (['mg', 'md', 'pg', 'pd'].includes(p.type)) {
                     // Forme vide : la prise reste visible. Cercle = main, rectangle = pied ; vert = gauche, rouge = droite.
                     marker.className = `marker limb ${p.type[0] === 'm' ? 'hand' : 'foot'} ${p.type[1] === 'd' ? 'right' : 'left'}`;
                     marker.dataset.label = p.type.toUpperCase();
-                } else if (['sd', 'top', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
+                } else if (['sd', 'top', 'jete', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
@@ -5174,7 +5200,12 @@
                 section.appendChild(head);
                 const body = document.createElement('div');
                 body.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 8px; background: #ffffff;";
-                group.items.slice().sort((x, y) => String(x.b.name).localeCompare(String(y.b.name), 'fr')).forEach(item => {
+                group.items.slice().sort((x, y) => {
+                    const vx = voieNumber(x.b.name), vy = voieNumber(y.b.name);
+                    if (vx !== null && vy !== null && vx !== vy) return vx - vy;
+                    if ((vx === null) !== (vy === null)) return vx === null ? 1 : -1;
+                    return String(x.b.name).localeCompare(String(y.b.name), 'fr');
+                }).forEach(item => {
                     const el = document.createElement(granted ? 'button' : 'div');
                     el.className = 'team-bloc-item';
                     el.style.cssText = `text-align: left; padding: 6px 8px; border: 2px solid ${granted ? color : '#cbd5e1'}; border-radius: 8px; background: ${granted ? '#ffffff' : '#f1f5f9'}; color: #1e293b; font-size: 0.84rem; font-weight: bold;` + (granted ? " cursor: pointer;" : "");
