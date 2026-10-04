@@ -420,7 +420,20 @@
         }
 
         #marker-layer .marker { pointer-events: auto; }
-        body.eleve #marker-layer .marker { pointer-events: none; }
+        body.eleve #marker-layer .marker { pointer-events: auto; cursor: help; }
+
+        /* Bulle d'explication d'une balise (survol à la souris, ou appui du doigt côté élève) */
+        #marker-tip { 
+            display: none; position: absolute; z-index: 90; max-width: 230px; 
+            background: #0f172a; color: #ffffff; border: 2px solid #ffffff; border-radius: 8px; 
+            padding: 7px 10px; font-size: 0.8rem; line-height: 1.3; text-align: left; 
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5); pointer-events: none; 
+        }
+        #marker-tip b { color: #fde047; }
+        #tool-info { 
+            font-size: 0.72rem; line-height: 1.3; color: #1e3a8a; background: #ffffff; 
+            border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px 8px; min-height: 3.2em; text-align: left; 
+        }
 
         /* =========================================
            MENU FLOTTANT (DOUBLE CLIC)
@@ -567,6 +580,9 @@
         .pme-level-btn:hover { background: #dbeafe; border-color: #2b6cb0; }
         .pme-level-btn.current { background: #2b6cb0; color: #ffffff; border-color: #1e3a8a; }
         .pme-mini { flex: 0 0 46px; height: 30px; }
+        .arrow-dir-btn { padding: 6px 0; font-size: 1.1rem; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 6px; color: #1e3a8a; }
+        .arrow-dir-btn:hover { background: #dbeafe; border-color: #2563eb; }
+        .arrow-dir-btn.current { background: #2563eb; color: #ffffff; border-color: #1e3a8a; }
         .pme-mini svg { width: 100%; height: 100%; overflow: visible; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
@@ -681,7 +697,14 @@
                     <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Cercle noir simple : prise de départ du bloc"><span class="ring-icon"></span> Départ bloc</button>
                     <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Double cercle noir : prise d'arrivée du bloc"><span class="ring-icon double"></span> Arrivée bloc</button>
                     
-                    <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
+                    <div id="arrow-wrap" style="position: relative; display: flex;" onmouseenter="showArrowChoices()" onmouseleave="hideArrowChoices()">
+                        <button class="tool-btn" id="tool-arrow" style="flex: 1;" onclick="setTool('arrow'); showArrowChoices()"><span id="arrow-icon" style="display: inline-block;">⬆️</span> Flèche</button>
+                        <div id="arrow-choices" style="display: none; position: absolute; left: 0; top: 100%; z-index: 60; width: 150px; background: #ffffff; border: 3px solid #2563eb; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+                            <div style="font-size: 0.72rem; font-weight: 900; color: #1e3a8a; margin-bottom: 6px; text-align: left;">Dans quelle direction ?</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;"><button class="arrow-dir-btn" data-rot="315" onclick="chooseArrow(315)" title="Flèche ↖">↖</button><button class="arrow-dir-btn" data-rot="0" onclick="chooseArrow(0)" title="Flèche ⬆">⬆</button><button class="arrow-dir-btn" data-rot="45" onclick="chooseArrow(45)" title="Flèche ↗">↗</button><button class="arrow-dir-btn" data-rot="270" onclick="chooseArrow(270)" title="Flèche ⬅">⬅</button><span></span><button class="arrow-dir-btn" data-rot="90" onclick="chooseArrow(90)" title="Flèche ➡">➡</button><button class="arrow-dir-btn" data-rot="225" onclick="chooseArrow(225)" title="Flèche ↙">↙</button><button class="arrow-dir-btn" data-rot="180" onclick="chooseArrow(180)" title="Flèche ⬇">⬇</button><button class="arrow-dir-btn" data-rot="135" onclick="chooseArrow(135)" title="Flèche ↘">↘</button></div>
+                            <div style="font-size: 0.66rem; color: #64748b; margin-top: 5px; text-align: left;">Une fois posée : double-clic pour l'orienter plus finement.</div>
+                        </div>
+                    </div>
                     <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
                     
                     <button class="tool-btn" id="tool-sd" onclick="setTool('sd')">🏁 Départ(SD)</button>
@@ -717,6 +740,7 @@
                     <button class="tool-btn clear-all-btn btn-full" onclick="clearStickers()">🧹 Tout nettoyer</button>
                     <button class="tool-btn magic-btn btn-full" id="magic-filter-btn" onclick="toggleColorFilter()">✨ Isoler couleur</button>
                 </div>
+                <div id="tool-info"></div>
             </div>
 
             <!-- Vert Pastel -->
@@ -740,6 +764,7 @@
                 <img id="wall-image" alt="Mur d'escalade" draggable="false">
                 <!-- Calque des balises : il épouse exactement la photo affichée -->
                 <div id="marker-layer"></div>
+                <div id="marker-tip" role="tooltip"></div>
                 
                 <!-- MENU FLOTTANT (Double Clic) -->
                 <div id="selection-panel" class="selection-panel" onclick="event.stopPropagation();">
@@ -1038,7 +1063,7 @@
                     <li><b>Effacer vite :</b> « 🧼 Gomme Magique », puis cliquez sur les balises à retirer. « 🧹 Tout nettoyer » les retire toutes.</li>
                     <li><b>⭕ Cercle et ⚪ P'tit Cercle :</b> les prises à utiliser, dans la couleur du niveau.</li>
                     <li><b>Départ bloc et Arrivée bloc :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
-                    <li><b>⬆️ Flèche :</b>une direction de déplacement (à faire pivoter). <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
+                    <li><b>⬆️ Flèche :</b> une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
                     <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD (main gauche, main droite), 🦶 PG, 🦶 PD (pied gauche, pied droit), 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
@@ -1755,7 +1780,87 @@
             const button = document.getElementById(isPme(tool) ? 'tool-pme' : `tool-${tool}`);
             if (button) button.classList.add('active-tool');
             document.getElementById('tool-pme').textContent = isPme(tool) ? `📌 PME ${pmeInfo(tool).level}` : "📌 PME";
+            showToolInfo(tool);
         }
+
+        // --- Explications des balises, écrites pour les élèves ---
+        const MARKER_HELP = {
+            'dot':        ["Prise du bloc", "Tu peux utiliser cette prise, avec les mains ou avec les pieds."],
+            'dot-small':  ["Petite prise", "Prise à utiliser, souvent plus petite : sois précis dans ton appui."],
+            'bloc-start': ["Départ du bloc", "Commence ici : c'est la prise de départ."],
+            'bloc-end':   ["Arrivée du bloc", "C'est la dernière prise. Tiens-la bien pour réussir le bloc."],
+            'arrow':      ["Direction", "Va dans le sens de la flèche : c'est par là que le bloc continue."],
+            'cross':      ["Prise interdite", "Ne touche pas cette prise, ni avec les mains ni avec les pieds."],
+            'sd':         ["Départ", "Position de départ : installe-toi sur ces prises avant de commencer."],
+            'top':        ["TOP : l'arrivée", "Prise finale. Tiens-la à 2 mains pendant 3 secondes pour valider."],
+            'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
+            'mg':         ["Main gauche", "Prends cette prise avec la main gauche."],
+            'md':         ["Main droite", "Prends cette prise avec la main droite."],
+            'pg':         ["Pied gauche", "Pose le pied gauche sur cette prise."],
+            'pd':         ["Pied droit", "Pose le pied droit sur cette prise."],
+            'pied':       ["Prise de pied", "Cette prise est réservée aux pieds : pas de main dessus."],
+            'joker':      ["Joker", "Prise d'aide. Si tu es à l'aise, essaie de réussir sans elle."],
+            'cm':         ["Changement de main", "Sur cette prise, remplace une main par l'autre."],
+            'cp':         ["Changement de pied", "Sur cette prise, remplace un pied par l'autre."],
+            'jete':       ["Jeté", "Mouvement dynamique : prends de l'élan pour attraper une prise éloignée."],
+            'eraser':     ["Gomme magique", "Cliquez ensuite sur les balises à effacer."]
+        };
+        const PME_HELP = [
+            "", 
+            "Niveau 1 : ta main est entre tes deux pieds. C'est la position la plus facile.",
+            "Niveau 2 : ta main est juste au-dessus d'un de tes pieds.",
+            "Niveau 3 : ta main est en dehors de tes pieds. C'est la position la plus difficile."
+        ];
+
+        function markerHelp(type) {
+            if (isPme(type)) {
+                const level = pmeInfo(type).level;
+                return ["PME " + level + " : position de repos", "1 main et 2 pieds, bras tendu, bassin près du mur : relâche-toi. " + PME_HELP[level]];
+            }
+            return MARKER_HELP[type] || ["Repère", "Repère posé par ton professeur."];
+        }
+
+        function showMarkerTip(element, type) {
+            const tip = document.getElementById('marker-tip');
+            const help = markerHelp(type);
+            tip.innerHTML = `<b>${escapeHtml(help[0])}</b><br>${escapeHtml(help[1])}`;
+            tip.style.display = 'block';
+            // La bulle se place au-dessus de la balise (ou dessous s'il n'y a pas la place), sans sortir de la photo
+            const box = container.getBoundingClientRect(), m = element.getBoundingClientRect();
+            let left = m.left + m.width / 2 - box.left - tip.offsetWidth / 2;
+            left = Math.max(6, Math.min(left, container.clientWidth - tip.offsetWidth - 6));
+            let top = m.top - box.top - tip.offsetHeight - 8;
+            if (top < 6) top = m.bottom - box.top + 8;
+            tip.style.left = left + 'px'; 
+            tip.style.top = top + 'px';
+            tip.dataset.type = type;
+        }
+
+        function hideMarkerTip() {
+            const tip = document.getElementById('marker-tip');
+            tip.style.display = 'none';
+            delete tip.dataset.type;
+            delete tip.dataset.index;
+        }
+
+        // Sous la palette : rappel de ce que fait l'outil survolé ou sélectionné
+        function showToolInfo(tool) {
+            const box = document.getElementById('tool-info');
+            if (!box) return;
+            const help = markerHelp(tool);
+            box.innerHTML = `<b>${escapeHtml(help[0])} :</b> ${escapeHtml(help[1])}`;
+        }
+
+        function initToolInfo() {
+            document.querySelectorAll('.tools-grid .tool-btn[id^="tool-"]').forEach(btn => {
+                const tool = btn.id.replace('tool-', '');
+                btn.addEventListener('mouseenter', () => showToolInfo(tool === 'pme' && isPme(currentTool) ? currentTool : tool));
+                btn.addEventListener('mouseleave', () => showToolInfo(currentTool));
+            });
+            showToolInfo(currentTool);
+        }
+
+        let studentMode = false;
 
         // --- PME : 3 niveaux d'habileté, selon la place de la main par rapport aux deux appuis pieds ---
         // 'pme' = niveau 1, 'pme2' = niveau 2, 'pme3' = niveau 3 ; un « f » final = triangle inversé gauche / droite
@@ -1786,6 +1891,30 @@
                 + '<circle cx="4" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
                 + (withLabel ? `<text x="36" y="52" text-anchor="middle" font-size="12" font-weight="bold" font-family="Arial, sans-serif" fill="#ffffff" stroke="#1e3a8a" stroke-width="3" paint-order="stroke">PME ${info.level}</text>` : '')
                 + '</svg>';
+        }
+
+        // --- Flèche : la direction se choisit avant de la poser (gauche vers droite, droite vers gauche, etc.) ---
+        let currentArrowRotation = 0;
+        let arrowHideTimer = null;
+
+        function showArrowChoices() {
+            clearTimeout(arrowHideTimer);
+            const box = document.getElementById('arrow-choices');
+            box.querySelectorAll('.arrow-dir-btn').forEach(btn => btn.classList.toggle('current', parseInt(btn.dataset.rot) === currentArrowRotation));
+            box.style.display = 'block';
+        }
+
+        function hideArrowChoices(now) {
+            clearTimeout(arrowHideTimer);
+            const close = () => { document.getElementById('arrow-choices').style.display = 'none'; };
+            if (now) close(); else arrowHideTimer = setTimeout(close, 350);
+        }
+
+        function chooseArrow(rotation) {
+            currentArrowRotation = rotation;
+            document.getElementById('arrow-icon').style.transform = `rotate(${rotation}deg)`;
+            setTool('arrow');
+            hideArrowChoices(true);
         }
 
         let pmeHideTimer = null;
@@ -2135,7 +2264,9 @@
         }
 
         function placeMarker(event) {
+            if (studentMode) return;
             hidePmeLevels(true);
+            hideArrowChoices(true);
             const panel = document.getElementById('selection-panel');
             
             if (panel.style.display === 'block') { 
@@ -2162,7 +2293,7 @@
                 y: y, 
                 type: currentTool, 
                 color: currentRouteColor, 
-                rotation: 0, 
+                rotation: currentTool === 'arrow' ? currentArrowRotation : 0, 
                 scale: 1 
             });
             
@@ -2202,8 +2333,30 @@
                     marker.innerHTML = '❌';
                 }
 
+                if (studentMode) {
+                    // Côté élève : un appui sur une balise affiche son explication, un second la referme
+                    marker.onclick = (e) => {
+                        e.stopPropagation();
+                        const tip = document.getElementById('marker-tip');
+                        const sameOpen = tip.style.display === 'block' && tip.dataset.index === String(index);
+                        if (sameOpen && e.pointerType !== 'mouse') { hideMarkerTip(); return; }
+                        showMarkerTip(marker, p.type);
+                        tip.dataset.index = String(index);
+                    };
+                    marker.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') showMarkerTip(marker, p.type); });
+                    marker.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hideMarkerTip(); });
+                    markerLayer.appendChild(marker); 
+                    p.element = marker;
+                    return;
+                }
+
+                // Côté professeur : l'explication apparaît au survol de la souris
+                marker.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && draggingIndex === null) showMarkerTip(marker, p.type); });
+                marker.addEventListener('pointerleave', hideMarkerTip);
+
                 // Gestion Glisser/Déposer
                 marker.onpointerdown = (e) => {
+                    hideMarkerTip();
                     if (currentTool === 'eraser') {
                         e.stopPropagation(); 
                         activeMarkers.splice(index, 1);
@@ -3108,13 +3261,17 @@
                 img.src = wallSrc;
             }
             
+            studentMode = true;
             document.body.classList.add('eleve');
             const wall = document.getElementById('wall-container');
             wall.style.maxWidth = '100%';
-            wall.style.pointerEvents = 'none';
+            wall.style.cursor = 'default';
+            // Un appui ailleurs que sur une balise referme la bulle d'explication
+            document.addEventListener('click', hideMarkerTip);
             img.style.maxHeight = 'none'; // sinon les balises se décalent sur un écran peu haut
 
-            const infoLine = (g, h, t) => `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml(g || '?')} | Gabarit: ${escapeHtml(h || '?')} | Thème: ${escapeHtml(t || '?')}</span>`;
+            const infoLine = (g, h, t) => `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml(g || '?')} | Gabarit: ${escapeHtml(h || '?')} | Thème: ${escapeHtml(t || '?')}</span>`
+                + `<br><span style="font-size:0.8rem; font-weight:normal;">👆 Touche un repère pour savoir ce qu'il veut dire.</span>`;
 
             try {
                 if (params.get('r') !== null) {
@@ -4401,8 +4558,9 @@
 
         window.onload = async () => { 
             try { await initApp(); } catch (e) { console.error(e); }
-            initSuivi(); 
-            initTeam(); 
+            initSuivi();
+            initTeam();
+            initToolInfo();
         };
     </script>
 </body>
