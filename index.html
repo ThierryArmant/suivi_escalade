@@ -468,6 +468,24 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.5); pointer-events: none; 
         }
         #marker-tip b { color: #fde047; }
+        /* Fiches des exercices : cartes colorées, cases à cocher */
+        .fiche-card { margin-top: 8px; background: #ffffff; border: 2px solid #94a3b8; border-radius: 12px; overflow: hidden; color: #1e293b; font-weight: normal; text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+        .fiche-head { color: #ffffff; font-weight: 800; font-size: 0.9rem; padding: 5px 12px; letter-spacing: 0.01em; }
+        .fiche-hint { font-weight: normal; font-size: 0.7rem; opacity: 0.95; margin-left: 6px; }
+        .fiche-body { padding: 8px 12px; font-size: 0.9rem; line-height: 1.4; }
+        .fiche-consigne .fiche-body { font-size: 1rem; font-weight: 600; background: #fffbeb; }
+        .fiche-text { margin: 2px 0; }
+        .fiche-item, .fiche-check { display: flex; align-items: flex-start; gap: 9px; padding: 5px 6px; border-radius: 8px; }
+        .fiche-dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; }
+        .fiche-check { cursor: pointer; user-select: none; border: 1px solid #e2e8f0; margin: 4px 0; background: #f8fafc; transition: background 0.15s; }
+        .fiche-check:hover { background: #f0fdf4; }
+        .fiche-tick { flex: 0 0 auto; width: 20px; height: 20px; border: 2px solid #16a34a; border-radius: 6px; background: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; color: #ffffff; margin-top: 1px; }
+        .fiche-check.done { background: #dcfce7; border-color: #86efac; }
+        .fiche-check.done .fiche-tick { background: #16a34a; }
+        .fiche-check.done .fiche-tick::before { content: "✓"; font-weight: 900; }
+        .fiche-bravo { display: none; margin-top: 6px; padding: 6px; text-align: center; font-weight: 800; color: #166534; background: #bbf7d0; border-radius: 8px; }
+        .fiche-card.all-done .fiche-bravo { display: block; }
+
         /* Bulle d'explication des boutons et des menus */
         #ui-tip { 
             display: none; position: fixed; z-index: 5000; max-width: 260px; 
@@ -5416,8 +5434,30 @@
         }
 
         // --- Fiche d'un bloc : textes pour l'élève (consigne, attendus, compétences) + notes pour l'enseignant ---
-        function ficheBox(title, text, border) {
-            return `<div style="margin-top: 6px; padding: 6px 10px; background: #ffffff; border: 2px solid ${border}; border-left-width: 6px; border-radius: 8px; color: #1e293b; font-size: 0.88rem; font-weight: normal; text-align: left; white-space: pre-wrap;"><b>${title}</b>${title ? "\n" : ""}${escapeHtml(text)}</div>`;
+        // Une carte de la fiche : bandeau de couleur, puis le texte.
+        // mode « check » : chaque ligne devient une case à cocher du doigt (auto-contrôle de l'élève)
+        // mode « list »  : chaque ligne devient une pastille
+        function ficheBox(title, text, border, mode) {
+            const lines = String(text || "").split("\n").map(l => l.trim()).filter(l => l);
+            let body = "";
+            lines.forEach(line => {
+                const bullet = /^[•\-–]\s*/.test(line);
+                const clean = escapeHtml(line.replace(/^[•\-–]\s*/, ""));
+                if (bullet && mode === 'check') body += `<div class="fiche-check" onclick="toggleFicheCheck(this)"><span class="fiche-tick"></span><span>${clean}</span></div>`;
+                else if (bullet) body += `<div class="fiche-item"><span class="fiche-dot" style="background: ${border};"></span><span>${clean}</span></div>`;
+                else body += `<div class="fiche-text">${clean}</div>`;
+            });
+            if (mode === 'check' && /fiche-check/.test(body)) body += `<div class="fiche-bravo">🎉 Tout est validé, bravo !</div>`;
+            const head = title ? `<div class="fiche-head" style="background: ${border};">${title}</div>` : "";
+            return `<div class="fiche-card${mode === 'consigne' ? ' fiche-consigne' : ''}" style="border-color: ${border};">${head}<div class="fiche-body">${body}</div></div>`;
+        }
+
+        // L'élève (ou le prof) coche une ligne ; quand tout est coché, un « bravo » apparaît
+        function toggleFicheCheck(row) {
+            row.classList.toggle('done');
+            const card = row.closest('.fiche-card');
+            const all = card.querySelectorAll('.fiche-check');
+            card.classList.toggle('all-done', all.length > 0 && Array.from(all).every(r => r.classList.contains('done')));
         }
 
         // Les trois textes destinés à l'élève, tels qu'il les verra
@@ -5435,9 +5475,9 @@
 
         function studentFicheHtml(o, withoutSource) {
             let html = videoHtml(o);
-            if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b");
-            if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir", o.attendus, "#16a34a");
-            if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb");
+            if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b", 'consigne');
+            if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir <span class=\"fiche-hint\">touche chaque ligne quand c'est fait</span>", o.attendus, "#16a34a", 'check');
+            if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb", 'list');
             if (!withoutSource) html += sourceHtml(o);
             return html;
         }
