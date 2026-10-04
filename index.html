@@ -580,7 +580,9 @@
         .pme-level-btn:hover { background: #dbeafe; border-color: #2b6cb0; }
         .pme-level-btn.current { background: #2b6cb0; color: #ffffff; border-color: #1e3a8a; }
         .pme-mini { flex: 0 0 46px; height: 30px; }
-        .arrow-dir-btn { padding: 6px 0; font-size: 1.1rem; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 6px; color: #1e3a8a; }
+        .zone-num-btn { padding: 6px 2px; font-size: 0.7rem; font-weight: bold; color: #ffffff; border: 2px solid rgba(255,255,255,0.9); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .zone-num-btn.current { outline: 3px solid #1e3a8a; outline-offset: 1px; }
+        .arrow-dir-btn { padding: 6px 0;font-size: 1.1rem; background: #eff6ff; border: 2px solid #bfdbfe; border-radius: 6px; color: #1e3a8a; }
         .arrow-dir-btn:hover { background: #dbeafe; border-color: #2563eb; }
         .arrow-dir-btn.current { background: #2563eb; color: #ffffff; border-color: #1e3a8a; }
         .pme-mini svg { width: 100%; height: 100%; overflow: visible; }
@@ -641,7 +643,7 @@
         @media (max-width: 1100px) {
             .workspace { flex-direction: column; align-items: center; }
             .palette-bar, .right-sidebar { width: 100%; max-width: 800px; max-height: none; }
-            .center-col { width: 100%; order: -1; }
+            .center-col { width: 100%; order: -1; flex: 0 0 auto; align-items: flex-start; }
         }
     </style>
 </head>
@@ -716,7 +718,14 @@
                     <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche">🦶 PG</button>
                     <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit">🦶 PD</button>
                     
-                    <button class="tool-btn" id="tool-zone" onclick="setTool('zone')">🎯 Zone</button>
+                    <div id="zone-wrap" style="position: relative; display: flex;" onmouseenter="showZoneChoices()" onmouseleave="hideZoneChoices()">
+                        <button class="tool-btn" id="tool-zone" style="flex: 1;" onclick="setTool(isZone(currentTool) ? currentTool : 'zone'); showZoneChoices()">🎯 Zone</button>
+                        <div id="zone-choices" style="display: none; position: absolute; left: 0; top: 100%; z-index: 60; width: 190px; background: #ffffff; border: 3px solid #0ea5e9; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+                            <div style="font-size: 0.72rem; font-weight: 900; color: #1e3a8a; margin-bottom: 6px; text-align: left;">🎯 Quelle zone ? (niveau à atteindre)</div>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;"><button class="zone-num-btn" data-zone="zone" onclick="chooseZone('zone')" style="grid-column: span 2;">Zone (sans numéro)</button><button class="zone-num-btn" data-zone="zone1" onclick="chooseZone('zone1')">Zone 1</button><button class="zone-num-btn" data-zone="zone2" onclick="chooseZone('zone2')">Zone 2</button><button class="zone-num-btn" data-zone="zone3" onclick="chooseZone('zone3')">Zone 3</button><button class="zone-num-btn" data-zone="zone4" onclick="chooseZone('zone4')">Zone 4</button></div>
+                            <div style="font-size: 0.66rem; color: #64748b; margin-top: 5px; text-align: left;">Couleurs des pistes de ski : 1 verte, 2 bleue, 3 rouge, 4 noire. Une fois posée : double-clic pour changer le numéro.</div>
+                        </div>
+                    </div>
                     <button class="tool-btn" id="tool-pied" onclick="setTool('pied')">👟 Pied</button>
                     
                     <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
@@ -780,7 +789,17 @@
                         <button onclick="scaleSelected(1.25)" title="Agrandir">🔍+</button>
                         <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
                     </div>
-                    <div id="pme-row" style="display: none; border-top: 2px solid #bfdbfe; margin-top: 5px; padding-top: 5px;">
+                    <div id="zone-row" style="display: none; border-top: 2px solid #bae6fd; margin-top: 5px; padding-top: 5px;">
+                        <div style="font-size: 0.7rem; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 3px;">Numéro de la zone</div>
+                        <div class="control-row" style="flex-wrap: wrap;">
+                            <button onclick="setSelectedZone(0)" title="Sans numéro">–</button>
+                            <button onclick="setSelectedZone(1)">1</button>
+                            <button onclick="setSelectedZone(2)">2</button>
+                            <button onclick="setSelectedZone(3)">3</button>
+                            <button onclick="setSelectedZone(4)">4</button>
+                        </div>
+                    </div>
+                    <div id="pme-row" style="display: none;border-top: 2px solid #bfdbfe; margin-top: 5px; padding-top: 5px;">
                         <div style="font-size: 0.7rem; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 3px;">Niveau de la PME</div>
                         <div class="control-row">
                             <button onclick="setSelectedPme(1)" title="Main entre les pieds">1</button>
@@ -859,7 +878,7 @@
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🎯 La ZONE (Bonus)</div>
-                    <div class="legend-body"><strong>La Zone :</strong> Prise intermédiaire du bloc qui donne des points bonus.</div>
+                    <div class="legend-body"><strong>La Zone :</strong> Prise intermédiaire du bloc qui donne des points bonus. Elle peut être numérotée pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🖐️ Départ (MG / MD)</div>
@@ -1063,7 +1082,8 @@
                     <li><b>Effacer vite :</b> « 🧼 Gomme Magique », puis cliquez sur les balises à retirer. « 🧹 Tout nettoyer » les retire toutes.</li>
                     <li><b>⭕ Cercle et ⚪ P'tit Cercle :</b> les prises à utiliser, dans la couleur du niveau.</li>
                     <li><b>Départ bloc et Arrivée bloc :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
-                    <li><b>⬆️ Flèche :</b> une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
+                    <li><b>🎯 Zone :</b> en passant sur le bouton, choisissez un numéro pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</li>
+                    <li><b>⬆️ Flèche :</b>une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
                     <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD (main gauche, main droite), 🦶 PG, 🦶 PD (pied gauche, pied droit), 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
@@ -1777,9 +1797,10 @@
         function setTool(tool) {
             currentTool = tool;
             document.querySelectorAll('.tool-btn:not(.magic-btn)').forEach(b => b.classList.remove('active-tool'));
-            const button = document.getElementById(isPme(tool) ? 'tool-pme' : `tool-${tool}`);
+            const button = document.getElementById(isPme(tool) ? 'tool-pme' : (isZone(tool) ? 'tool-zone' : `tool-${tool}`));
             if (button) button.classList.add('active-tool');
             document.getElementById('tool-pme').textContent = isPme(tool) ? `📌 PME ${pmeInfo(tool).level}` : "📌 PME";
+            document.getElementById('tool-zone').textContent = (isZone(tool) && zoneNumber(tool)) ? `🎯 Zone ${zoneNumber(tool)}` : "🎯 Zone";
             showToolInfo(tool);
         }
 
@@ -1816,6 +1837,10 @@
             if (isPme(type)) {
                 const level = pmeInfo(type).level;
                 return ["PME " + level + " : position de repos", "1 main et 2 pieds, bras tendu, bassin près du mur : relâche-toi. " + PME_HELP[level]];
+            }
+            if (isZone(type) && zoneNumber(type)) {
+                const number = zoneNumber(type);
+                return ["Zone " + number + " (" + ZONE_NAMES[number] + ")", "Niveau n° " + number + " à atteindre, comme une piste " + ZONE_NAMES[number] + " au ski. Si tu arrives jusqu'à cette prise, tu valides la zone " + number + "."];
             }
             return MARKER_HELP[type] || ["Repère", "Repère posé par ton professeur."];
         }
@@ -1891,6 +1916,50 @@
                 + '<circle cx="4" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
                 + (withLabel ? `<text x="36" y="52" text-anchor="middle" font-size="12" font-weight="bold" font-family="Arial, sans-serif" fill="#ffffff" stroke="#1e3a8a" stroke-width="3" paint-order="stroke">PME ${info.level}</text>` : '')
                 + '</svg>';
+        }
+
+        // --- Zones numérotées : « zone » (sans numéro) ou « zone1 » à « zone6 », chacune avec sa couleur ---
+        // Couleurs des pistes de ski : 1 verte, 2 bleue, 3 rouge, 4 noire (la zone sans numéro reste bleu clair)
+        const ZONE_COLORS = ["#0ea5e9", "#16a34a", "#1d4ed8", "#dc2626", "#111827"];
+        const ZONE_NAMES = ["", "verte", "bleue", "rouge", "noire"];
+        let zoneHideTimer = null;
+
+        function isZone(type) { 
+            return /^zone[1-4]?$/.test(String(type || "")); 
+        }
+
+        function zoneNumber(type) { 
+            return parseInt(String(type).replace('zone', '')) || 0; 
+        }
+
+        function showZoneChoices() {
+            clearTimeout(zoneHideTimer);
+            const box = document.getElementById('zone-choices');
+            box.querySelectorAll('.zone-num-btn').forEach(btn => {
+                btn.style.backgroundColor = ZONE_COLORS[zoneNumber(btn.dataset.zone)];
+                btn.classList.toggle('current', btn.dataset.zone === currentTool);
+            });
+            box.style.display = 'block';
+        }
+
+        function hideZoneChoices(now) {
+            clearTimeout(zoneHideTimer);
+            const close = () => { document.getElementById('zone-choices').style.display = 'none'; };
+            if (now) close(); else zoneHideTimer = setTimeout(close, 350);
+        }
+
+        function chooseZone(type) {
+            setTool(type);
+            hideZoneChoices(true);
+        }
+
+        function setSelectedZone(number) {
+            if (selectedMarkerIndex === null || !isZone(activeMarkers[selectedMarkerIndex].type)) return;
+            activeMarkers[selectedMarkerIndex].type = number ? 'zone' + number : 'zone';
+            hasUnsavedChanges = true;
+            const index = selectedMarkerIndex;
+            renderMarkers(); 
+            selectMarker(index);
         }
 
         // --- Flèche : la direction se choisit avant de la poser (gauche vers droite, droite vers gauche, etc.) ---
@@ -2250,6 +2319,7 @@
             selectMarker(index);
             const panel = document.getElementById('selection-panel');
             document.getElementById('pme-row').style.display = isPme(activeMarkers[index].type) ? 'block' : 'none';
+            document.getElementById('zone-row').style.display = isZone(activeMarkers[index].type) ? 'block' : 'none';
             panel.style.display = 'block';
             
             const rect = container.getBoundingClientRect();
@@ -2267,6 +2337,7 @@
             if (studentMode) return;
             hidePmeLevels(true);
             hideArrowChoices(true);
+            hideZoneChoices(true);
             const panel = document.getElementById('selection-panel');
             
             if (panel.style.display === 'block') { 
@@ -2311,7 +2382,12 @@
                 if (isPme(p.type)) {
                     marker.className = 'marker pme-triangle';
                     marker.innerHTML = pmeSvg(p.type, true);
-                } else if (['sd', 'top', 'zone', 'mg', 'md', 'pg', 'pd', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
+                } else if (isZone(p.type)) {
+                    const number = zoneNumber(p.type);
+                    marker.className = 'marker tech-tag tech-zone';
+                    marker.textContent = number ? `ZONE ${number}` : 'ZONE';
+                    marker.style.backgroundColor = ZONE_COLORS[number];
+                } else if (['sd', 'top', 'mg', 'md', 'pg', 'pd', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
@@ -3046,7 +3122,7 @@
         // QR CODE & MODE ÉLÈVE
         // =========================================
         // Les nouveaux types s'ajoutent toujours À LA FIN : les QR codes déjà imprimés restent lisibles
-        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd'];
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
         function escapeHtml(text) {
