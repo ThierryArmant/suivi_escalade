@@ -4173,6 +4173,12 @@
                     activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
                     banner.innerHTML = `<b>${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'));
                     document.getElementById('student-fiche').innerHTML = studentFicheHtml({ consigne: params.get('k') || "" });
+                    // Fiche de sécurité sans rien à montrer sur le mur (seulement la pastille de départ) : on n'affiche pas la photo
+                    if (/^s[ée]curit/i.test(params.get('t') || "") && activeMarkers.every(m => m.type === 'bloc-start')) {
+                        wall.style.display = 'none';
+                        const tools = under.querySelector('.student-tools');
+                        if (tools) tools.style.display = 'none';
+                    }
                     // Fiche complète du bloc, lue dans l'espace de l'équipe (si le stockage en ligne le permet)
                     if (params.get('b') && params.get('eq')) {
                         cloudCall({ action: 'ficheBloc', equipe: params.get('eq'), id: 'custom_' + params.get('b') }, false).then(fiche => {
