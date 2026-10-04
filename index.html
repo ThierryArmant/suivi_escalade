@@ -899,14 +899,57 @@
                 <div class="form-group">
                     <label>Mot de passe de l'équipe :</label>
                     <div style="display: flex; gap: 6px; align-items: stretch;">
-                        <input type="password" id="team-input-pass" autocomplete="current-password" onkeydown="if (event.key === 'Enter') teamLogin()" style="flex: 1; min-width: 0; padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
-                        <button type="button" id="team-pass-toggle" onclick="toggleTeamPassword()" title="Afficher le mot de passe" aria-label="Afficher le mot de passe" style="background: #f1f5f9; border: 1px solid #ccc; padding: 6px 12px; white-space: nowrap;">👁️ Afficher</button>
+                        <input type="password" id="team-input-pass" class="team-pass" autocomplete="current-password"onkeydown="if (event.key === 'Enter') teamLogin()" style="flex: 1; min-width: 0; padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                        <button type="button" id="team-pass-toggle" class="team-pass-toggle" onclick="toggleTeamPassword()"title="Afficher le mot de passe" aria-label="Afficher le mot de passe" style="background: #f1f5f9; border: 1px solid #ccc; padding: 6px 12px; white-space: nowrap;">👁️ Afficher</button>
                     </div>
                 </div>
                 <div id="team-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; margin-top: 6px;">
+                    <a href="#" onclick="teamForgot(); return false;" style="color: #2563eb; font-weight: bold;">Mot de passe oublié ?</a>
+                    <a href="#" onclick="showTeamPanel('create'); return false;" style="color: #2563eb; font-weight: bold;">➕ Créer une nouvelle équipe</a>
+                </div>
                 <div style="text-align: right; margin-top: 15px;">
                     <button onclick="closeTeamModal()" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Continuer sans équipe</button>
                     <button id="team-login-btn" onclick="teamLogin()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">Se connecter</button>
+                </div>
+            </div>
+
+            <div id="team-create" style="display: none;">
+                <p class="help-text" style="margin-top: 0;">Créez l'espace de votre établissement. Vous donnerez ensuite le nom d'équipe et le mot de passe à vos collègues. Le code d'invitation vous est fourni par le référent de l'outil.</p>
+                <div class="form-group">
+                    <label>Nom de l'équipe :</label>
+                    <input type="text" id="team-new-name" placeholder="Ex : college-dupont" autocomplete="off">
+                    <div class="help-text">3 à 30 caractères : lettres sans accent, chiffres, espaces ou tirets.</div>
+                </div>
+                <div class="form-group">
+                    <label>Établissement :</label>
+                    <input type="text" id="team-new-etab" placeholder="Ex : Collège Dupont, Marseille" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>E-mail du responsable de l'équipe :</label>
+                    <input type="text" id="team-new-email" placeholder="prenom.nom@ac-academie.fr" autocomplete="email" inputmode="email">
+                    <div class="help-text">Sert uniquement à renvoyer le mot de passe en cas d'oubli.</div>
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe de l'équipe (6 caractères minimum) :</label>
+                    <div style="display: flex; gap: 6px; align-items: stretch;">
+                        <input type="password" id="team-new-pass" class="team-pass" autocomplete="new-password" oninput="checkTeamPasswords()" style="flex: 1; min-width: 0; padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                        <button type="button" class="team-pass-toggle" onclick="toggleTeamPassword()" style="background: #f1f5f9; border: 1px solid #ccc; padding: 6px 12px; white-space: nowrap;">👁️ Afficher</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Confirmez le mot de passe :</label>
+                    <input type="password" id="team-new-pass2" class="team-pass" autocomplete="new-password" oninput="checkTeamPasswords()" style="padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                    <div id="team-pass-match" class="help-text" style="font-weight: bold; min-height: 1.2em;"></div>
+                </div>
+                <div class="form-group">
+                    <label>Code d'invitation :</label>
+                    <input type="text" id="team-new-invit" autocomplete="off" style="text-transform: uppercase;">
+                </div>
+                <div id="team-create-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="showTeamPanel('login')" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Retour</button>
+                    <button id="team-create-btn" onclick="teamCreate()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">Créer l'équipe</button>
                 </div>
             </div>
 
@@ -3170,10 +3213,11 @@
                 btn.style.backgroundColor = cloudTeam ? (cloudStateText.startsWith("⚠️") ? "#b45309" : "#0f766e") : "#475569";
             }
             const connected = document.getElementById('team-connected');
-            const loginBox = document.getElementById('team-login');
-            if (!connected || !loginBox) return;
+            if (!connected) return;
             connected.style.display = cloudTeam ? 'block' : 'none';
-            loginBox.style.display = cloudTeam ? 'none' : 'block';
+            ['login', 'create', 'choice'].forEach(name => {
+                document.getElementById('team-' + name).style.display = (!cloudTeam && teamPanel === name) ? 'block' : 'none';
+            });
             if (cloudTeam) {
                 const meta = schoolConfig.cloud || {};
                 document.getElementById('team-name').textContent = cloudTeam.equipe + (cloudTeam.etablissement ? ` (${cloudTeam.etablissement})` : "");
@@ -3182,20 +3226,120 @@
             }
         }
 
+        let teamPanel = 'login';   // 'login', 'create' ou 'choice'
+
+        function showTeamPanel(name) {
+            teamPanel = name;
+            toggleTeamPassword(true);
+            document.getElementById('team-error').textContent = "";
+            document.getElementById('team-error').style.color = "#991b1b";
+            document.getElementById('team-create-error').textContent = "";
+            updateTeamUI();
+        }
+
+        // Affiche ou masque tous les champs de mot de passe de la fenêtre d'équipe
         function toggleTeamPassword(forceHide) {
-            const input = document.getElementById('team-input-pass');
-            const btn = document.getElementById('team-pass-toggle');
-            const show = forceHide ? false : input.type === 'password';
-            input.type = show ? 'text' : 'password';
-            btn.textContent = show ? "🙈 Masquer" : "👁️ Afficher";
-            btn.title = show ? "Masquer le mot de passe" : "Afficher le mot de passe";
-            btn.setAttribute('aria-label', btn.title);
+            const inputs = Array.from(document.querySelectorAll('.team-pass'));
+            const show = forceHide ? false : inputs[0].type === 'password';
+            inputs.forEach(input => { input.type = show ? 'text' : 'password'; });
+            document.querySelectorAll('.team-pass-toggle').forEach(btn => {
+                btn.textContent = show ? "🙈 Masquer" : "👁️ Afficher";
+                btn.title = show ? "Masquer le mot de passe" : "Afficher le mot de passe";
+                btn.setAttribute('aria-label', btn.title);
+            });
+        }
+
+        function checkTeamPasswords() {
+            const first = document.getElementById('team-new-pass').value;
+            const second = document.getElementById('team-new-pass2').value;
+            const box = document.getElementById('team-pass-match');
+            if (!second) { box.textContent = ""; return false; }
+            const same = first === second;
+            box.textContent = same ? "✅ Les deux mots de passe sont identiques." : "❌ Les deux mots de passe sont différents.";
+            box.style.color = same ? "#166534" : "#991b1b";
+            return same;
+        }
+
+        async function cloudAsk(payload) {
+            const response = await fetch(CLOUD_URL, { method: 'POST', body: JSON.stringify(payload) });
+            return await response.json();
+        }
+
+        async function teamCreate() {
+            const errorBox = document.getElementById('team-create-error');
+            const value = id => document.getElementById(id).value;
+            const equipe = value('team-new-name').trim().toLowerCase();
+            const etablissement = value('team-new-etab').trim();
+            const email = value('team-new-email').trim();
+            const mdp = value('team-new-pass'), mdp2 = value('team-new-pass2');
+            const invitation = value('team-new-invit').trim();
+            errorBox.textContent = "";
+
+            let problem = "";
+            if (!/^[a-z0-9][a-z0-9 _-]{2,29}$/.test(equipe)) problem = "Nom d'équipe invalide : 3 à 30 caractères, lettres sans accent, chiffres, espaces ou tirets.";
+            else if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) problem = "Saisissez une adresse e-mail valide.";
+            else if (mdp.length < 6) problem = "Le mot de passe doit faire au moins 6 caractères.";
+            else if (mdp !== mdp2) problem = "Les deux mots de passe sont différents : saisissez le même deux fois.";
+            else if (!invitation) problem = "Saisissez le code d'invitation.";
+            if (problem) { errorBox.textContent = "❌ " + problem; return; }
+
+            const btn = document.getElementById('team-create-btn');
+            btn.disabled = true;
+            btn.textContent = "Création…";
+            let answer = null;
+            try {
+                const ping = await cloudAsk({ action: 'ping' });
+                if (!ping || !(ping.version >= 3)) {
+                    errorBox.textContent = "❌ Le stockage en ligne n'est pas à jour pour créer des équipes. Prévenez le référent de l'outil.";
+                } else {
+                    answer = await cloudAsk({ action: 'creerEquipe', equipe: equipe, mdp: mdp, etablissement: etablissement, email: email, invitation: invitation });
+                }
+            } catch (e) {
+                errorBox.textContent = "❌ Impossible de joindre le stockage en ligne. Vérifiez la connexion Internet.";
+            }
+            btn.disabled = false;
+            btn.textContent = "Créer l'équipe";
+            if (!answer) return;
+            if (!answer.ok) { errorBox.textContent = "❌ " + (answer.erreur || "Création refusée."); return; }
+
+            ['team-new-pass', 'team-new-pass2', 'team-new-invit'].forEach(id => { document.getElementById(id).value = ""; });
+            document.getElementById('team-pass-match').textContent = "";
+            alert(`✅ Équipe « ${answer.equipe} » créée.\nNotez le nom de l'équipe et le mot de passe : vos collègues en auront besoin pour se connecter.`);
+            pendingTeam = { equipe: answer.equipe, mdp: mdp, etablissement: answer.etablissement || "" };
+            await proceedWithPendingTeam();
+        }
+
+        async function teamForgot() {
+            const errorBox = document.getElementById('team-error');
+            const equipe = document.getElementById('team-input-name').value.trim();
+            errorBox.style.color = "#991b1b";
+            if (!equipe) { errorBox.textContent = "Saisissez d'abord le nom de l'équipe, puis cliquez sur « Mot de passe oublié ? »."; return; }
+            errorBox.style.color = "#475569";
+            errorBox.textContent = "Envoi en cours…";
+            let answer = null;
+            try {
+                answer = await cloudAsk({ action: 'motDePasseOublie', equipe: equipe });
+            } catch (e) {
+                errorBox.style.color = "#991b1b";
+                errorBox.textContent = "❌ Impossible de joindre le stockage en ligne. Vérifiez la connexion Internet.";
+                return;
+            }
+            if (answer && answer.ok) {
+                errorBox.style.color = "#166534";
+                errorBox.textContent = `✉️ Mot de passe envoyé à ${answer.envoyeA}. Pensez à regarder les indésirables.`;
+            } else {
+                errorBox.style.color = "#991b1b";
+                // Un stockage pas encore mis à jour répond par un refus de connexion : on le traduit
+                const message = answer && answer.erreur ? answer.erreur : "Envoi impossible.";
+                errorBox.textContent = "❌ " + (/mot de passe incorrect/i.test(message) ? "Le renvoi du mot de passe n'est pas encore disponible. Contactez le référent de l'outil." : message);
+            }
         }
 
         function openTeamModal() {
+            if (!cloudTeam && teamPanel === 'choice' && !pendingTeam) teamPanel = 'login';
             toggleTeamPassword(true);
             document.getElementById('team-error').textContent = "";
-            document.getElementById('team-choice').style.display = 'none';
+            document.getElementById('team-error').style.color = "#991b1b";
             updateTeamUI();
             document.getElementById('team-modal').style.display = 'flex';
         }
@@ -3216,6 +3360,7 @@
             const errorBox = document.getElementById('team-error');
             const equipe = document.getElementById('team-input-name').value.trim();
             const mdp = document.getElementById('team-input-pass').value;
+            errorBox.style.color = "#991b1b";
             errorBox.textContent = "";
             if (!equipe || !mdp) { errorBox.textContent = "Saisissez le nom de l'équipe et son mot de passe."; return; }
 
@@ -3236,17 +3381,18 @@
             if (!answer.ok) { errorBox.textContent = "❌ " + (answer.erreur || "Connexion refusée."); return; }
 
             pendingTeam = { equipe: answer.equipe, mdp: mdp, etablissement: answer.etablissement || "" };
+            await proceedWithPendingTeam();
+        }
+
+        // Après une connexion ou une création réussie : on vérifie d'abord ce que contient déjà l'appareil
+        async function proceedWithPendingTeam() {
             const previous = schoolConfig.cloud && schoolConfig.cloud.equipe;
-            const choice = document.getElementById('team-choice');
-            const mergeBtn = document.getElementById('team-choice-merge');
             if (hasLocalSharedData() && previous !== pendingTeam.equipe) {
-                // Cet appareil contient déjà des données qui ne viennent pas de cette équipe
                 document.getElementById('team-choice-text').textContent = previous
                     ? `Cet appareil contient les données de l'équipe « ${previous} ». Pour passer à « ${pendingTeam.equipe} », elles seront retirées de cet appareil (elles restent en ligne pour « ${previous} »).`
                     : `Cet appareil contient déjà des photos, des voies ou des blocs. Que voulez-vous en faire ?`;
-                mergeBtn.style.display = previous ? 'none' : 'block';
-                document.getElementById('team-login').style.display = 'none';
-                choice.style.display = 'block';
+                document.getElementById('team-choice-merge').style.display = previous ? 'none' : 'block';
+                showTeamPanel('choice');
                 return;
             }
             await finishTeamLogin('merge');
@@ -3256,8 +3402,7 @@
             if (!pendingTeam) return;
             if (mode === 'cancel') {
                 pendingTeam = null;
-                document.getElementById('team-choice').style.display = 'none';
-                updateTeamUI();
+                showTeamPanel('login');
                 return;
             }
             if (mode === 'replace') {
@@ -3281,7 +3426,7 @@
             pendingTeam = null;
             try { localStorage.setItem(TEAM_KEY, JSON.stringify(cloudTeam)); } catch (e) { /* on restera connecté jusqu'à la fermeture de la page */ }
             document.getElementById('team-input-pass').value = "";
-            document.getElementById('team-choice').style.display = 'none';
+            teamPanel = 'login';
             updateTeamUI();
             const ok = await cloudSync();
             refreshAfterCloud();

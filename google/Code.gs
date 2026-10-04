@@ -7,18 +7,22 @@
  *   - ses blocs et tracés   -> onglet « Blocs »
  *   - son topo des voies    -> onglet « Topo »
  *   - ses photos de murs    -> sous-dossiers « photos - <équipe> » à côté de ce Sheet
- * Les équipes et leurs mots de passe sont dans l'onglet « Equipes » : c'est vous qui les créez,
- * en ajoutant une ligne par équipe.
+ * Les équipes et leurs mots de passe sont dans l'onglet « Equipes ». Une équipe se crée soit
+ * en ajoutant une ligne dans cet onglet, soit depuis l'appli avec le code d'invitation
+ * rangé dans l'onglet « Reglages » (à ne donner qu'aux collègues à qui vous ouvrez l'outil).
  *
  * Aucune donnée d'élève ne doit être rangée ici.
  */
 
 var ONGLETS = {
-  Equipes: ['equipe', 'mot_de_passe', 'etablissement', 'cree_le'],
+  Equipes: ['equipe', 'mot_de_passe', 'etablissement', 'cree_le', 'email', 'dernier_rappel'],
   Blocs:   ['equipe', 'id', 'modifie_le', 'donnees'],
   Topo:    ['equipe', 'modifie_le', 'donnees'],
-  Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le']
+  Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le'],
+  Reglages: ['cle', 'valeur']
 };
+var VERSION = 3;
+var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
 var TAILLE_PHOTO_MAX = 3000000;   // environ 2 Mo par photo
 
@@ -33,6 +37,8 @@ function installer() {
   if (equipes.getLastRow() < 2) {
     equipes.appendRow(['giono', 'a-changer', 'Collège Jean Giono', maintenant_()]);
   }
+  try { MailApp.getRemainingDailyQuota(); } catch (err) { /* demande l'autorisation d'envoyer les rappels de mot de passe */ }
+  codeInvitation_(); // crée le code d'invitation s'il n'existe pas encore
   dossierParent_(); // demande dès maintenant l'autorisation d'accéder à Drive
   return 'Installation terminée';
 }
@@ -40,11 +46,10 @@ function installer() {
 function ongletPret_(classeur, nom) {
   var feuille = classeur.getSheetByName(nom);
   if (!feuille) feuille = classeur.insertSheet(nom);
-  if (feuille.getLastRow() === 0) {
-    var titres = ONGLETS[nom];
-    feuille.getRange(1, 1, 1, titres.length).setValues([titres]).setFontWeight('bold');
-    feuille.setFrozenRows(1);
-  }
+  // La ligne de titres est toujours remise à jour (de nouvelles colonnes peuvent s'ajouter avec les versions)
+  var titres = ONGLETS[nom];
+  feuille.getRange(1, 1, 1, titres.length).setValues([titres]).setFontWeight('bold');
+  feuille.setFrozenRows(1);
   // Tout en texte brut : évite qu'une donnée soit prise pour une formule
   feuille.getRange(1, 1, feuille.getMaxRows(), feuille.getMaxColumns()).setNumberFormat('@');
   return feuille;
@@ -79,7 +84,9 @@ function traiter_(d) {
   try {
     d = d || {};
     var action = String(d.action || '');
-    if (action === 'ping') return { ok: true, service: "Bloc'Note EPS" };
+    if (action === 'ping') return { ok: true, service: "Bloc'Note EPS", version: VERSION };
+    if (action === 'creerEquipe') return creerEquipe_(d);
+    if (action === 'motDePasseOublie') return motDePasseOublie_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
 
     // Toutes les autres actions demandent le mot de passe de l'équipe
@@ -125,6 +132,94 @@ function verifier_(equipe, mdp) {
     }
   }
   return null;
+}
+
+// Code d'invitation : demandé pour créer une équipe depuis l'appli. Il est lisible et modifiable
+// dans l'onglet « Reglages ». Si la case est vidée, plus personne ne peut créer d'équipe depuis l'appli.
+function codeInvitation_() {
+  var lignes = lignes_('Reglages');
+  for (var i = 0; i < lignes.length; i++) {
+    if (cle_(lignes[i][0]) === 'code_invitation') return String(lignes[i][1]).trim();
+  }
+  var lettres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
+  for (var j = 0; j < 8; j++) code += lettres.charAt(Math.floor(Math.random() * lettres.length));
+  ecrireLigne_(feuille_('Reglages'), -1, ['code_invitation', code]);
+  return code;
+}
+
+function creerEquipe_(d) {
+  var nom = cle_(d.equipe);
+  var motDePasse = String(d.mdp == null ? '' : d.mdp);
+  var etablissement = String(d.etablissement == null ? '' : d.etablissement).trim().substring(0, 80);
+  if (!/^[a-z0-9][a-z0-9 _-]{2,29}$/.test(nom)) {
+    return { ok: false, erreur: "Nom d'équipe invalide : 3 à 30 caractères, lettres sans accent, chiffres, espaces ou tirets." };
+  }
+  if (motDePasse.length < 6 || motDePasse.length > 60) {
+    return { ok: false, erreur: 'Le mot de passe doit faire entre 6 et 60 caractères.' };
+  }
+  var email = String(d.email == null ? '' : d.email).trim();
+  if (!emailValide_(email)) {
+    return { ok: false, erreur: "Adresse e-mail invalide. Elle sert à renvoyer le mot de passe en cas d'oubli." };
+  }
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(25000);
+  try {
+    var attendu = codeInvitation_();
+    if (!attendu) return { ok: false, erreur: "La création d'équipe depuis l'appli est fermée. Demandez au référent de créer votre équipe." };
+    if (String(d.invitation == null ? '' : d.invitation).trim().toUpperCase() !== attendu.toUpperCase()) {
+      return { ok: false, erreur: "Code d'invitation incorrect." };
+    }
+    var existe = chercher_('Equipes', function (l) { return cle_(l[0]) === nom; });
+    if (existe > 0) return { ok: false, erreur: 'Une équipe porte déjà ce nom. Choisissez-en un autre.' };
+    ecrireLigne_(feuille_('Equipes'), -1, [nom, motDePasse, etablissement, maintenant_(), email, '']);
+    return { ok: true, equipe: nom, etablissement: etablissement };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+function emailValide_(email) {
+  return email.length <= 120 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email);
+}
+
+function masquerEmail_(email) {
+  var parties = email.split('@');
+  return parties[0].charAt(0) + '***@' + parties[1];
+}
+
+// Mot de passe oublié : il est envoyé à l'adresse enregistrée pour l'équipe (colonne « email »),
+// jamais affiché dans l'appli. Un seul envoi toutes les 10 minutes par équipe.
+function motDePasseOublie_(d) {
+  var nom = cle_(d.equipe);
+  if (!nom) return { ok: false, erreur: "Indiquez le nom de l'équipe." };
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(25000);
+  try {
+    var position = chercher_('Equipes', function (l) { return cle_(l[0]) === nom; });
+    if (position < 0) return { ok: false, erreur: 'Aucune équipe ne porte ce nom.' };
+    var feuille = feuille_('Equipes');
+    var ligne = feuille.getRange(position, 1, 1, ONGLETS.Equipes.length).getValues()[0];
+    var email = String(ligne[4] || '').trim();
+    if (!emailValide_(email)) {
+      return { ok: false, erreur: "Aucune adresse e-mail n'est enregistrée pour cette équipe. Contactez le référent de l'outil." };
+    }
+    var dernier = Date.parse(String(ligne[5] || ''));
+    if (!isNaN(dernier) && (Date.now() - dernier) < DELAI_RAPPEL_MINUTES * 60000) {
+      return { ok: false, erreur: 'Un e-mail vient déjà d\'être envoyé. Vérifiez la boîte ' + masquerEmail_(email) + ' (et les indésirables), ou réessayez dans ' + DELAI_RAPPEL_MINUTES + ' minutes.' };
+    }
+    MailApp.sendEmail(email, "Bloc'Note EPS : mot de passe de l'équipe « " + nom + " »",
+      'Bonjour,\n\n' +
+      "Le mot de passe de votre équipe a été demandé depuis l'appli Bloc'Note EPS.\n\n" +
+      "Nom de l'équipe : " + nom + '\n' +
+      'Mot de passe : ' + String(ligne[1]) + '\n\n' +
+      "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message.");
+    var plage = feuille.getRange(position, 6);
+    plage.setNumberFormat('@');
+    plage.setValues([[maintenant_()]]);
+    return { ok: true, envoyeA: masquerEmail_(email) };
+  } finally {
+    verrou.releaseLock();
+  }
 }
 
 /* =========================================================
