@@ -10,6 +10,9 @@
  * Les équipes et leurs mots de passe sont dans l'onglet « Equipes ». Une équipe se crée soit
  * en ajoutant une ligne dans cet onglet, soit depuis l'appli avec le code d'invitation
  * rangé dans l'onglet « Reglages » (à ne donner qu'aux collègues à qui vous ouvrez l'outil).
+ * Un collègue sans code peut le demander depuis l'appli : la demande arrive par e-mail à
+ * l'adresse « email_referent » de l'onglet « Reglages », et seules les adresses académiques
+ * (@ac-….fr) sont acceptées.
  *
  * Aucune donnée d'élève ne doit être rangée ici.
  */
@@ -19,9 +22,11 @@ var ONGLETS = {
   Blocs:   ['equipe', 'id', 'modifie_le', 'donnees'],
   Topo:    ['equipe', 'modifie_le', 'donnees'],
   Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le'],
-  Reglages: ['cle', 'valeur']
+  Reglages: ['cle', 'valeur'],
+  Demandes: ['date', 'nom', 'etablissement', 'email']
 };
-var VERSION = 3;
+var VERSION = 4;
+var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
 var TAILLE_PHOTO_MAX = 3000000;   // environ 2 Mo par photo
@@ -39,6 +44,7 @@ function installer() {
   }
   try { MailApp.getRemainingDailyQuota(); } catch (err) { /* demande l'autorisation d'envoyer les rappels de mot de passe */ }
   codeInvitation_(); // crée le code d'invitation s'il n'existe pas encore
+  emailReferent_();  // crée la ligne « email_referent » (adresse qui reçoit les demandes d'accès)
   dossierParent_(); // demande dès maintenant l'autorisation d'accéder à Drive
   return 'Installation terminée';
 }
@@ -87,6 +93,7 @@ function traiter_(d) {
     if (action === 'ping') return { ok: true, service: "Bloc'Note EPS", version: VERSION };
     if (action === 'creerEquipe') return creerEquipe_(d);
     if (action === 'motDePasseOublie') return motDePasseOublie_(d);
+    if (action === 'demanderAcces') return demanderAcces_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
 
     // Toutes les autres actions demandent le mot de passe de l'équipe
@@ -137,14 +144,11 @@ function verifier_(equipe, mdp) {
 // Code d'invitation : demandé pour créer une équipe depuis l'appli. Il est lisible et modifiable
 // dans l'onglet « Reglages ». Si la case est vidée, plus personne ne peut créer d'équipe depuis l'appli.
 function codeInvitation_() {
-  var lignes = lignes_('Reglages');
-  for (var i = 0; i < lignes.length; i++) {
-    if (cle_(lignes[i][0]) === 'code_invitation') return String(lignes[i][1]).trim();
-  }
-  var lettres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
-  for (var j = 0; j < 8; j++) code += lettres.charAt(Math.floor(Math.random() * lettres.length));
-  ecrireLigne_(feuille_('Reglages'), -1, ['code_invitation', code]);
-  return code;
+  return reglage_('code_invitation', function () {
+    var lettres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', code = '';
+    for (var j = 0; j < 8; j++) code += lettres.charAt(Math.floor(Math.random() * lettres.length));
+    return code;
+  });
 }
 
 function creerEquipe_(d) {
@@ -158,8 +162,8 @@ function creerEquipe_(d) {
     return { ok: false, erreur: 'Le mot de passe doit faire entre 6 et 60 caractères.' };
   }
   var email = String(d.email == null ? '' : d.email).trim();
-  if (!emailValide_(email)) {
-    return { ok: false, erreur: "Adresse e-mail invalide. Elle sert à renvoyer le mot de passe en cas d'oubli." };
+  if (!emailAcademique_(email)) {
+    return { ok: false, erreur: "L'adresse e-mail doit être une adresse académique (se terminant par @ac-….fr)." };
   }
   var verrou = LockService.getScriptLock();
   verrou.waitLock(25000);
@@ -180,6 +184,73 @@ function creerEquipe_(d) {
 
 function emailValide_(email) {
   return email.length <= 120 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email);
+}
+
+// Adresse professionnelle de l'Éducation nationale : prenom.nom@ac-academie.fr
+function emailAcademique_(email) {
+  return emailValide_(email) && /@ac-[a-z0-9-]+\.[a-z]{2,4}$/i.test(email);
+}
+
+// Lit une valeur de l'onglet « Reglages » ; crée la ligne (avec la valeur par défaut) si elle manque
+function reglage_(cle, parDefaut) {
+  var lignes = lignes_('Reglages');
+  for (var i = 0; i < lignes.length; i++) {
+    if (cle_(lignes[i][0]) === cle) return String(lignes[i][1]).trim();
+  }
+  var valeur = typeof parDefaut === 'function' ? parDefaut() : parDefaut;
+  ecrireLigne_(feuille_('Reglages'), -1, [cle, valeur]);
+  return String(valeur);
+}
+
+// Adresse qui reçoit les demandes d'accès : case « email_referent » de l'onglet « Reglages »
+function emailReferent_() {
+  return reglage_('email_referent', function () {
+    try { return Session.getEffectiveUser().getEmail() || ''; } catch (err) { return ''; }
+  });
+}
+
+// Demande d'accès : un collègue sans code d'invitation écrit au référent depuis l'appli.
+// Seules les adresses académiques sont acceptées ; le référent répond ensuite à cette adresse avec le code.
+function demanderAcces_(d) {
+  var nom = String(d.nom == null ? '' : d.nom).trim().replace(/\s+/g, ' ');
+  var etablissement = String(d.etablissement == null ? '' : d.etablissement).trim().replace(/\s+/g, ' ');
+  var email = String(d.email == null ? '' : d.email).trim().toLowerCase();
+  if (nom.length < 2 || nom.length > 80) return { ok: false, erreur: 'Indiquez votre prénom et votre nom.' };
+  if (etablissement.length < 2 || etablissement.length > 120) return { ok: false, erreur: 'Indiquez votre établissement.' };
+  if (!emailAcademique_(email)) {
+    return { ok: false, erreur: "Seules les adresses académiques sont acceptées (se terminant par @ac-….fr)." };
+  }
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(25000);
+  try {
+    var referent = emailReferent_();
+    if (!emailValide_(referent)) return { ok: false, erreur: "Les demandes d'accès ne sont pas ouvertes pour le moment." };
+
+    var unJour = Date.now() - 24 * 3600000;
+    var recentes = lignes_('Demandes').filter(function (l) { var t = Date.parse(String(l[0])); return !isNaN(t) && t > unJour; });
+    if (recentes.some(function (l) { return cle_(l[3]) === email; })) {
+      return { ok: false, erreur: 'Votre demande a déjà été envoyée. Le référent vous répondra à votre adresse académique.' };
+    }
+    if (recentes.length >= DEMANDES_MAX_PAR_JOUR) {
+      return { ok: false, erreur: "Trop de demandes aujourd'hui. Réessayez demain." };
+    }
+
+    var code = codeInvitation_();
+    MailApp.sendEmail(referent, "Bloc'Note EPS : demande d'accès de " + nom + ' (' + etablissement + ')',
+      'Bonjour,\n\n' +
+      "Un collègue demande à créer son équipe dans l'appli Bloc'Note EPS.\n\n" +
+      'Nom : ' + nom + '\n' +
+      'Établissement : ' + etablissement + '\n' +
+      'Adresse académique : ' + email + '\n\n' +
+      'POUR ACCEPTER : cliquez sur « Répondre ». Votre réponse partira directement à ' + email + '.\n' +
+      "Indiquez-lui le code d'invitation : " + (code || "(aucun code : la création d'équipe est fermée dans l'onglet Reglages)") + '\n\n' +
+      'POUR REFUSER : ne répondez pas, rien ne sera créé.',
+      { replyTo: email, name: "Bloc'Note EPS" });
+    ecrireLigne_(feuille_('Demandes'), -1, [maintenant_(), nom, etablissement, email]);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
 }
 
 function masquerEmail_(email) {

@@ -926,9 +926,9 @@
                     <input type="text" id="team-new-etab" placeholder="Ex : Collège Dupont, Marseille" autocomplete="off">
                 </div>
                 <div class="form-group">
-                    <label>E-mail du responsable de l'équipe :</label>
+                    <label>E-mail académique du responsable de l'équipe :</label>
                     <input type="text" id="team-new-email" placeholder="prenom.nom@ac-academie.fr" autocomplete="email" inputmode="email">
-                    <div class="help-text">Sert uniquement à renvoyer le mot de passe en cas d'oubli.</div>
+                    <div class="help-text">Adresse de l'Éducation nationale (@ac-….fr). Sert uniquement à renvoyer le mot de passe en cas d'oubli.</div>
                 </div>
                 <div class="form-group">
                     <label>Mot de passe de l'équipe (6 caractères minimum) :</label>
@@ -945,11 +945,34 @@
                 <div class="form-group">
                     <label>Code d'invitation :</label>
                     <input type="text" id="team-new-invit" autocomplete="off" style="text-transform: uppercase;">
+                    <div class="help-text">Pas de code ? <a href="#" onclick="showTeamPanel('request'); return false;" style="color: #2563eb; font-weight: bold;">✉️ Demander l'accès au référent</a></div>
                 </div>
                 <div id="team-create-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
                 <div style="text-align: right; margin-top: 15px;">
                     <button onclick="showTeamPanel('login')" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Retour</button>
                     <button id="team-create-btn" onclick="teamCreate()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">Créer l'équipe</button>
+                </div>
+            </div>
+
+            <div id="team-request" style="display: none;">
+                <p class="help-text" style="margin-top: 0;">L'outil est réservé aux personnels de l'Éducation nationale. Envoyez votre demande : le référent vous répondra à votre adresse académique avec le code d'invitation qui permet de créer votre équipe.</p>
+                <div class="form-group">
+                    <label>Prénom et nom :</label>
+                    <input type="text" id="team-req-name" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label>Établissement :</label>
+                    <input type="text" id="team-req-etab" placeholder="Ex : Collège Dupont, Marseille" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label>Votre adresse académique :</label>
+                    <input type="text" id="team-req-email" placeholder="prenom.nom@ac-academie.fr" autocomplete="email" inputmode="email">
+                    <div class="help-text">Seules les adresses se terminant par @ac-….fr sont acceptées.</div>
+                </div>
+                <div id="team-request-msg" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="showTeamPanel('create')" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Retour</button>
+                    <button id="team-request-btn" onclick="teamRequest()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">✉️ Envoyer la demande</button>
                 </div>
             </div>
 
@@ -3215,7 +3238,7 @@
             const connected = document.getElementById('team-connected');
             if (!connected) return;
             connected.style.display = cloudTeam ? 'block' : 'none';
-            ['login', 'create', 'choice'].forEach(name => {
+            ['login', 'create', 'request', 'choice'].forEach(name => {
                 document.getElementById('team-' + name).style.display = (!cloudTeam && teamPanel === name) ? 'block' : 'none';
             });
             if (cloudTeam) {
@@ -3226,7 +3249,8 @@
             }
         }
 
-        let teamPanel = 'login';   // 'login', 'create' ou 'choice'
+        let teamPanel = 'login';   // 'login', 'create', 'request' ou 'choice'
+        const ACADEMIC_EMAIL = /^[^\s@,;<>]+@ac-[a-z0-9-]+\.[a-z]{2,4}$/i;   // adresse de l'Éducation nationale
 
         function showTeamPanel(name) {
             teamPanel = name;
@@ -3234,7 +3258,47 @@
             document.getElementById('team-error').textContent = "";
             document.getElementById('team-error').style.color = "#991b1b";
             document.getElementById('team-create-error').textContent = "";
+            const requestMsg = document.getElementById('team-request-msg');
+            requestMsg.textContent = ""; 
+            requestMsg.style.color = "#991b1b";
             updateTeamUI();
+        }
+
+        // Demande d'accès : envoyée automatiquement au référent, qui répond avec le code d'invitation
+        async function teamRequest() {
+            const msg = document.getElementById('team-request-msg');
+            const nom = document.getElementById('team-req-name').value.trim();
+            const etablissement = document.getElementById('team-req-etab').value.trim();
+            const email = document.getElementById('team-req-email').value.trim();
+            msg.style.color = "#991b1b";
+            msg.textContent = "";
+
+            let problem = "";
+            if (nom.length < 2) problem = "Indiquez votre prénom et votre nom.";
+            else if (etablissement.length < 2) problem = "Indiquez votre établissement.";
+            else if (!ACADEMIC_EMAIL.test(email)) problem = "Seules les adresses académiques sont acceptées (se terminant par @ac-….fr).";
+            if (problem) { msg.textContent = "❌ " + problem; return; }
+
+            const btn = document.getElementById('team-request-btn');
+            btn.disabled = true; 
+            btn.textContent = "Envoi…";
+            let answer = null;
+            try {
+                const ping = await cloudAsk({ action: 'ping' });
+                if (!ping || !(ping.version >= 4)) {
+                    msg.textContent = "❌ Les demandes d'accès ne sont pas encore ouvertes. Contactez directement le référent de l'outil.";
+                } else {
+                    answer = await cloudAsk({ action: 'demanderAcces', nom: nom, etablissement: etablissement, email: email });
+                }
+            } catch (e) {
+                msg.textContent = "❌ Impossible de joindre le stockage en ligne. Vérifiez la connexion Internet.";
+            }
+            btn.disabled = false; 
+            btn.textContent = "✉️ Envoyer la demande";
+            if (!answer) return;
+            if (!answer.ok) { msg.textContent = "❌ " + (answer.erreur || "Demande refusée."); return; }
+            msg.style.color = "#166534";
+            msg.textContent = `✅ Demande envoyée. La réponse arrivera sur ${email} : gardez un œil sur votre messagerie académique, puis revenez créer votre équipe avec le code reçu.`;
         }
 
         // Affiche ou masque tous les champs de mot de passe de la fenêtre d'équipe
@@ -3277,7 +3341,7 @@
 
             let problem = "";
             if (!/^[a-z0-9][a-z0-9 _-]{2,29}$/.test(equipe)) problem = "Nom d'équipe invalide : 3 à 30 caractères, lettres sans accent, chiffres, espaces ou tirets.";
-            else if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) problem = "Saisissez une adresse e-mail valide.";
+            else if (!ACADEMIC_EMAIL.test(email)) problem = "L'adresse e-mail doit être une adresse académique (se terminant par @ac-….fr).";
             else if (mdp.length < 6) problem = "Le mot de passe doit faire au moins 6 caractères.";
             else if (mdp !== mdp2) problem = "Les deux mots de passe sont différents : saisissez le même deux fois.";
             else if (!invitation) problem = "Saisissez le code d'invitation.";
@@ -3289,8 +3353,8 @@
             let answer = null;
             try {
                 const ping = await cloudAsk({ action: 'ping' });
-                if (!ping || !(ping.version >= 3)) {
-                    errorBox.textContent = "❌ Le stockage en ligne n'est pas à jour pour créer des équipes. Prévenez le référent de l'outil.";
+                if (!ping || !(ping.version >= 4)) {
+                    errorBox.textContent= "❌ Le stockage en ligne n'est pas à jour pour créer des équipes. Prévenez le référent de l'outil.";
                 } else {
                     answer = await cloudAsk({ action: 'creerEquipe', equipe: equipe, mdp: mdp, etablissement: etablissement, email: email, invitation: invitation });
                 }
