@@ -35,6 +35,11 @@ var TAILLE_PHOTO_MAX = 3000000;   // environ 2 Mo par photo
    1. INSTALLATION (à lancer une seule fois depuis l'éditeur)
    ========================================================= */
 function installer() {
+  // Demande toutes les autorisations nécessaires (feuille, Drive, envoi d'e-mails).
+  // Si l'une d'elles a été décochée ou n'a jamais été demandée, Google rouvre la fenêtre d'autorisation.
+  if (ScriptApp.requireAllScopes) ScriptApp.requireAllScopes(ScriptApp.AuthMode.FULL);
+  MailApp.getRemainingDailyQuota();
+
   var classeur = SpreadsheetApp.getActiveSpreadsheet();
   Object.keys(ONGLETS).forEach(function (nom) { ongletPret_(classeur, nom); });
 
@@ -42,7 +47,6 @@ function installer() {
   if (equipes.getLastRow() < 2) {
     equipes.appendRow(['giono', 'a-changer', 'Collège Jean Giono', maintenant_()]);
   }
-  try { MailApp.getRemainingDailyQuota(); } catch (err) { /* demande l'autorisation d'envoyer les rappels de mot de passe */ }
   codeInvitation_(); // crée le code d'invitation s'il n'existe pas encore
   emailReferent_();  // crée la ligne « email_referent » (adresse qui reçoit les demandes d'accès)
   dossierParent_(); // demande dès maintenant l'autorisation d'accéder à Drive
