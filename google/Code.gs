@@ -26,7 +26,7 @@ var ONGLETS = {
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date']
 };
-var VERSION = 6;
+var VERSION = 7;
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -563,7 +563,8 @@ function ficheBloc_(equipe, id) {
           nom: String(route.name || ''),
           consigne: String(route.consigne || ''),
           attendus: String(route.attendus || ''),
-          competences: String(route.competences || '')
+          competences: String(route.competences || ''),
+          source: String(route.source || '')
         };
       } catch (err) { break; }
     }

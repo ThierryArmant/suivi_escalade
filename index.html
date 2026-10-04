@@ -464,6 +464,13 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.5); pointer-events: none; 
         }
         #marker-tip b { color: #fde047; }
+        /* Bulle d'explication des boutons et des menus */
+        #ui-tip { 
+            display: none; position: fixed; z-index: 5000; max-width: 260px; 
+            background: #0f172a; color: #ffffff; border: 2px solid #fde047; border-radius: 8px; 
+            padding: 7px 10px; font-size: 0.8rem; font-weight: normal; line-height: 1.35; text-align: left; 
+            box-shadow: 0 6px 18px rgba(0,0,0,0.5); pointer-events: none; 
+        }
         #tool-info { 
             font-size: 0.72rem; line-height: 1.3; color: #1e3a8a; background: #ffffff; 
             border: 1px solid #bfdbfe; border-radius: 6px; padding: 6px 8px; min-height: 3.2em; text-align: left; 
@@ -1259,6 +1266,8 @@
         </div>
     </div>
 
+    <div id="ui-tip"></div>
+
     <div id="group-bar" style="display: none; position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 850; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 96vw; box-sizing: border-box; background: #eef2ff; color: #312e81; border: 3px solid #6366f1; border-radius: 12px; padding: 8px 10px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
         <span>📥 Déplacer tout le tracé :</span>
         <button onclick="shiftAllMarkers(-2, 0)" title="Vers la gauche">⬅️</button>
@@ -1336,6 +1345,10 @@
             <div class="form-group">
                 <label>👩‍🏫 Notes pour l'enseignant <span style="font-weight: normal;">(jamais montrées aux élèves : variantes, organisation, sécurité)</span> :</label>
                 <textarea id="edit-fiche" rows="5" maxlength="1200" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>📚 Source <span style="font-weight: normal;">(document ou auteur dont vient cet exercice ; affichée au prof et à l'élève)</span> :</label>
+                <input type="text" id="edit-source" maxlength="400" placeholder="Ex : CPD EPS, DSDEN 07, mars 2025" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px;">
             </div>
             <div style="text-align: right; margin-top: 12px;">
                 <button onclick="document.getElementById('consigne-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
@@ -1873,7 +1886,7 @@
                 const qrBtn = document.createElement('button');
                 qrBtn.className = 'qr-custom-btn'; 
                 qrBtn.textContent = '📱'; 
-                qrBtn.title = 'Afficher le QR Code';
+                qrBtn.title = "Affiche le QR code de cet exercice : l'élève le scanne et voit le tracé et la consigne sur son téléphone.";
                 qrBtn.onclick = (e) => { 
                     e.stopPropagation(); 
                     generateQRCode(r.id); 
@@ -1882,7 +1895,7 @@
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-custom-btn'; 
                 delBtn.textContent = '❌'; 
-                delBtn.title = 'Supprimer';
+                delBtn.title = "Supprime cet exercice, pour toute l'équipe.";
                 delBtn.onclick = async (e) => {
                     e.stopPropagation();
                     if (confirm(`Voulez-vous supprimer "${r.name}" ?`)) {
@@ -2157,6 +2170,107 @@
         }
 
         let studentMode = false;
+
+        // =========================================
+        // BULLES D'EXPLICATION : chaque bouton et chaque menu explique ce qu'il fait
+        // (au survol de la souris, ou en laissant le doigt appuyé sur une tablette)
+        // =========================================
+        const UI_TIPS = {
+            '#routeSelect': "Choisir une voie du topo : la photo de son secteur et son tracé s'affichent.",
+            '#blocWallSelect': "Choisir un mur de blocs. Posez ensuite vos balises, puis « + Créer un Bloc ».",
+            '.btn-save': "Enregistre les balises du tracé affiché. Il est gardé et partagé avec votre équipe.",
+            '.btn-delete': "Efface toutes les balises du tracé affiché. La voie ou le bloc reste dans la liste.",
+            '[onclick="openConfigModal()"]': "Réglages : photos des murs, topo des voies, fiche de suivi, import, export et suppression de blocs.",
+            '[onclick="openHowTo()"]': "Mode d'emploi : créer un bloc, tracer une voie, utiliser les outils, demander des blocs à des collègues.",
+            '[onclick="clearStickers()"]': "Retire toutes les balises de l'écran. Rien n'est effacé pour de bon tant que vous n'enregistrez pas.",
+            '#magic-filter-btn': "Analyse la photo, puis grise tout le mur sauf la couleur que vous choisissez.",
+            '[onclick="openCreateModal(\'bloc\')"]': "Enregistre les balises posées comme un nouveau bloc : nom, niveau, thème et consigne.",
+            '[onclick="openCreateModal(\'individualise\')"]': "Tracé personnel pour un élève. Il reste sur cet appareil et n'est jamais partagé.",
+            '#suivi-choose-btn': "Désigner le fichier Excel de suivi sur cet ordinateur. L'appli retient son emplacement ; rien n'est envoyé sur Internet.",
+            '#suivi-open-btn': "Relit le fichier de suivi mémorisé et l'affiche.",
+            '[onclick="exportData()"]': "Télécharge tous vos blocs dans un fichier, pour les sauvegarder ou les donner à un collègue.",
+            '#wallImagesInput': "Ajouter les photos des secteurs de VOIES. Le nom du fichier doit contenir les numéros des secteurs (« voie 4 5 6 »).",
+            '#blocImagesInput': "Ajouter les photos des murs de BLOCS. Elles s'ajoutent aux photos déjà en mémoire.",
+            '#excelInput': "Importer le topo Excel : secteurs, voies, cotations et couleurs.",
+            '#importInput': "Choisir un fichier de blocs (.json). Les blocs déjà présents ne sont pas dupliqués.",
+            '[onclick="openBulkDelete()"]': "Cocher plusieurs blocs, ou un thème entier, pour les supprimer ensemble. Une sauvegarde est téléchargée avant.",
+            '[onclick="refreshTeams()"]': "Recharge la liste des équipes, des demandes reçues et des accès.",
+            '[onclick="openShareHelp()"]': "Explique comment demander à consulter les blocs d'une autre équipe.",
+            '#unsaved-action': "Enregistre maintenant pour ne pas perdre votre travail.",
+            '#student-zoom': "Agrandit la photo. Fais-la glisser avec le doigt pour voir tout le mur.",
+            '.legend-header': "Cliquez pour lire l'explication de ce repère.",
+            '.theme-header': "Cliquez pour ouvrir ou refermer ce thème."
+        };
+
+        function uiTipFor(el) {
+            if (el.closest && el.closest('#qrcode-container')) return null;   // le QR code garde son lien tel quel
+            let node = el;
+            for (let depth = 0; node && node !== document.body && depth < 5; depth++, node = node.parentElement) {
+                if (node.dataset && node.dataset.tip) return [node, node.dataset.tip];
+                // Les info-bulles ordinaires (title) sont reprises dans la bulle de l'appli
+                if (node.getAttribute && node.getAttribute('title')) {
+                    node.dataset.tip = node.getAttribute('title');
+                    node.removeAttribute('title');
+                    return [node, node.dataset.tip];
+                }
+                // Ces trois boutons ouvrent déjà leur propre fenêtre de choix au survol
+                if (['tool-zone', 'tool-arrow', 'tool-pme'].indexOf(node.id) !== -1) return null;
+                if (node.id && node.id.indexOf('tool-') === 0 && node.classList.contains('tool-btn')) {
+                    const tool = node.id.replace('tool-', '');
+                    const help = markerHelp(tool === 'pme' && isPme(currentTool) ? currentTool : tool);
+                    return [node, help[0] + " : " + help[1]];
+                }
+                for (const selector in UI_TIPS) {
+                    if (node.matches && node.matches(selector)) return [node, UI_TIPS[selector]];
+                }
+            }
+            return null;
+        }
+
+        let uiTipTimer = null, uiTipTarget = null;
+        function hideUiTip() {
+            clearTimeout(uiTipTimer);
+            uiTipTarget = null;
+            const tip = document.getElementById('ui-tip');
+            if (tip) tip.style.display = 'none';
+        }
+
+        function showUiTip(node, text) {
+            const tip = document.getElementById('ui-tip');
+            tip.textContent = text;
+            tip.style.display = 'block';
+            const r = node.getBoundingClientRect(), t = tip.getBoundingClientRect();
+            let left = Math.max(6, Math.min(window.innerWidth - t.width - 6, r.left + r.width / 2 - t.width / 2));
+            let top = r.bottom + 8;
+            if (top + t.height > window.innerHeight - 6) top = Math.max(6, r.top - t.height - 8);
+            tip.style.left = left + 'px';
+            tip.style.top = top + 'px';
+        }
+
+        function initUiTips() {
+            document.addEventListener('mouseover', (e) => {
+                if (e.target.closest && e.target.closest('#marker-layer')) return;   // les balises ont leur propre bulle
+                const found = uiTipFor(e.target);
+                if (!found) { hideUiTip(); return; }
+                if (found[0] === uiTipTarget) return;
+                hideUiTip();
+                uiTipTarget = found[0];
+                uiTipTimer = setTimeout(() => { if (uiTipTarget === found[0] && document.contains(found[0])) showUiTip(found[0], found[1]); }, 450);
+            });
+            document.addEventListener('mouseout', (e) => { if (!e.relatedTarget) hideUiTip(); });
+            ['mousedown', 'wheel', 'keydown'].forEach(name => document.addEventListener(name, hideUiTip, true));
+            window.addEventListener('scroll', hideUiTip, true);
+            // Sur tablette : laisser le doigt appuyé une demi-seconde affiche l'explication
+            document.addEventListener('touchstart', (e) => {
+                hideUiTip();
+                if (e.target.closest && e.target.closest('#marker-layer')) return;
+                const found = uiTipFor(e.target);
+                if (!found) return;
+                uiTipTarget = found[0];
+                uiTipTimer = setTimeout(() => { showUiTip(found[0], found[1]); setTimeout(hideUiTip, 3500); }, 550);
+            }, { passive: true });
+            ['touchend', 'touchmove', 'touchcancel'].forEach(name => document.addEventListener(name, () => clearTimeout(uiTipTimer), { passive: true }));
+        }
 
         // Vue élève : agrandit la photo (on la fait alors glisser du doigt de gauche à droite)
         function toggleStudentZoom() {
@@ -2516,6 +2630,7 @@
                 if (pasteInfo) {
                     if (pasteInfo.attendus) newRoute.attendus = pasteInfo.attendus;
                     if (pasteInfo.competences) newRoute.competences = pasteInfo.competences;
+                    if (pasteInfo.source) newRoute.source = pasteInfo.source;
                     pasteInfo = null;
                     document.getElementById('group-bar').style.display = 'none';
                 }
@@ -3615,7 +3730,7 @@
                         const existing = schoolConfig.customRoutes.find(cr => cr.id === nr.id);
                         if (existing) {
                             let touched = false;
-                            ['consigne', 'attendus', 'competences', 'fiche'].forEach(key => {
+                            ['consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => {
                                 if (nr[key] && nr[key] !== existing[key]) { existing[key] = nr[key]; touched = true; }
                             });
                             // Le fichier apporte une version plus récente du tracé : on remplace aussi les balises
@@ -4685,6 +4800,7 @@
             setTimeout(checkTeamsNews, 5000);
             setInterval(watchUnsaved, 1000);
             updatePasteButton();
+            initUiTips();
             setTimeout(offerDraft, 3500);
             setInterval(checkTeamsNews, 120000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTeamsNews(); });
@@ -4863,6 +4979,16 @@
             btn.textContent = label;
             btn.style.cssText = `background: ${background}; color: white; border: none; padding: 6px 10px; font-size: 0.8rem; margin: 4px 6px 0 0;`;
             btn.onclick = onClick;
+            const tips = [
+                [/Autoriser/, "Cette équipe pourra afficher vos blocs et les recopier chez elle, sans jamais modifier les vôtres."],
+                [/^Refuser/, "Cette équipe ne verra que les titres de vos blocs."],
+                [/Retirer/, "Cette équipe ne pourra plus afficher vos blocs. Elle devra refaire une demande."],
+                [/Voir (mes|les)/, "Ouvre la liste complète des blocs, rangés par thème, avec leur niveau."],
+                [/Demander/, "Envoie une demande à cette équipe. Elle accepte ou refuse ; vous êtes prévenu par e-mail et par la pastille rouge."],
+                [/Écrire/, "Envoie un message au responsable de cette équipe, par e-mail."]
+            ];
+            const found = tips.find(t => t[0].test(label));
+            if (found) btn.dataset.tip = found[1];
             return btn;
         }
 
@@ -5073,7 +5199,7 @@
             const inPreview = !currentRouteId && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
             const source = currentRouteId ? ((schoolConfig.customRoutes || []).find(r => r.id === currentRouteId) || null) : (inPreview ? previewRoute : null);
             const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
-            if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche'].forEach(key => { if (source[key]) clip[key] = source[key]; });
+            if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => { if (source[key]) clip[key] = source[key]; });
             try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
             alert(`📋 ${clip.markers.length} balise(s) copiée(s)` + (clip.name ? ` (« ${clip.name} »)` : "") + `.\n\nAffichez maintenant votre mur (menu « Choix du mur de blocs »), puis cliquez sur « 📥 Coller ».`);
@@ -5203,13 +5329,14 @@
             if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b");
             if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir", o.attendus, "#16a34a");
             if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb");
+            if (o.source) html += `<div class="fiche-source" style="margin-top: 6px; font-size: 0.72rem; font-weight: normal; font-style: italic; text-align: left; opacity: 0.9;">📚 Source : ${escapeHtml(o.source)}</div>`;
             return html;
         }
 
         function consigneHtml(route) {
             let html = `<div class="fiche-zone">` + studentFicheHtml(route);
             if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (non montrées aux élèves)</summary>${ficheBox("", route.fiche, "#94a3b8")}</details>`;
-            const filled = route.consigne || route.attendus || route.competences || route.fiche;
+            const filled = route.consigne || route.attendus || route.competences || route.fiche || route.source;
             html += `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button></div>`;
             return html;
         }
@@ -5220,6 +5347,7 @@
             document.getElementById('edit-consigne').value = route.consigne || "";
             document.getElementById('edit-attendus').value = route.attendus || "";
             document.getElementById('edit-competences').value = route.competences || "";
+            document.getElementById('edit-source').value = route.source || "";
             document.getElementById('edit-fiche').value = route.fiche || "";
             document.getElementById('consigne-modal').style.display = 'flex';
         }
@@ -5227,7 +5355,7 @@
         async function saveConsigne() {
             const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
             if (!route) return;
-            ['consigne', 'attendus', 'competences', 'fiche'].forEach(key => {
+            ['consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => {
                 const value = document.getElementById('edit-' + key).value.trim();
                 if (value) route[key] = value; else delete route[key];
             });
