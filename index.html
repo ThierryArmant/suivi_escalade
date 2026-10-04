@@ -565,12 +565,28 @@
         .marker.tech-sd { background-color: #1e293b; color: #fbbf24; border-color: #fbbf24; }
         .marker.tech-top { background-color: #ca8a04; color: white; border-color: #fef08a; }
         .marker.tech-zone { background-color: #0ea5e9; color: white; border-color: #bae6fd; }
-        .marker.tech-mg { background-color: #475569; }
-        .marker.tech-md { background-color: #475569; }
+        /* Mains et pieds : formes vides pour laisser voir la prise.
+           Cercle = main, rectangle = pied ; vert = gauche, rouge = droite. */
+        .marker.limb { 
+            width: 34px; height: 34px; background: transparent; 
+            border: 4px solid #16a34a; 
+            box-shadow: 0 0 0 1.5px #ffffff, inset 0 0 0 1.5px #ffffff, 0 0 5px rgba(0,0,0,0.8); 
+        }
+        .marker.limb.hand { border-radius: 50%; }
+        .marker.limb.foot { border-radius: 3px; width: 38px; height: 28px; }
+        .marker.limb.right { border-color: #dc2626; }
+        .marker.limb::after { 
+            content: attr(data-label); position: absolute; top: 100%; left: 50%; transform: translate(-50%, 3px); 
+            background: #16a34a; color: #ffffff; font-size: 0.6rem; line-height: 1; padding: 2px 4px; 
+            border-radius: 3px; border: 1px solid #ffffff; white-space: nowrap; 
+        }
+        .marker.limb.right::after { background: #dc2626; }
+        .limb-icon { display: inline-block; width: 13px; height: 13px; border: 3px solid #16a34a; vertical-align: -2px; margin-right: 3px; background: transparent; }
+        .limb-icon.hand { border-radius: 50%; }
+        .limb-icon.foot { width: 15px; height: 10px; border-radius: 2px; }
+        .limb-icon.right { border-color: #dc2626; }
         .marker.tech-jete { background-color: #ec4899; }
         .marker.tech-pied { background-color: #f59e0b; }
-        .marker.tech-pg { background-color: #b45309; }
-        .marker.tech-pd { background-color: #b45309; }
         .marker.tech-joker { background-color: #10b981; border: 2px dashed #6ee7b7; }
         .marker.tech-pme { background-color: #2b6cb0; }
         /* PME : triangle reliant les 3 appuis (1 main et 2 pieds), à pivoter et agrandir pour le caler sur les prises */
@@ -713,11 +729,11 @@
                     <button class="tool-btn" id="tool-sd" onclick="setTool('sd')">🏁 Départ(SD)</button>
                     <button class="tool-btn" id="tool-top" onclick="setTool('top')">🏆 TOP</button>
 
-                    <button class="tool-btn" id="tool-mg" onclick="setTool('mg')">🖐️ MG</button>
-                    <button class="tool-btn" id="tool-md" onclick="setTool('md')">🤚 MD</button>
+                    <button class="tool-btn" id="tool-mg" onclick="setTool('mg')" title="Main gauche : cercle vert"><span class="limb-icon hand"></span>MG</button>
+                    <button class="tool-btn" id="tool-md" onclick="setTool('md')" title="Main droite : cercle rouge"><span class="limb-icon hand right"></span>MD</button>
 
-                    <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche">🦶 PG</button>
-                    <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit">🦶 PD</button>
+                    <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche : rectangle vert"><span class="limb-icon foot"></span>PG</button>
+                    <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit : rectangle rouge"><span class="limb-icon foot right"></span>PD</button>
                     
                     <div id="zone-wrap" style="position: relative; display: flex;" onmouseenter="showZoneChoices()" onmouseleave="hideZoneChoices()">
                         <button class="tool-btn" id="tool-zone" style="flex: 1;" onclick="setTool(isZone(currentTool) ? currentTool : 'zone'); showZoneChoices()">🎯 Zone</button>
@@ -1092,7 +1108,7 @@
                     <li><b>🎯 Zone :</b> en passant sur le bouton, choisissez un numéro pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</li>
                     <li><b>⬆️ Flèche :</b>une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
-                    <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD (main gauche, main droite), 🦶 PG, 🦶 PD (pied gauche, pied droit), 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
+                    <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, MG, MD (main gauche, main droite : cercles vides), PG, PD (pied gauche, pied droit : rectangles vides) — vert = gauche, rouge = droite, 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
                 <p class="help-text" style="font-size: 0.82rem;">N'oubliez pas d'enregistrer : « + Créer un Bloc » pour un nouveau bloc, « 💾 Enregistrer » pour une voie ou un bloc déjà créé.</p>
             </div>
@@ -1842,10 +1858,10 @@
             'sd':         ["Départ", "Position de départ : installe-toi sur ces prises avant de commencer."],
             'top':        ["TOP : l'arrivée", "Prise finale. Tiens-la à 2 mains pendant 3 secondes pour valider."],
             'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
-            'mg':         ["Main gauche", "Prends cette prise avec la main gauche."],
-            'md':         ["Main droite", "Prends cette prise avec la main droite."],
-            'pg':         ["Pied gauche", "Pose le pied gauche sur cette prise."],
-            'pd':         ["Pied droit", "Pose le pied droit sur cette prise."],
+            'mg':         ["Main gauche (cercle vert)", "Prends cette prise avec la main gauche. Cercle = main, vert = gauche."],
+            'md':         ["Main droite (cercle rouge)", "Prends cette prise avec la main droite. Cercle = main, rouge = droite."],
+            'pg':         ["Pied gauche (rectangle vert)", "Pose le pied gauche sur cette prise. Rectangle = pied, vert = gauche."],
+            'pd':         ["Pied droit (rectangle rouge)", "Pose le pied droit sur cette prise. Rectangle = pied, rouge = droite."],
             'pied':       ["Prise de pied", "Cette prise est réservée aux pieds : pas de main dessus."],
             'joker':      ["Joker", "Prise d'aide. Si tu es à l'aise, essaie de réussir sans elle."],
             'cm':         ["Changement de main", "Sur cette prise, remplace une main par l'autre."],
@@ -2417,7 +2433,11 @@
                     marker.className = 'marker tech-tag tech-zone';
                     marker.textContent = number ? `ZONE ${number}` : 'ZONE';
                     marker.style.backgroundColor = ZONE_COLORS[number];
-                } else if (['sd', 'top', 'mg', 'md', 'pg', 'pd', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
+                } else if (['mg', 'md', 'pg', 'pd'].includes(p.type)) {
+                    // Forme vide : la prise reste visible. Cercle = main, rectangle = pied ; vert = gauche, rouge = droite.
+                    marker.className = `marker limb ${p.type[0] === 'm' ? 'hand' : 'foot'} ${p.type[1] === 'd' ? 'right' : 'left'}`;
+                    marker.dataset.label = p.type.toUpperCase();
+                } else if (['sd', 'top', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
