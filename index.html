@@ -811,6 +811,8 @@
                     
                     <button class="tool-btn eraser-btn btn-full" id="tool-eraser" onclick="setTool('eraser')">🧼 Gomme Magique</button>
                     <button class="tool-btn clear-all-btn btn-full" onclick="clearStickers()">🧹 Tout nettoyer</button>
+                    <button class="tool-btn" id="copy-all-btn" onclick="copyAllMarkers()" title="Copier toutes les balises du tracé affiché, pour les coller sur un autre mur">📋 Copier tout</button>
+                    <button class="tool-btn" id="paste-all-btn" onclick="pasteAllMarkers()" title="Coller les balises copiées sur le mur affiché">📥 Coller</button>
                     <div style="grid-column: span 2; position: relative; display: flex;">
                         <button class="tool-btn magic-btn btn-full" id="magic-filter-btn" style="flex: 1;" onclick="toggleColorFilter()">✨ Isoler couleur</button>
                         <div id="filter-choices" style="display: none; position: absolute; left: 0; bottom: 100%; z-index: 60; width: 240px; background: #ffffff; border: 3px solid #a855f7; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
@@ -1257,6 +1259,17 @@
         </div>
     </div>
 
+    <div id="group-bar" style="display: none; position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 850; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 96vw; box-sizing: border-box; background: #eef2ff; color: #312e81; border: 3px solid #6366f1; border-radius: 12px; padding: 8px 10px; font-weight: bold; font-size: 0.85rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+        <span>📥 Déplacer tout le tracé :</span>
+        <button onclick="shiftAllMarkers(-2, 0)" title="Vers la gauche">⬅️</button>
+        <button onclick="shiftAllMarkers(2, 0)" title="Vers la droite">➡️</button>
+        <button onclick="shiftAllMarkers(0, -2)" title="Vers le haut">⬆️</button>
+        <button onclick="shiftAllMarkers(0, 2)" title="Vers le bas">⬇️</button>
+        <button onclick="scaleAllMarkers(1.1)" title="Écarter les balises">↔️ Écarter</button>
+        <button onclick="scaleAllMarkers(0.9)" title="Resserrer les balises">🔽 Resserrer</button>
+        <button onclick="document.getElementById('group-bar').style.display='none'" style="background: #16a34a; color: white; border: none; padding: 6px 10px;">Terminé</button>
+    </div>
+
     <div id="unsaved-bar" style="display: none; position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 800; align-items: center; gap: 10px; max-width: 94vw; box-sizing: border-box; background: #fef3c7; color: #78350f; border: 3px solid #f59e0b; border-radius: 12px; padding: 8px 12px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
         <span id="unsaved-text"></span>
         <button id="unsaved-action" onclick="unsavedAction()" style="background: #16a34a; color: white; border: none; padding: 8px 12px; font-weight: bold; white-space: nowrap;"></button>
@@ -1277,7 +1290,8 @@
                 <li>Cliquez sur <b>« Demander à consulter leurs blocs »</b>. Le responsable de l'équipe est prévenu par e-mail.</li>
                 <li><b>L'équipe accepte ou refuse</b> depuis sa propre fenêtre « Les équipes ». Vous êtes prévenu par e-mail de sa réponse.</li>
                 <li>Si elle accepte, les titres deviennent <b>bleus et cliquables</b> : un clic affiche le bloc sur le mur de cette équipe.</li>
-                <li>Pour garder un bloc, cliquez sur <b>« + Créer un Bloc »</b> : il est recopié dans votre équipe. Les blocs de l'autre équipe ne sont jamais modifiés.</li>
+                <li>Pour l'adapter à <b>votre mur</b> : cliquez sur <b>« 📋 Copier ce tracé »</b>, affichez votre mur, puis <b>« 📥 Coller »</b>. Toutes les balises et la fiche arrivent d'un coup ; il reste à les ajuster à vos prises.</li>
+                <li>Pour le garder tel quel, cliquez sur <b>« + Créer un Bloc »</b> : il est recopié dans votre équipe avec le mur d'origine. Les blocs de l'autre équipe ne sont jamais modifiés.</li>
             </ol>
             <p class="help-text">L'équipe peut retirer son accès à tout moment. Pour poser une question avant de demander, utilisez « Écrire à cette équipe ».</p>
             <div style="text-align: right; margin-top: 12px;">
@@ -2079,6 +2093,8 @@
             'cp':         ["Changement de pied", "Sur cette prise, remplace un pied par l'autre."],
             'jete':       ["Jeté", "Mouvement dynamique : prends de l'élan pour attraper une prise éloignée."],
             'eraser':     ["Gomme magique", "Cliquez ensuite sur les balises à effacer."],
+            'copy-all':   ["Copier tout", "Copie toutes les balises du tracé affiché (et sa fiche) pour les coller sur un autre mur."],
+            'paste-all':  ["Coller", "Colle les balises copiées sur le mur affiché. Vous pouvez ensuite déplacer tout le tracé, puis ajuster chaque balise."],
             'cursor':     ["Souris", "Aucun outil : un clic sur le mur ne pose rien. Vous pouvez toujours déplacer une balise ou double-cliquer dessus."]
         };
         const PME_HELP = [
@@ -2433,6 +2449,16 @@
             document.getElementById('create-name').value = "";
             document.getElementById('create-consigne').value = "";
             document.getElementById('create-fiche').value = "";
+            // Tracé collé depuis un autre bloc : sa fiche est proposée, à adapter
+            if (type === 'bloc' && pasteInfo) {
+                document.getElementById('create-name').value = pasteInfo.name || "";
+                document.getElementById('create-consigne').value = pasteInfo.consigne || "";
+                document.getElementById('create-fiche').value = pasteInfo.fiche || "";
+                const pick = (id, value) => { const el = document.getElementById(id); if (value && Array.from(el.options).some(o => o.value === value)) el.value = value; };
+                pick('create-grade', String(pasteInfo.grade || "").split(' ')[0]);
+                pick('create-height', pasteInfo.height);
+                pick('create-theme', pasteInfo.theme);
+            }
             document.getElementById('create-modal-title').textContent = type === 'individualise' ? "Créer un Élève" : "Créer un Bloc";
             document.getElementById('bloc-options').style.display = type === 'bloc' ? 'block' : 'none';
             document.getElementById('create-modal').style.display = 'flex';
@@ -2487,6 +2513,12 @@
                 const fiche = document.getElementById('create-fiche').value.trim();
                 if (consigne) newRoute.consigne = consigne;
                 if (fiche) newRoute.fiche = fiche;
+                if (pasteInfo) {
+                    if (pasteInfo.attendus) newRoute.attendus = pasteInfo.attendus;
+                    if (pasteInfo.competences) newRoute.competences = pasteInfo.competences;
+                    pasteInfo = null;
+                    document.getElementById('group-bar').style.display = 'none';
+                }
             }
 
             schoolConfig.customRoutes.push(newRoute);
@@ -4652,6 +4684,7 @@
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
             setTimeout(checkTeamsNews, 5000);
             setInterval(watchUnsaved, 1000);
+            updatePasteButton();
             setTimeout(offerDraft, 3500);
             setInterval(checkTeamsNews, 120000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTeamsNews(); });
@@ -5014,6 +5047,77 @@
             });
         }
 
+        // =========================================
+        // COPIER TOUT UN TRACÉ pour le coller sur un autre mur
+        // =========================================
+        const CLIP_KEY = 'eps_clip';
+        let previewRoute = null;   // bloc d'une autre équipe affiché en aperçu
+        let pasteInfo = null;      // fiche du tracé collé, reprise à la création du bloc
+
+        function readClip() {
+            try { return JSON.parse(localStorage.getItem(CLIP_KEY) || 'null'); } catch (e) { return null; }
+        }
+
+        function updatePasteButton() {
+            const clip = readClip();
+            const btn = document.getElementById('paste-all-btn');
+            if (!btn) return;
+            const count = clip && Array.isArray(clip.markers) ? clip.markers.length : 0;
+            btn.textContent = count ? `📥 Coller (${count})` : "📥 Coller";
+            btn.style.opacity = count ? "1" : "0.5";
+            btn.title = count ? `Coller les ${count} balises de « ${clip.name || "tracé"} » sur le mur affiché` : "Rien à coller : affichez un tracé et cliquez d'abord sur « Copier tout »";
+        }
+
+        function copyAllMarkers() {
+            if (activeMarkers.length === 0) { alert("Rien à copier : affichez d'abord un bloc ou une voie qui a des balises."); return; }
+            const inPreview = !currentRouteId && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
+            const source = currentRouteId ? ((schoolConfig.customRoutes || []).find(r => r.id === currentRouteId) || null) : (inPreview ? previewRoute : null);
+            const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
+            if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche'].forEach(key => { if (source[key]) clip[key] = source[key]; });
+            try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
+            updatePasteButton();
+            alert(`📋 ${clip.markers.length} balise(s) copiée(s)` + (clip.name ? ` (« ${clip.name} »)` : "") + `.\n\nAffichez maintenant votre mur (menu « Choix du mur de blocs »), puis cliquez sur « 📥 Coller ».`);
+        }
+
+        function pasteAllMarkers() {
+            const clip = readClip();
+            if (!clip || !Array.isArray(clip.markers) || clip.markers.length === 0) { alert("Rien à coller.\nAffichez un tracé, cliquez sur « 📋 Copier tout », puis revenez sur votre mur."); return; }
+            const wallShown = document.getElementById('blocWallSelect').value !== "" || !!currentRouteId;
+            if (!wallShown) { alert("Choisissez d'abord le mur où coller : menu « Choix du mur de blocs », en haut."); return; }
+            if (activeMarkers.length > 0 && !confirm(`Ce mur a déjà ${activeMarkers.length} balise(s).\n\nOK = ajouter les ${clip.markers.length} balises copiées\nAnnuler = ne rien coller`)) return;
+            const color = currentRouteColor || "#FFD700";
+            clip.markers.forEach(m => activeMarkers.push({ x: m.x, y: m.y, type: m.type || 'dot', color: color, rotation: m.rotation || 0, scale: m.scale || 1 }));
+            pasteInfo = currentRouteId ? null : clip;
+            hasUnsavedChanges = true;
+            setTool('cursor');
+            closeSelectionPanel();
+            renderMarkers();
+            document.getElementById('group-bar').style.display = 'flex';
+        }
+
+        // Déplace toutes les balises d'un coup (en % de la photo)
+        function shiftAllMarkers(dx, dy) {
+            if (activeMarkers.length === 0) return;
+            const xs = activeMarkers.map(m => m.x), ys = activeMarkers.map(m => m.y);
+            dx = Math.max(-Math.min.apply(null, xs), Math.min(100 - Math.max.apply(null, xs), dx));
+            dy = Math.max(-Math.min.apply(null, ys), Math.min(100 - Math.max.apply(null, ys), dy));
+            activeMarkers.forEach(m => { m.x += dx; m.y += dy; });
+            hasUnsavedChanges = true;
+            renderMarkers();
+        }
+
+        // Écarte ou resserre toutes les balises autour du centre du tracé
+        function scaleAllMarkers(factor) {
+            if (activeMarkers.length < 2) return;
+            const cx = activeMarkers.reduce((sum, m) => sum + m.x, 0) / activeMarkers.length;
+            const cy = activeMarkers.reduce((sum, m) => sum + m.y, 0) / activeMarkers.length;
+            const next = activeMarkers.map(m => ({ x: cx + (m.x - cx) * factor, y: cy + (m.y - cy) * factor }));
+            if (next.some(q => q.x < 0 || q.x > 100 || q.y < 0 || q.y > 100)) return;   // on ne sort pas de la photo
+            activeMarkers.forEach((m, i) => { m.x = next[i].x; m.y = next[i].y; });
+            hasUnsavedChanges = true;
+            renderMarkers();
+        }
+
         // --- Suppression de plusieurs blocs d'un coup ---
         function bulkCount() {
             const count = document.querySelectorAll('#bulk-list input.bulk-bloc:checked').length;
@@ -5352,6 +5456,7 @@
                 img.src = photo;
                 document.getElementById('wall-container').style.maxWidth = '1300px';
                 currentRouteColor = route.color || "#FFD700";
+                previewRoute = route;
                 activeMarkers = (bloc.markers || []).map(m => ({
                     x: m.x, y: m.y, type: m.type || 'dot', color: route.color || m.color || currentRouteColor, rotation: m.rotation || 0, scale: m.scale || 1
                 }));
@@ -5363,7 +5468,8 @@
                 activeBanner.innerHTML = `👁️ <b>Bloc « ${escapeHtml(route.name)} » de l'équipe ${escapeHtml(teamName)}</b>`
                     + `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((route.grade || '?').split(' ')[0])} | Gabarit: ${escapeHtml(route.height || '?')} | Thème: ${escapeHtml(route.theme || '?')}</span>`
                     + `<br><button onclick="goHome()" style="background: #16a34a; color: white; border: none; padding: 5px 10px; font-size: 0.8rem; margin: 4px 0;">🏠 Revenir à mes blocs</button>`
-                    + `<br><span style="font-size:0.8rem; font-weight:normal;">Aperçu seulement. Pour le recopier dans votre équipe, cliquez sur « + Créer un Bloc ».</span>`;
+                    + ` <button onclick="copyAllMarkers()" style="background: #4f46e5; color: white; border: none; padding: 5px 10px; font-size: 0.8rem; margin: 4px 0;">📋 Copier ce tracé pour mon mur</button>`
+                    + `<br><span style="font-size:0.8rem; font-weight:normal;">Aperçu seulement. « Copier ce tracé » puis « 📥 Coller » le pose sur votre propre mur. « + Créer un Bloc » le recopie tel quel, avec le mur de cette équipe.</span>`;
                 previewingTeam = true;
                 setTeamsMessage("");
                 closeTeamsModal();
