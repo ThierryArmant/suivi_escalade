@@ -898,7 +898,10 @@
                 </div>
                 <div class="form-group">
                     <label>Mot de passe de l'équipe :</label>
-                    <input type="password" id="team-input-pass" autocomplete="current-password" onkeydown="if (event.key === 'Enter') teamLogin()" style="padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                    <div style="display: flex; gap: 6px; align-items: stretch;">
+                        <input type="password" id="team-input-pass" autocomplete="current-password" onkeydown="if (event.key === 'Enter') teamLogin()" style="flex: 1; min-width: 0; padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                        <button type="button" id="team-pass-toggle" onclick="toggleTeamPassword()" title="Afficher le mot de passe" aria-label="Afficher le mot de passe" style="background: #f1f5f9; border: 1px solid #ccc; padding: 6px 12px; white-space: nowrap;">👁️ Afficher</button>
+                    </div>
                 </div>
                 <div id="team-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
                 <div style="text-align: right; margin-top: 15px;">
@@ -3179,7 +3182,18 @@
             }
         }
 
+        function toggleTeamPassword(forceHide) {
+            const input = document.getElementById('team-input-pass');
+            const btn = document.getElementById('team-pass-toggle');
+            const show = forceHide ? false : input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.textContent = show ? "🙈 Masquer" : "👁️ Afficher";
+            btn.title = show ? "Masquer le mot de passe" : "Afficher le mot de passe";
+            btn.setAttribute('aria-label', btn.title);
+        }
+
         function openTeamModal() {
+            toggleTeamPassword(true);
             document.getElementById('team-error').textContent = "";
             document.getElementById('team-choice').style.display = 'none';
             updateTeamUI();
