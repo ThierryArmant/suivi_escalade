@@ -581,6 +581,14 @@
         .config-status.empty { background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; }
         .config-status span { font-weight: normal; font-size: 0.78rem; }
 
+        /* Fenêtres sur téléphone : défilement fluide, hauteur calée sur l'écran réellement visible */
+        .modal-content { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+        @supports (height: 100dvh) { .modal-content { max-height: 90dvh; } }
+        @media (max-width: 600px) {
+            .modal-content { padding: 16px; width: 94%; }
+            .modal-content h2 { font-size: 1.25rem; }
+        }
+
         /* Media Query pour écrans plus petits */
         @media (max-width: 1100px) {
             .workspace { flex-direction: column; align-items: center; }
