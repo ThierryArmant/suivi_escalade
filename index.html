@@ -832,10 +832,19 @@
             <div class="form-group">
                 <label>1. Importer les photos des murs (Max 20) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <div class="help-text">
+                    ✏️ <b>Renommez vos photos avant de les importer</b> : « voie 1 2 3 », « voie 4 5 6 »… pour les voies, et « bloc 1 », « bloc 2 »… pour les blocs.<br>
+                    C'est le nom du fichier qui sert à classer : les numéros associent chaque voie à sa photo, et le mot « bloc » réserve la photo aux blocs.
+                </div>
             </div>
             <div class="form-group">
-                <label>2. Importer le fichier Excel (.xlsx ou .csv) :</label>
-                <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <label>2. Importer le fichier Excel avec les difficultés des voies :</label>
+                <input type="file" id="excelInput" accept=".xlsx, .xlsm, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <div class="help-text">
+                    📋 Pour être sûr d'avoir le bon modèle, partez de notre base :
+                    <a href="gestion%20des%20voies%20en%20vue%20del%20'évaluation%20base%20a%20modifier%2020%2009%2014%2000.xlsm" download style="color: #2563eb; font-weight: bold;">📥 Télécharger la base Excel</a><br>
+                    Remplissez l'onglet « LISTE A SAISIR » (relais, type, couleurs et difficultés), enregistrez, puis importez le fichier ici.
+                </div>
             </div>
             <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
             <div class="form-group">
@@ -1065,7 +1074,7 @@
             schoolConfig.routes.forEach(r => {
                 const opt = document.createElement('option');
                 opt.value = r.id;
-                opt.textContent = `Voie ${r.voie} (${r.cotation} - ${ucFirst(r.couleur)}) [Secteur ${r.secteur}]`;
+                opt.textContent = r.label || `Voie ${r.voie} (${r.cotation} - ${ucFirst(r.couleur)}) [Secteur ${r.secteur}]`;
                 routeSelect.appendChild(opt);
             });
         }
@@ -1466,8 +1475,8 @@
             if (!src) return;
             
             let colorName = getCurrentColorName();
-            if (!colorName) {
-                alert("Ce filtre magique s'applique sur les voies officielles colorées.");
+            if (!colorName || !/jaune|bleu|rouge|vert|violet|noir/.test(colorName)) {
+                alert("Ce filtre magique s'applique sur les voies officielles colorées (pas sur les voies « TP » ni sur les blocs).");
                 isFilterActive = false; 
                 document.getElementById('magic-filter-btn').classList.remove('active-magic'); 
                 return;
@@ -1761,6 +1770,85 @@
             });
         }
 
+        // Associe une voie à une photo grâce aux numéros présents dans le nom du fichier
+        function findPhotoIndexForVoie(voieNum, secteurNum) {
+            const names = schoolConfig.imageNames || [];
+            const namesOk = names.length === schoolConfig.images.length;
+            const allIdx = schoolConfig.images.map((_, i) => i);
+            // Les photos dont le nom contient "bloc" sont réservées aux blocs
+            const voieIdx = namesOk ? allIdx.filter(i => !/bloc/i.test(names[i])) : [];
+            const pool = voieIdx.length > 0 ? voieIdx : allIdx;
+            const secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
+
+            let hit;
+            if (namesOk) {
+                hit = pool.find(i => {
+                    let n = names[i].toLowerCase(), nums = n.match(/\d+/g) || [];
+                    if (nums.includes(voieNumStr)) return true;
+                    let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
+                    if (ranges) { 
+                        for (let r of ranges) { 
+                            let bounds = r.match(/\d+/g); 
+                            if (bounds && bounds.length === 2) { 
+                                if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true; 
+                            } 
+                        } 
+                    }
+                    if (n.includes("secteur " + secteurNumStr) || n.includes("s" + secteurNumStr)) return true;
+                    if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
+                    return false;
+                });
+            }
+            if (hit === undefined) hit = pool[Math.max(0, secteurNum - 1)];
+            if (hit === undefined) hit = pool[0];
+            return {
+                src: (hit !== undefined && schoolConfig.images[hit]) || "",
+                name: (namesOk && hit !== undefined && names[hit]) || ""
+            };
+        }
+
+        function cellText(value) { 
+            return String(value == null ? "" : value).trim(); 
+        }
+
+        // Modèle de la base Excel : une ligne d'en-tête "relais | type | couleur | difficulté | couleur | difficulté ..."
+        // puis une ligne par relais. Chaque couple couleur / difficulté donne une voie.
+        function parseBaseModel(workbook) {
+            for (const sheetName of workbook.SheetNames) {
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: null }) || [];
+                for (let i = 0; i < Math.min(rows.length, 30); i++) {
+                    const head = (rows[i] || []).map(c => cellText(c).toLowerCase());
+                    const relaisCol = head.findIndex(c => c === 'relais' || c === 'relai');
+                    if (relaisCol === -1) continue;
+                    
+                    const pairs = [];
+                    for (let j = relaisCol + 1; j < head.length - 1; j++) {
+                        if (head[j].startsWith('couleur') && head[j + 1].startsWith('diff')) pairs.push(j);
+                    }
+                    if (pairs.length === 0) continue;
+                    const typeCol = head.findIndex((c, j) => j > relaisCol && c === 'type');
+
+                    const list = [];
+                    for (let k = i + 1; k < rows.length; k++) {
+                        const row = rows[k] || [];
+                        const relais = parseInt(row[relaisCol]);
+                        if (isNaN(relais)) { 
+                            if (list.length > 0) break; 
+                            continue; 
+                        }
+                        const type = typeCol !== -1 ? cellText(row[typeCol]).toLowerCase() : "";
+                        pairs.forEach(j => {
+                            const couleur = cellText(row[j]).toLowerCase();
+                            const cotation = cellText(row[j + 1]).toUpperCase();
+                            if (couleur && cotation) list.push({ relais: relais, type: type, couleur: couleur, cotation: cotation });
+                        });
+                    }
+                    if (list.length > 0) return list;
+                }
+            }
+            return null;
+        }
+
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') { 
                 alert("❌ Module Excel introuvable."); 
@@ -1779,66 +1867,75 @@
 
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                let workbook;
+                try {
+                    workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                } catch (err) {
+                    alert("❌ Fichier illisible. Utilisez la base Excel proposée au téléchargement.");
+                    input.value = "";
+                    return;
+                }
                 let parsedRoutes = [];
 
-                rows.forEach((row, idx) => {
-                    let secteurNum = parseInt(row.Secteur || row.secteur || 1);
-                    let voieNum = row.Voie || row.voie || (idx + 1);
-                    let cotation = (row.Cotation || row.cotation || "4A").toString().trim();
-                    let couleurInput = (row.Couleur || row.couleur || "jaune").trim().toLowerCase();
-                    let hexColor = colorMap[couleurInput] || "#eab308";
-                    
-                    let secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
-                    const names = schoolConfig.imageNames || [];
-                    const namesOk = names.length === schoolConfig.images.length;
-                    const allIdx = schoolConfig.images.map((_, i) => i);
-                    // Les photos dont le nom contient "bloc" sont réservées aux blocs
-                    const voieIdx = namesOk ? allIdx.filter(i => !/bloc/i.test(names[i])) : [];
-                    const pool = voieIdx.length > 0 ? voieIdx : allIdx;
-
-                    let hit;
-                    if (namesOk) {
-                        hit = pool.find(i => {
-                            let n = names[i].toLowerCase(), nums = n.match(/\d+/g) || [];
-                            if (nums.includes(voieNumStr)) return true;
-                            let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
-                            if (ranges) { 
-                                for (let r of ranges) { 
-                                    let bounds = r.match(/\d+/g); 
-                                    if (bounds && bounds.length === 2) { 
-                                        if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true; 
-                                    } 
-                                } 
-                            }
-                            if (n.includes("secteur " + secteurNumStr) || n.includes("s" + secteurNumStr)) return true;
-                            if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
-                            return false;
+                const baseRows = parseBaseModel(workbook);
+                if (baseRows) {
+                    // --- Modèle de la base (relais / type / couleurs / difficultés) ---
+                    const usedIds = {};
+                    baseRows.forEach(item => {
+                        const photo = findPhotoIndexForVoie(item.relais, item.relais);
+                        let id = `route_r${item.relais}_${item.couleur.replace(/[^a-z0-9]/g, '')}`;
+                        if (usedIds[id]) id += `_${++usedIds[id]}`; else usedIds[id] = 1;
+                        const couleurLabel = item.couleur === 'tp' ? 'TP' : ucFirst(item.couleur);
+                        
+                        parsedRoutes.push({ 
+                            id: id, 
+                            secteur: item.relais, 
+                            voie: item.relais, 
+                            cotation: item.cotation, 
+                            couleur: item.couleur, 
+                            type: item.type,
+                            label: `Relais ${item.relais} · ${couleurLabel} · ${item.cotation}` + (item.type ? ` (${item.type})` : ""),
+                            hexColor: colorMap[item.couleur] || "#64748b", 
+                            imageSrc: photo.src,
+                            imageName: photo.name 
                         });
-                    }
-                    if (hit === undefined) hit = pool[Math.max(0, secteurNum - 1)];
-                    if (hit === undefined) hit = pool[0];
-                    let targetImage = (hit !== undefined && schoolConfig.images[hit]) || "";
-                    let targetImageName = (namesOk && hit !== undefined && names[hit]) || "";
-
-                    parsedRoutes.push({ 
-                        id: `route_excel_${idx}`, 
-                        secteur: secteurNum, 
-                        voie: voieNum, 
-                        cotation: cotation, 
-                        couleur: couleurInput, 
-                        hexColor: hexColor, 
-                        imageSrc: targetImage,
-                        imageName: targetImageName 
                     });
-                });
+                } else {
+                    // --- Ancien modèle simple : colonnes Secteur / Voie / Cotation / Couleur ---
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]) || [];
+                    const keys = rows.length > 0 ? Object.keys(rows[0]).map(k => k.trim().toLowerCase()) : [];
+                    
+                    if (!keys.includes('voie') && !keys.includes('cotation')) {
+                        alert("❌ Modèle non reconnu.\nTéléchargez la base Excel proposée dans la Configuration, remplissez l'onglet « LISTE A SAISIR » puis importez-la.");
+                        input.value = "";
+                        return;
+                    }
+
+                    rows.forEach((row, idx) => {
+                        let secteurNum = parseInt(row.Secteur || row.secteur || 1);
+                        let voieNum = row.Voie || row.voie || (idx + 1);
+                        let cotation = (row.Cotation || row.cotation || "4A").toString().trim();
+                        let couleurInput = (row.Couleur || row.couleur || "jaune").toString().trim().toLowerCase();
+                        const photo = findPhotoIndexForVoie(voieNum, secteurNum);
+
+                        parsedRoutes.push({ 
+                            id: `route_excel_${idx}`, 
+                            secteur: secteurNum, 
+                            voie: voieNum, 
+                            cotation: cotation, 
+                            couleur: couleurInput, 
+                            hexColor: colorMap[couleurInput] || "#eab308", 
+                            imageSrc: photo.src,
+                            imageName: photo.name 
+                        });
+                    });
+                }
                 
                 schoolConfig.routes = parsedRoutes; 
                 schoolConfig.localUpdate = Date.now(); 
                 await saveConfig();
-                alert("✅ Fichier Excel importé avec succès !"); 
+                input.value = "";
+                alert(`✅ Fichier Excel importé : ${parsedRoutes.length} voie(s) !`); 
                 initApp();
             };
             reader.readAsArrayBuffer(file);
@@ -1893,7 +1990,9 @@
                 
                 activeBanner.style.background = bannerBg; 
                 activeBanner.style.color = bannerText;
-                activeBanner.innerHTML = `🎯 Voie active : Voie ${foundRoute.voie} (${foundRoute.cotation} - ${ucFirst(foundRoute.couleur)}) - Secteur ${foundRoute.secteur}`;
+                activeBanner.innerHTML = foundRoute.label 
+                    ? `🎯 Voie active : ${escapeHtml(foundRoute.label)}` 
+                    : `🎯 Voie active : Voie ${escapeHtml(foundRoute.voie)} (${escapeHtml(foundRoute.cotation)} - ${escapeHtml(ucFirst(foundRoute.couleur))}) - Secteur ${escapeHtml(foundRoute.secteur)}`;
             }
             loadRouteMarkers(currentRouteId);
         }
