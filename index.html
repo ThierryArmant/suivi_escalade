@@ -366,6 +366,7 @@
         }
 
         .qr-custom-btn { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+        .copy-custom-btn { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
         .delete-custom-btn { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 
         .add-custom-btn { 
@@ -1927,6 +1928,14 @@
                     }
                 };
 
+                if (r.type === 'bloc') {
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'qr-custom-btn copy-custom-btn';
+                    copyBtn.textContent = '📋';
+                    copyBtn.title = "Copie toutes les balises et la fiche de cet exercice, pour le dupliquer sur un autre mur ou une autre voie (bouton « 📥 Coller »).";
+                    copyBtn.onclick = (e) => { e.stopPropagation(); copyRoute(r); };
+                    actionsDiv.appendChild(copyBtn);
+                }
                 actionsDiv.appendChild(qrBtn); 
                 actionsDiv.appendChild(delBtn);
                 item.appendChild(textSpan); 
@@ -5192,6 +5201,17 @@
             btn.textContent = count ? `📥 Coller (${count})` : "📥 Coller";
             btn.style.opacity = count ? "1" : "0.5";
             btn.title = count ? `Coller les ${count} balises de « ${clip.name || "tracé"} » sur le mur affiché` : "Rien à coller : affichez un tracé et cliquez d'abord sur « Copier tout »";
+        }
+
+        // Copie un exercice directement depuis la liste, sans avoir à l'afficher
+        function copyRoute(route) {
+            const list = readRouteMarkers(route.id) || [];
+            if (list.length === 0) { alert("Cet exercice n'a aucune balise à copier."); return; }
+            const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
+            ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => { if (route[key]) clip[key] = route[key]; });
+            try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
+            updatePasteButton();
+            alert(`📋 « ${route.name} » est copié (${list.length} balises et sa fiche).\n\n1. Choisissez le mur de destination dans le menu « Choix du mur de blocs », en haut.\n2. Cliquez sur « 📥 Coller », dans les outils à gauche.\n3. Ajustez, puis « + Créer un Bloc ».`);
         }
 
         function copyAllMarkers() {
