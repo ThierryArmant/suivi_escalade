@@ -1098,6 +1098,7 @@
         }
 
         function renderCustomLists() {
+            updateConfigStatus();
             const blocListContainer = document.getElementById('bloc-list');
             const indivListContainer = document.getElementById('indiv-list');
             
@@ -1292,7 +1293,24 @@
             const blocs = customs.filter(r => r.type !== 'individualise').length;
             const eleves = customs.length - blocs;
             if (customs.length > 0) {
-                setStatus('blocs-status', true, `✅ En mémoire : ${blocs} bloc(s) et ${eleves} tracé(s) élève.`);
+                // Détail des blocs, classés par thème, puis des tracés élèves
+                const byTheme = {};
+                const elevesList = [];
+                customs.forEach(r => {
+                    const photo = getImageNameFor(r.imageSrc, r).replace(/\.[^/.]+$/, "");
+                    if (r.type === 'individualise') {
+                        elevesList.push(escapeHtml(r.name) + (photo ? ` (${escapeHtml(photo)})` : ""));
+                    } else {
+                        const theme = r.theme || "Libre / Autre";
+                        const niveau = r.grade ? String(r.grade).split(' ')[0] : "";
+                        const infos = [niveau, photo].filter(Boolean).map(escapeHtml).join(', ');
+                        (byTheme[theme] = byTheme[theme] || []).push(escapeHtml(r.name) + (infos ? ` (${infos})` : ""));
+                    }
+                });
+                let detail = Object.keys(byTheme).map(t => `<b>${escapeHtml(t)}</b> : ${byTheme[t].join(' ; ')}`).join('<br>');
+                if (elevesList.length > 0) detail += (detail ? '<br>' : '') + `<b>Élèves</b> : ${elevesList.join(' ; ')}`;
+                setStatus('blocs-status', true, `✅ En mémoire : ${blocs} bloc(s) et ${eleves} tracé(s) élève.`
+                    + `<details style="margin-top: 4px;"><summary style="cursor: pointer; font-size: 0.8rem;">Voir les blocs enregistrés</summary><span>${detail}</span></details>`);
             } else {
                 setStatus('blocs-status', false, "Aucun bloc en mémoire.");
             }
