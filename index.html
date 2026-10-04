@@ -787,7 +787,7 @@
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
             <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9; position: relative;">🌍 Les équipes<span id="teams-badge" style="display: none; position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; line-height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; background: #dc2626; color: #ffffff; font-size: 0.78rem; font-weight: 900; text-align: center; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span></button>
-            <button class="config-btn" onclick="openSuiviSecu()" title="Suivi des fiches de sécurité : qui a vu quelle fiche, classe par classe." style="background-color: #7c3aed;">🛡️ Suivi sécurité</button>
+            <button class="config-btn" onclick="openSuiviSecu()" title="Suivi des fiches de sécurité | Sert à vérifier que chaque élève a bien vu les fiches de sécurité avant de grimper. L'élève scanne une fiche, coche les lignes, tape sa classe et son code : une coche ✅ apparaît ici, classe par classe. C'est un témoin de visionnage, pas une note." style="background-color: #7c3aed;">🛡️ Suivi sécurité</button>
             <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
         </div>
@@ -1378,7 +1378,7 @@
 
     <div id="suivi-secu-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 820px;">
-            <h2>🛡️ Suivi des fiches de sécurité</h2>
+            <h2 title="À quoi sert ce tableau ? | À voir d'un coup d'œil quels élèves ont vu les fiches de sécurité (encordement, assurage, descente…) et lesquels doivent encore les voir avant de grimper. Une ligne par élève, une colonne par fiche. Les noms restent sur cet appareil : en ligne, seuls la classe et le code sont enregistrés.">🛡️ Suivi des fiches de sécurité <span style="font-size: 0.8rem; color: #64748b; cursor: help;">ⓘ</span></h2>
             <p class="help-text" style="margin-top: 0;">Qui a vu quelle fiche. Les élèves sont repérés par un code (initiales et numéro dans la liste), jamais par leur nom.</p>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
                 <label style="font-weight: bold;">Classe :</label>
@@ -5592,8 +5592,23 @@
         // Listes de classe : elles restent sur CET appareil (jamais envoyées en ligne).
         // Une ligne par élève, dans l'ordre de la liste d'appel : « Prénom Nom ».
         const LISTES_KEY = 'eps_listes';
+        let listesCache = null;
         function readListes() {
+            if (listesCache) return listesCache;
             try { return JSON.parse(localStorage.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { return {}; }
+        }
+        // Les listes sont rangées dans la grande mémoire de l'appareil (celle des photos), jamais envoyées en ligne
+        async function loadListes() {
+            let fromDb = null;
+            try { fromDb = await getFromDB(LISTES_KEY); } catch (e) { /* rien */ }
+            let old = {};
+            try { old = JSON.parse(localStorage.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { /* rien */ }
+            listesCache = Object.assign({}, old, (fromDb && typeof fromDb === 'object') ? fromDb : {});
+        }
+        async function writeListes(listes) {
+            listesCache = listes;
+            try { await saveToDB(LISTES_KEY, listes); try { localStorage.removeItem(LISTES_KEY); } catch (e) {} return true; } catch (e) { /* on essaie l'autre mémoire */ }
+            try { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); return true; } catch (e) { return false; }
         }
 
         // Code d'un élève d'après la liste : initiale du prénom, initiale du nom, numéro
@@ -5615,13 +5630,13 @@
             document.getElementById('liste-classe-texte').value = (readListes()[classe] || []).join("\n");
         }
 
-        function saveListeClasse() {
+        async function saveListeClasse() {
             const classe = cleanClasse(document.getElementById('liste-classe-nom').value);
             if (!classe) { alert("Indiquez le nom de la classe (par exemple 4B)."); return; }
             const names = document.getElementById('liste-classe-texte').value.split("\n").map(l => l.replace(/^\s*\d+\s*[.)\-–·:]?\s*/, "").trim()).filter(l => l);
             const listes = readListes();
             if (names.length) listes[classe] = names; else delete listes[classe];
-            try { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); } catch (e) { alert("❌ Enregistrement impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
+            if (!(await writeListes(listes))) { alert("❌ Enregistrement impossible : la mémoire du navigateur est bloquée (navigation privée ?)."); return; }
             suiviClasse = classe;
             document.getElementById('liste-classe-zone').style.display = 'none';
             renderSuiviSecu();
@@ -5642,6 +5657,7 @@
 
         async function openSuiviSecu() {
             if (!cloudTeam) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
+            await loadListes();
             document.getElementById('suivi-secu-modal').style.display = 'flex';
             await refreshSuiviSecu();
         }
