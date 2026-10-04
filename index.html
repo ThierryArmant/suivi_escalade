@@ -500,6 +500,7 @@
         .legend-category { font-size: 0.78rem; font-weight: bold; color: #166534; background: #dcfce7; padding: 4px 8px; border-radius: 4px; margin: 8px 0 5px 0; text-transform: uppercase;}
         .legend-banner { background: #fff; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 5px; overflow: hidden; }
         .legend-header { padding: 6px 8px; font-size: 0.8rem; font-weight: bold; color: #14532d; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4;}
+        .legend-header .ring-icon, .legend-header .limb-icon { transform: scale(0.75); vertical-align: middle; margin: 0 2px 0 0; display: inline-block; }
         .legend-body { padding: 8px; font-size: 0.74rem; color: #374151; display: none; text-align: center; border-top: 1px solid #bbf7d0;}
         .legend-banner.active .legend-body { display: block; }
         .legend-illustration { width: 100%; height: 85px; background: #f8fafc; border-radius: 4px; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0;}
@@ -900,46 +901,88 @@
             <div class="technical-zone">
                 <h3>📖 Zone Technique & Pédagogique</h3>
                 
-                <div class="legend-category">🎓 Éléments Pédagogiques</div>
+                <p style="font-size: 0.72rem; color: #166534; margin: 4px 0 2px 0; text-align: center;">Cliquez sur une ligne pour lire son explication.</p>
+
+                <div class="legend-category">⭕ Les prises du bloc</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">👟 Prise de Pied Imposée</div>
-                    <div class="legend-body"><strong>Pied exclusif :</strong> Ne peut être utilisée *que* par les pieds. Force le travail des appuis.<br><b>PG</b> impose le pied gauche, <b>PD</b> le pied droit, comme MG et MD pour les mains.</div>
+                    <div class="legend-header"><span>⭕ Cercle et ⚪ P'tit Cercle</span></div>
+                    <div class="legend-body"><strong>Prises à utiliser :</strong> avec les mains ou les pieds. Le cercle prend la couleur du niveau du bloc. Le petit cercle sert pour les petites prises, où il faut être précis.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🎁 Prise Facilitante (Joker)</div>
-                    <div class="legend-body"><strong>Joker :</strong> Prise bonus ou intermédiaire. Un élève expert devra l'ignorer pour complexifier le bloc.</div>
+                    <div class="legend-header"><span><span class="ring-icon"></span> Départ bloc</span></div>
+                    <div class="legend-body"><strong>Cercle noir simple :</strong> prise de départ du bloc. C'est ici que l'on s'installe avant de commencer.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span><span class="ring-icon double"></span> Arrivée bloc</span></div>
+                    <div class="legend-body"><strong>Double cercle noir :</strong> dernière prise du bloc. Elle doit être tenue et contrôlée pour réussir le bloc.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>⬆️ Flèche (direction)</span></div>
+                    <div class="legend-body"><strong>Direction :</strong> indique par où le bloc continue. Huit directions possibles : passez la souris sur le bouton Flèche pour choisir, ou double-cliquez sur une flèche posée pour la pivoter.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>❌ Interdit</span></div>
+                    <div class="legend-body"><strong>Prise interdite :</strong> elle ne doit être touchée ni avec les mains ni avec les pieds.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>🎁 Prise facilitante (Joker)</span></div>
+                    <div class="legend-body"><strong>Joker :</strong> prise bonus ou intermédiaire. Un élève expert devra l'ignorer pour complexifier le bloc.</div>
                 </div>
 
-                <div class="legend-category">🏆 Validation du Bloc</div>
+                <div class="legend-category">✋ Mains et pieds imposés</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🏆 Le TOP (Arrivée)</div>
-                    <div class="legend-body"><strong>Le TOP :</strong> Prise finale du bloc. Tenue à <b>2 mains</b> pendant 3 secondes pour valider la réussite.</div>
+                    <div class="legend-header"><span><span class="limb-icon hand"></span>MG &nbsp; <span class="limb-icon hand right"></span>MD — les mains</span></div>
+                    <div class="legend-body"><strong>Cercle vide = main.</strong> Vert : main gauche (MG). Rouge : main droite (MD). La prise reste visible dans le cercle. Sert aussi à imposer la position des mains au départ.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🎯 La ZONE (Bonus)</div>
-                    <div class="legend-body"><strong>La Zone :</strong> Prise intermédiaire du bloc qui donne des points bonus. Elle peut être numérotée pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</div>
+                    <div class="legend-header"><span><span class="limb-icon foot"></span>PG &nbsp; <span class="limb-icon foot right"></span>PD — les pieds</span></div>
+                    <div class="legend-body"><strong>Rectangle vide = pied.</strong> Vert : pied gauche (PG). Rouge : pied droit (PD). Force le travail des appuis.</div>
+                </div>
+
+                <div class="legend-category">🏆 Validation</div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>🏁 Départ (SD)</span></div>
+                    <div class="legend-body"><strong>Départ :</strong> position de départ imposée. On s'installe sur ces prises avant de commencer.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🖐️ Départ (MG / MD)</div>
-                    <div class="legend-body"><strong>Prises de Départ :</strong> Impose la position initiale exacte des mains pour commencer le bloc (SD).</div>
+                    <div class="legend-header"><span>🏆 Le TOP (Arrivée)</span></div>
+                    <div class="legend-body"><strong>Le TOP :</strong> prise finale. Tenue à <b>2 mains</b> pendant 3 secondes pour valider la réussite.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>🎯 Les ZONES (niveaux)</span></div>
+                    <div class="legend-body"><strong>La Zone :</strong> prise intermédiaire qui valide un niveau atteint. Elle peut être numérotée, avec les couleurs des pistes de ski :<br><span style="display:inline-block; background:#16a34a; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 1</span> verte &nbsp;<span style="display:inline-block; background:#1d4ed8; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 2</span> bleue<br><span style="display:inline-block; background:#dc2626; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 3</span> rouge &nbsp;<span style="display:inline-block; background:#111827; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 4</span> noire<br>Pour changer de couleur : double-cliquez sur la zone et choisissez un autre numéro.</div>
                 </div>
 
                 <div class="legend-category">🤸 Gestes & Postures</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">📌 PME (Repos)</div>
+                    <div class="legend-header"><span>📌 PME (Repos) — 3 niveaux</span></div>
                     <div class="legend-body"><strong>PME :</strong> Bassin collé à la paroi, bras tendus, genoux fléchis pour se relâcher. Le triangle relie les 3 appuis : 1 main (point orange) et 2 pieds.<br><b>Niveau 1</b> : la main est entre les deux pieds. <b>Niveau 2</b> : la main est alignée avec un pied. <b>Niveau 3</b> : la main est en dehors des pieds.<br>Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🔄 Chang. de Main (CM)</div>
+                    <div class="legend-header"><span>🔄 Chang. de Main (CM)</span></div>
                     <div class="legend-body"><strong>CM :</strong> Permutation des mains sur une même prise.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">👟 Chang. de Pied (CP)</div>
+                    <div class="legend-header"><span>👟 Chang. de Pied (CP)</span></div>
                     <div class="legend-body"><strong>CP :</strong> Substitution ou pivot des pieds sur la même prise.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header">🚀 Le Jeté</div>
+                    <div class="legend-header"><span>🚀 Le Jeté</span></div>
                     <div class="legend-body"><strong>Jeté :</strong> Mouvement dynamique avec élan et suspension aérienne vers une prise lointaine.</div>
+                </div>
+
+                <div class="legend-category">🧰 Pour l'enseignant</div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>🖱️ Souris</span></div>
+                    <div class="legend-body"><strong>Aucun outil :</strong> un clic sur le mur ne pose rien. Pratique pour regarder ou déplacer des balises sans en ajouter.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>✨ Isoler couleur</span></div>
+                    <div class="legend-body"><strong>Isoler :</strong> la photo est analysée, vous choisissez la couleur à garder et le reste du mur est grisé. Fonctionne sur les voies et sur les murs de blocs.</div>
+                </div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)">
+                    <div class="legend-header"><span>🧼 Gomme et 🧹 Tout nettoyer</span></div>
+                    <div class="legend-body"><strong>Gomme magique :</strong> cliquez sur les balises à effacer. <strong>Tout nettoyer</strong> retire toutes les balises d'un coup.</div>
                 </div>
             </div>
         </div>
