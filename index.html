@@ -422,6 +422,25 @@
         #marker-layer .marker { pointer-events: auto; }
         body.eleve #marker-layer .marker { pointer-events: auto; cursor: help; }
 
+        /* Vue élève (téléphone, tablette) : la photo du mur d'abord, le texte ensuite */
+        body.eleve { padding: 4px !important; }
+        body.eleve h1 { font-size: 0.95rem; margin: 2px 0; }
+        body.eleve .subtitle { display: none; }
+        body.eleve #active-route-banner { padding: 4px 8px; margin: 2px auto 4px auto; font-size: 0.95rem; line-height: 1.2; border-width: 2px; }
+        body.eleve .main-layout, body.eleve .center-col { padding: 0; margin: 0; gap: 0; width: 100%; max-width: 100%; }
+        body.eleve .center-col { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; }
+        body.eleve #wall-container { width: 100%; border-width: 2px; border-radius: 6px; }
+        body.eleve #wall-container.zoomed { width: 230%; max-width: none !important; }
+        body.eleve #wall-image { width: 100%; height: auto; display: block; }
+        #student-under { position: sticky; left: 0; max-width: 900px; margin: 0 auto; }
+        .student-tools { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 2px; color: #e0f2fe; font-size: 0.78rem; }
+        .student-tools button { background: #0369a1; color: #ffffff; border: none; padding: 7px 10px; font-size: 0.8rem; white-space: nowrap; }
+        @media (orientation: landscape) and (max-height: 520px) {
+            body.eleve h1 { display: none; }
+            body.eleve #wall-container:not(.zoomed) { width: auto; max-width: 100% !important; margin: 0 auto; }
+            body.eleve #wall-container:not(.zoomed) #wall-image { width: auto; max-width: 100%; max-height: 82vh !important; margin: 0 auto; }
+        }
+
         .filter-color-btn { display: flex; align-items: center; gap: 5px; padding: 6px; font-size: 0.76rem; font-weight: bold; background: #f8fafc; color: #1e293b; border: 2px solid #cbd5e1; border-radius: 6px; text-align: left; }
         .filter-color-btn.current { border-color: #7e22ce; background: #f3e8ff; }
         .filter-chip { display: inline-block; flex: 0 0 auto; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #334155; }
@@ -1555,10 +1574,28 @@
             markerLayer.style.height = h + 'px';
         }
 
-        img.addEventListener('load', updateMarkerLayer);
-        window.addEventListener('resize', updateMarkerLayer);
+        // Sur un petit écran la photo est plus petite : les balises rétrécissent avec elle,
+        // pour ne pas se chevaucher ni cacher le mur.
+        let lastMarkerZoom = 1;
+        function markerZoom() {
+            const w = parseFloat(markerLayer.style.width) || img.clientWidth || 0;
+            if (!w) return 1;
+            return Math.max(0.32, Math.min(1, w / 950));
+        }
+
+        function refreshMarkerLayer() {
+            updateMarkerLayer();
+            const zoom = markerZoom();
+            if (Math.abs(zoom - lastMarkerZoom) > 0.02) {
+                lastMarkerZoom = zoom;
+                if (typeof renderMarkers === 'function' && typeof activeMarkers !== 'undefined' && activeMarkers.length > 0) renderMarkers();
+            }
+        }
+
+        img.addEventListener('load', refreshMarkerLayer);
+        window.addEventListener('resize', refreshMarkerLayer);
         if (typeof ResizeObserver !== 'undefined') {
-            new ResizeObserver(updateMarkerLayer).observe(img);
+            new ResizeObserver(refreshMarkerLayer).observe(img);
         }
 
         function toggleLegendBanner(element) {
@@ -2065,6 +2102,15 @@
         }
 
         let studentMode = false;
+
+        // Vue élève : agrandit la photo (on la fait alors glisser du doigt de gauche à droite)
+        function toggleStudentZoom() {
+            const wall = document.getElementById('wall-container');
+            const big = !wall.classList.contains('zoomed');
+            wall.classList.toggle('zoomed', big);
+            document.getElementById('student-zoom').textContent = big ? "↩️ Réduire la photo" : "🔍 Agrandir la photo";
+            hideMarkerTip();
+        }
 
         // --- PME : 3 niveaux d'habileté, selon la place de la main par rapport aux deux appuis pieds ---
         // 'pme' = niveau 1, 'pme2' = niveau 2, 'pme3' = niveau 3 ; un « f » final = triangle inversé gauche / droite
@@ -2781,7 +2827,7 @@
 
                 marker.style.left = p.x + '%'; 
                 marker.style.top = p.y + '%';
-                let rot = p.rotation || 0, scl = p.scale || 1;
+                let rot = p.rotation || 0, scl = (p.scale || 1) * markerZoom();
                 marker.style.transform = `translate(-50%, -50%) rotate(${rot}deg) scale(${scl})`;
 
                 if (p.type === 'dot' || p.type === 'dot-small') {
@@ -3752,15 +3798,20 @@
             document.addEventListener('click', hideMarkerTip);
             img.style.maxHeight = 'none'; // sinon les balises se décalent sur un écran peu haut
 
-            const infoLine = (g, h, t) => `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml(g || '?')} | Gabarit: ${escapeHtml(h || '?')} | Thème: ${escapeHtml(t || '?')}</span>`
-                + `<br><span style="font-size:0.8rem; font-weight:normal;">👆 Touche un repère pour savoir ce qu'il veut dire.</span>`;
+            const infoLine = (g, h, t) => `<br><span style="font-size:0.72rem; font-weight:normal;">${escapeHtml(g || '?')} · ${escapeHtml(h || '?')} · ${escapeHtml(t || '?')}</span>`;
+
+            // La photo passe en premier : la fiche (consigne, attendus, compétences) est placée dessous
+            const under = document.createElement('div');
+            under.id = 'student-under';
+            under.innerHTML = `<div class="student-tools"><span>👆 Touche un repère pour savoir ce qu'il veut dire.</span><button id="student-zoom" onclick="toggleStudentZoom()">🔍 Agrandir la photo</button></div><div id="student-fiche"></div>`;
+            wall.parentNode.insertBefore(under, wall.nextSibling);
 
             try {
                 if (params.get('r') !== null) {
                     // Nouveau format compact
                     activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
-                    banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'))
-                        + `<div id="student-fiche">${studentFicheHtml({ consigne: params.get('k') || "" })}</div>`;
+                    banner.innerHTML = `<b>${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'));
+                    document.getElementById('student-fiche').innerHTML = studentFicheHtml({ consigne: params.get('k') || "" });
                     // Fiche complète du bloc, lue dans l'espace de l'équipe (si le stockage en ligne le permet)
                     if (params.get('b') && params.get('eq')) {
                         cloudCall({ action: 'ficheBloc', equipe: params.get('eq'), id: 'custom_' + params.get('b') }, false).then(fiche => {
