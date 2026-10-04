@@ -721,10 +721,10 @@
                     
                     <div id="zone-wrap" style="position: relative; display: flex;" onmouseenter="showZoneChoices()" onmouseleave="hideZoneChoices()">
                         <button class="tool-btn" id="tool-zone" style="flex: 1;" onclick="setTool(isZone(currentTool) ? currentTool : 'zone'); showZoneChoices()">🎯 Zone</button>
-                        <div id="zone-choices" style="display: none; position: absolute; left: 0; top: 100%; z-index: 60; width: 190px; background: #ffffff; border: 3px solid #0ea5e9; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
+                        <div id="zone-choices" style="display: none; position: absolute; left: 0; top: 100%; z-index: 60; width: 230px; background: #ffffff; border: 3px solid #0ea5e9; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4);">
                             <div style="font-size: 0.72rem; font-weight: 900; color: #1e3a8a; margin-bottom: 6px; text-align: left;">🎯 Quelle zone ? (niveau à atteindre)</div>
                             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;"><button class="zone-num-btn" data-zone="zone" onclick="chooseZone('zone')" style="grid-column: span 2;">Zone (sans numéro)</button><button class="zone-num-btn" data-zone="zone1" onclick="chooseZone('zone1')">Zone 1</button><button class="zone-num-btn" data-zone="zone2" onclick="chooseZone('zone2')">Zone 2</button><button class="zone-num-btn" data-zone="zone3" onclick="chooseZone('zone3')">Zone 3</button><button class="zone-num-btn" data-zone="zone4" onclick="chooseZone('zone4')">Zone 4</button></div>
-                            <div style="font-size: 0.66rem; color: #64748b; margin-top: 5px; text-align: left;">Couleurs des pistes de ski : 1 verte, 2 bleue, 3 rouge, 4 noire. Une fois posée : double-clic pour changer le numéro.</div>
+                            <div style="font-size: 0.74rem; color: #1e293b; margin-top: 7px; padding: 6px; text-align: left; background: #fef9c3; border: 1px solid #facc15; border-radius: 6px; line-height: 1.35;">💡 <b>La couleur suit le numéro</b>, comme les pistes de ski : 1 verte, 2 bleue, 3 rouge, 4 noire.<br><b>Pour changer la couleur d'une zone déjà posée :</b> double-cliquez dessus, puis choisissez un autre numéro.</div>
                         </div>
                     </div>
                     <button class="tool-btn" id="tool-pied" onclick="setTool('pied')">👟 Pied</button>
@@ -791,13 +791,13 @@
                         <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
                     </div>
                     <div id="zone-row" style="display: none; border-top: 2px solid #bae6fd; margin-top: 5px; padding-top: 5px;">
-                        <div style="font-size: 0.7rem; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 3px;">Numéro de la zone</div>
+                        <div style="font-size: 0.7rem; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 3px;">Changer la couleur : choisissez le numéro<br><span style="font-weight: normal; color: #475569;">1 verte · 2 bleue · 3 rouge · 4 noire</span></div>
                         <div class="control-row" style="flex-wrap: wrap;">
                             <button onclick="setSelectedZone(0)" title="Sans numéro">–</button>
-                            <button onclick="setSelectedZone(1)">1</button>
-                            <button onclick="setSelectedZone(2)">2</button>
-                            <button onclick="setSelectedZone(3)">3</button>
-                            <button onclick="setSelectedZone(4)">4</button>
+                            <button onclick="setSelectedZone(1)" style="background: #16a34a; color: white;">1</button>
+                            <button onclick="setSelectedZone(2)" style="background: #1d4ed8; color: white;">2</button>
+                            <button onclick="setSelectedZone(3)" style="background: #dc2626; color: white;">3</button>
+                            <button onclick="setSelectedZone(4)" style="background: #111827; color: white;">4</button>
                         </div>
                     </div>
                     <div id="pme-row" style="display: none;border-top: 2px solid #bfdbfe; margin-top: 5px; padding-top: 5px;">
