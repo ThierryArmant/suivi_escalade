@@ -570,7 +570,8 @@ function ficheBloc_(equipe, id) {
           consigne: String(route.consigne || ''),
           attendus: String(route.attendus || ''),
           competences: String(route.competences || ''),
-          source: String(route.source || '')
+          source: String(route.source || ''),
+          video: String(route.video || '')
         };
       } catch (err) { break; }
     }

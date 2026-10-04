@@ -1066,6 +1066,7 @@
                         <option value="Mouvement dynamique et coord.">Mouvement dynamique et coordination</option>
                         <option value="Positionnement / Orientation">Position du corps / Orientation</option>
                         <option value="Préhension différentes">Préhension de prises différentes</option>
+                        <option value="Sécurité en moulinette">Sécurité en moulinette</option>
                         <option value="Échauffement">Échauffement</option>
                         <option value="S'équilibrer et se déplacer">S'équilibrer et se déplacer</option>
                         <option value="S'informer pour décider">S'informer pour décider</option>
@@ -1363,6 +1364,10 @@
             <div class="form-group">
                 <label>📚 Source <span style="font-weight: normal;">(document ou auteur dont vient cet exercice ; affichée au prof et à l'élève)</span> :</label>
                 <input type="text" id="edit-source" maxlength="400" placeholder="Ex : CPD EPS, DSDEN 07, mars 2025" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px;">
+            </div>
+            <div class="form-group">
+                <label>▶ Vidéo <span style="font-weight: normal;">(lien https vers une vidéo qui montre l'exercice ; bouton affiché au prof et à l'élève)</span> :</label>
+                <input type="text" id="edit-video" maxlength="300" placeholder="https://…" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px;">
             </div>
             <div style="text-align: right; margin-top: 12px;">
                 <button onclick="document.getElementById('consigne-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
@@ -1867,7 +1872,11 @@
 
             let blocsParTheme = {};
             // Les thèmes gardent leur ordre habituel ; seuls les exercices sont triés par voie à l'intérieur
-            schoolConfig.customRoutes.forEach(r => { if (r.type === 'bloc') blocsParTheme[r.theme || "Libre / Autre"] = []; });
+            // Les thèmes de sécurité passent toujours en tête de liste
+            if (schoolConfig.customRoutes.some(r => r.type === 'bloc' && /^s[ée]curit[ée]/i.test(r.theme || ""))) {
+                schoolConfig.customRoutes.forEach(r => { if (r.type === 'bloc' && /^s[ée]curit[ée]/i.test(r.theme || "")) blocsParTheme[r.theme] = []; });
+            }
+            schoolConfig.customRoutes.forEach(r => { if (r.type === 'bloc' && !blocsParTheme[r.theme || "Libre / Autre"]) blocsParTheme[r.theme || "Libre / Autre"] = []; });
 
             sortByVoie(schoolConfig.customRoutes).forEach(r => {
                 const item = document.createElement('div');
@@ -2661,6 +2670,7 @@
                     if (pasteInfo.attendus) newRoute.attendus = pasteInfo.attendus;
                     if (pasteInfo.competences) newRoute.competences = pasteInfo.competences;
                     if (pasteInfo.source) newRoute.source = pasteInfo.source;
+                    if (pasteInfo.video) newRoute.video = pasteInfo.video;
                     pasteInfo = null;
                     document.getElementById('group-bar').style.display = 'none';
                 }
@@ -3760,7 +3770,7 @@
                         const existing = schoolConfig.customRoutes.find(cr => cr.id === nr.id);
                         if (existing) {
                             let touched = false;
-                            ['consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => {
+                            ['consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => {
                                 if (nr[key] && nr[key] !== existing[key]) { existing[key] = nr[key]; touched = true; }
                             });
                             // Le fichier apporte une version plus récente du tracé : on remplace aussi les balises
@@ -4063,7 +4073,7 @@
                     if (params.get('b') && params.get('eq')) {
                         cloudCall({ action: 'ficheBloc', equipe: params.get('eq'), id: 'custom_' + params.get('b') }, false).then(fiche => {
                             const zone = document.getElementById('student-fiche');
-                            if (zone && fiche && (fiche.consigne || fiche.attendus || fiche.competences)) zone.innerHTML = studentFicheHtml(fiche);
+                            if (zone && fiche && (fiche.consigne || fiche.attendus || fiche.competences || fiche.video)) zone.innerHTML = studentFicheHtml(fiche);
                         }).catch(() => { /* ancien stockage ou hors ligne : la consigne du QR code reste affichée */ });
                     }
                 } else if (params.get('route')) {
@@ -5271,7 +5281,7 @@
             const list = readRouteMarkers(route.id) || [];
             if (list.length === 0) { alert("Cet exercice n'a aucune balise à copier."); return; }
             const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
-            ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => { if (route[key]) clip[key] = route[key]; });
+            ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (route[key]) clip[key] = route[key]; });
             try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
             if (silent) return true;
@@ -5283,7 +5293,7 @@
             const inPreview = !currentRouteId && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
             const source = currentRouteId ? ((schoolConfig.customRoutes || []).find(r => r.id === currentRouteId) || null) : (inPreview ? previewRoute : null);
             const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
-            if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => { if (source[key]) clip[key] = source[key]; });
+            if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (source[key]) clip[key] = source[key]; });
             try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
             alert(`📋 ${clip.markers.length} balise(s) copiée(s)` + (clip.name ? ` (« ${clip.name} »)` : "") + `.\n\nAffichez maintenant votre mur (menu « Choix du mur de blocs »), puis cliquez sur « 📥 Coller ».`);
@@ -5413,8 +5423,15 @@
             return o.source ? `<div class="fiche-source" style="margin-top: 8px; margin-left: 35%; font-size: 0.68rem; font-weight: normal; font-style: italic; text-align: right; line-height: 1.25; opacity: 0.85;">📚 Source : ${escapeHtml(o.source)}</div>` : "";
         }
 
+        // Lien vers une vidéo de référence (adresse https uniquement)
+        function videoHtml(o) {
+            const url = String(o.video || "").trim();
+            if (!/^https:\/\/[^\s"'<>]+$/i.test(url)) return "";
+            return `<div style="margin-top: 6px; text-align: left;"><a href="${escapeHtml(url)}" target="_blank" rel="noopener" style="display: inline-block; background: #dc2626; color: #ffffff; font-weight: bold; font-size: 0.85rem; padding: 6px 12px; border-radius: 8px; text-decoration: none;">▶ Voir la vidéo</a></div>`;
+        }
+
         function studentFicheHtml(o, withoutSource) {
-            let html = "";
+            let html = videoHtml(o);
             if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b");
             if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir", o.attendus, "#16a34a");
             if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb");
@@ -5437,6 +5454,7 @@
             document.getElementById('edit-attendus').value = route.attendus || "";
             document.getElementById('edit-competences').value = route.competences || "";
             document.getElementById('edit-source').value = route.source || "";
+            document.getElementById('edit-video').value = route.video || "";
             document.getElementById('edit-fiche').value = route.fiche || "";
             document.getElementById('consigne-modal').style.display = 'flex';
         }
@@ -5444,7 +5462,7 @@
         async function saveConsigne() {
             const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
             if (!route) return;
-            ['consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => {
+            ['consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => {
                 const value = document.getElementById('edit-' + key).value.trim();
                 if (value) route[key] = value; else delete route[key];
             });
