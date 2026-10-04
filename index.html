@@ -5324,20 +5324,25 @@
         }
 
         // Les trois textes destinés à l'élève, tels qu'il les verra
-        function studentFicheHtml(o) {
+        // La source de l'exercice, discrète, dans le coin en bas à droite de la fiche
+        function sourceHtml(o) {
+            return o.source ? `<div class="fiche-source" style="margin-top: 8px; margin-left: 35%; font-size: 0.68rem; font-weight: normal; font-style: italic; text-align: right; line-height: 1.25; opacity: 0.85;">📚 Source : ${escapeHtml(o.source)}</div>` : "";
+        }
+
+        function studentFicheHtml(o, withoutSource) {
             let html = "";
             if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b");
             if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir", o.attendus, "#16a34a");
             if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb");
-            if (o.source) html += `<div class="fiche-source" style="margin-top: 6px; font-size: 0.72rem; font-weight: normal; font-style: italic; text-align: left; opacity: 0.9;">📚 Source : ${escapeHtml(o.source)}</div>`;
+            if (!withoutSource) html += sourceHtml(o);
             return html;
         }
 
         function consigneHtml(route) {
-            let html = `<div class="fiche-zone">` + studentFicheHtml(route);
+            let html = `<div class="fiche-zone">` + studentFicheHtml(route, true);
             if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (non montrées aux élèves)</summary>${ficheBox("", route.fiche, "#94a3b8")}</details>`;
             const filled = route.consigne || route.attendus || route.competences || route.fiche || route.source;
-            html += `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button></div>`;
+            html += `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button>` + sourceHtml(route) + `</div>`;
             return html;
         }
 
