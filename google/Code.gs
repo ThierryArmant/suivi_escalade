@@ -172,7 +172,7 @@ function creerEquipe_(d) {
   if (motDePasse.length < 6 || motDePasse.length > 60) {
     return { ok: false, erreur: 'Le mot de passe doit faire entre 6 et 60 caractères.' };
   }
-  var email = String(d.email == null ? '' : d.email).trim();
+  var email = emailPropre_(d.email);
   if (!emailAcademique_(email)) {
     return { ok: false, erreur: "L'adresse e-mail doit être une adresse académique (se terminant par @ac-….fr)." };
   }
@@ -193,8 +193,14 @@ function creerEquipe_(d) {
   }
 }
 
+// Une adresse e-mail ne porte jamais d'accent : « sébastien.dupont@… » devient « sebastien.dupont@… »
+// (sinon la messagerie refuse la réponse : « bad UTF-8 syntax »).
+function emailPropre_(texte) {
+  return String(texte == null ? '' : texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '').toLowerCase();
+}
+
 function emailValide_(email) {
-  return email.length <= 120 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email);
+  return email.length <= 120 && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(email);
 }
 
 // Adresse professionnelle de l'Éducation nationale : prenom.nom@ac-academie.fr
@@ -225,7 +231,7 @@ function emailReferent_() {
 function demanderAcces_(d) {
   var nom = String(d.nom == null ? '' : d.nom).trim().replace(/\s+/g, ' ');
   var etablissement = String(d.etablissement == null ? '' : d.etablissement).trim().replace(/\s+/g, ' ');
-  var email = String(d.email == null ? '' : d.email).trim().toLowerCase();
+  var email = emailPropre_(d.email);
   if (nom.length < 2 || nom.length > 80) return { ok: false, erreur: 'Indiquez votre prénom et votre nom.' };
   if (etablissement.length < 2 || etablissement.length > 120) return { ok: false, erreur: 'Indiquez votre établissement.' };
   if (!emailAcademique_(email)) {

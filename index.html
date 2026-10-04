@@ -4541,7 +4541,13 @@
         }
 
         let teamPanel = 'login';   // 'login', 'create', 'request' ou 'choice'
-        const ACADEMIC_EMAIL = /^[^\s@,;<>]+@ac-[a-z0-9-]+\.[a-z]{2,4}$/i;   // adresse de l'Éducation nationale
+        const ACADEMIC_EMAIL = /^[a-z0-9._%+-]+@ac-[a-z0-9-]+\.[a-z]{2,4}$/i;   // adresse de l'Éducation nationale, sans accent ni caractère spécial
+
+        // Une adresse e-mail ne porte jamais d'accent : « sébastien.dupont@… » est corrigé en « sebastien.dupont@… »,
+        // sinon la messagerie refuse la réponse (« bad UTF-8 syntax »).
+        function cleanEmail(text) {
+            return String(text || "").normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "").toLowerCase();
+        }
 
         function showTeamPanel(name) {
             teamPanel = name;
@@ -4560,7 +4566,8 @@
             const msg = document.getElementById('team-request-msg');
             const nom = document.getElementById('team-req-name').value.trim();
             const etablissement = document.getElementById('team-req-etab').value.trim();
-            const email = document.getElementById('team-req-email').value.trim();
+            const email = cleanEmail(document.getElementById('team-req-email').value);
+            document.getElementById('team-req-email').value = email;
             msg.style.color = "#991b1b";
             msg.textContent = "";
 
@@ -4644,7 +4651,8 @@
             const value = id => document.getElementById(id).value;
             const equipe = normalizeTeamName(value('team-new-name'));
             const etablissement = value('team-new-etab').trim();
-            const email = value('team-new-email').trim();
+            const email = cleanEmail(value('team-new-email'));
+            document.getElementById('team-new-email').value = email;
             const mdp = value('team-new-pass'), mdp2 = value('team-new-pass2');
             const invitation = value('team-new-invit').trim();
             errorBox.textContent = "";
