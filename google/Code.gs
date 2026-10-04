@@ -24,9 +24,11 @@ var ONGLETS = {
   Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le'],
   Reglages: ['cle', 'valeur'],
   Demandes: ['date', 'nom', 'etablissement', 'email'],
-  Partages: ['proprietaire', 'demandeur', 'etat', 'date']
+  Partages: ['proprietaire', 'demandeur', 'etat', 'date'],
+  Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date']
 };
-var VERSION = 7;
+var VERSION = 8;
+var VALIDATIONS_MAX_PAR_EQUIPE = 6000;   // garde-fou contre le remplissage abusif de la feuille
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -101,6 +103,13 @@ function traiter_(d) {
     if (action === 'demanderAcces') return demanderAcces_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
     if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
+    if (action === 'parcoursSecurite') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve);
+    if (action === 'validerFiche') {
+      var verrouEleve = LockService.getScriptLock();
+      verrouEleve.waitLock(25000);
+      try { return validerFiche_(cle_(d.equipe), String(d.id || ''), d.classe, d.eleve); }
+      finally { verrouEleve.releaseLock(); }
+    }
 
     // Toutes les autres actions demandent le mot de passe de l'équipe
     var equipe = verifier_(d.equipe, d.mdp);
@@ -110,6 +119,7 @@ function traiter_(d) {
     if (action === 'lire') return lireTout_(equipe.equipe);
     if (action === 'annuaire') return annuaire_(equipe.equipe);
     if (action === 'lireBlocsEquipe') return lireBlocsEquipe_(equipe.equipe, cle_(d.cible));
+    if (action === 'lireValidations') return lireValidations_(equipe.equipe);
 
     // Actions qui modifient : une seule à la fois, pour ne pas mélanger deux enregistrements
     var verrou = LockService.getScriptLock();
@@ -117,6 +127,7 @@ function traiter_(d) {
     try {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
+      if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
       if (action === 'supprimerPhoto') return supprimerPhoto_(equipe.equipe, String(d.nom || ''));
@@ -571,12 +582,121 @@ function ficheBloc_(equipe, id) {
           attendus: String(route.attendus || ''),
           competences: String(route.competences || ''),
           source: String(route.source || ''),
-          video: String(route.video || '')
+          video: String(route.video || ''),
+          suivi: ficheSuivie_(route)
         };
       } catch (err) { break; }
     }
   }
   return { ok: false, erreur: 'Bloc introuvable.' };
+}
+
+/* =========================================================
+   SUIVI DES FICHES DE SÉCURITÉ
+   L'élève ne donne jamais son nom : seulement sa classe et un code
+   (initiale du prénom, initiale du nom, numéro dans la liste), ex. « TA 12 ».
+   ========================================================= */
+// Seules les fiches du thème « Sécurité… » sont suivies
+function ficheSuivie_(route) {
+  return /^s[ée]curit[ée]/i.test(String(route && route.theme || '').trim());
+}
+
+function classePropre_(texte) {
+  return String(texte == null ? '' : texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^0-9A-Za-z ]/g, '').replace(/\s+/g, ' ').trim().toUpperCase().slice(0, 10);
+}
+
+// « t a 12 », « ta12 », « T.A. 12 » → « TA 12 » ; tout le reste est refusé
+function codeElevePropre_(texte) {
+  var trouve = /^([A-Z])[ .\-]*([A-Z])[ .\-]*(\d{1,2})$/.exec(String(texte == null ? '' : texte).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase());
+  return trouve ? trouve[1] + trouve[2] + ' ' + parseInt(trouve[3], 10) : '';
+}
+
+// Validation envoyée par le téléphone de l'élève : sans mot de passe, donc très encadrée
+function validerFiche_(equipe, id, classe, eleve) {
+  classe = classePropre_(classe);
+  eleve = codeElevePropre_(eleve);
+  if (!equipe || !/^custom_[0-9A-Za-z_-]{1,40}$/.test(id)) return { ok: false, erreur: 'Fiche introuvable.' };
+  if (!classe) return { ok: false, erreur: 'Indique ta classe (par exemple 4B).' };
+  if (!eleve) return { ok: false, erreur: 'Indique ton code : initiale du prénom, initiale du nom, puis ton numéro dans la liste (par exemple TA 12).' };
+
+  // La fiche doit exister dans cette équipe et faire partie du thème « Sécurité »
+  var suivie = false;
+  var blocs = lignes_('Blocs');
+  for (var i = 0; i < blocs.length; i++) {
+    if (cle_(blocs[i][0]) === equipe && String(blocs[i][1]) === id) {
+      try { suivie = ficheSuivie_(JSON.parse(recoller_(blocs[i], 3)).route); } catch (err) { suivie = false; }
+      break;
+    }
+  }
+  if (!suivie) return { ok: false, erreur: "Cette fiche n'est pas suivie." };
+
+  var lignes = lignes_('Validations');
+  var total = 0;
+  for (var j = 0; j < lignes.length; j++) {
+    if (cle_(lignes[j][0]) !== equipe) continue;
+    total++;
+    if (String(lignes[j][1]) === classe && String(lignes[j][2]) === eleve && String(lignes[j][3]) === id) {
+      return { ok: true, deja: true };   // déjà validée : on n'écrit pas deux fois
+    }
+  }
+  if (total >= VALIDATIONS_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
+  feuille_('Validations').appendRow([equipe, classe, eleve, id, maintenant_()]);
+  return { ok: true };
+}
+
+// Parcours d'un élève : toutes les fiches de sécurité de l'équipe, avec ce qu'il a déjà vu.
+// Sans mot de passe (l'élève y accède de chez lui) ; ne renvoie que ce qu'un QR code de fiche montre déjà.
+function parcoursSecurite_(equipe, classe, eleve) {
+  classe = classePropre_(classe);
+  eleve = codeElevePropre_(eleve);
+  if (!equipe || !classe || !eleve) return { ok: false, erreur: 'Indique ta classe et ton code.' };
+  var vues = {};
+  lignes_('Validations').forEach(function (l) {
+    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) vues[String(l[3])] = true;
+  });
+  var fiches = [];
+  lignes_('Blocs').forEach(function (l) {
+    if (cle_(l[0]) !== equipe) return;
+    try {
+      var bloc = JSON.parse(recoller_(l, 3));
+      if (!ficheSuivie_(bloc.route)) return;
+      fiches.push({
+        id: String(l[1]),
+        nom: String(bloc.route.name || ''),
+        theme: String(bloc.route.theme || ''),
+        niveau: String(bloc.route.grade || ''),
+        gabarit: String(bloc.route.height || ''),
+        couleur: String(bloc.route.color || ''),
+        image: String(bloc.route.imageName || ''),
+        markers: bloc.markers || [],
+        vue: vues[String(l[1])] === true
+      });
+    } catch (err) { /* ligne abîmée : on l'ignore */ }
+  });
+  return { ok: true, fiches: fiches };
+}
+
+function lireValidations_(equipe) {
+  var liste = [];
+  lignes_('Validations').forEach(function (l) {
+    if (cle_(l[0]) === equipe) liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]) });
+  });
+  return { ok: true, validations: liste };
+}
+
+// Efface le suivi d'une classe (ou de toute l'équipe si aucune classe n'est donnée)
+function effacerValidations_(equipe, classe) {
+  classe = classePropre_(classe);
+  var feuille = feuille_('Validations');
+  var lignes = lignes_('Validations');
+  var efface = 0;
+  for (var i = lignes.length - 1; i >= 0; i--) {
+    if (cle_(lignes[i][0]) === equipe && (!classe || String(lignes[i][1]) === classe)) {
+      feuille.deleteRow(i + 2);   // +2 : la ligne de titres, et les lignes comptées à partir de 1
+      efface++;
+    }
+  }
+  return { ok: true, efface: efface };
 }
 
 // Lecture d'une photo : sans mot de passe, pour que le téléphone d'un élève puisse afficher le mur
