@@ -3597,10 +3597,8 @@
                 cloudSync();
                 return;
             }
-            // Première visite sur cet appareil : on propose de rejoindre une équipe
-            let asked = true;
-            try { asked = !!localStorage.getItem('eps_team_asked'); localStorage.setItem('eps_team_asked', '1'); } catch (e) { /* rien */ }
-            if (!asked && !hasLocalSharedData()) openWelcomeModal();
+            // Tant que l'on n'est connecté à aucune équipe, l'accueil s'affiche à chaque ouverture
+            openWelcomeModal();
         }
 
         // =========================================
