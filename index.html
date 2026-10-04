@@ -623,7 +623,7 @@
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
             <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9;">🌍 Les équipes</button>
-            <button class="config-btn" onclick="openWelcomeModal()" title="Présentation de l'outil" style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
+            <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
             <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo par défaut">🎁 Démo</button>
         </div>
@@ -936,6 +936,21 @@
             <button onclick="welcomeGo('create')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #2563eb;">➕ J'ai reçu mon code : créer l'équipe de mon établissement</button>
             <button onclick="welcomeGo('login')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #475569;">👥 Mon équipe existe déjà : me connecter</button>
             <button onclick="closeWelcomeModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #94a3b8; margin-bottom: 0;">👀 Simplement regarder la démonstration</button>
+        </div>
+    </div>
+
+    <div id="guide-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>🧭 Guide de démarrage</h2>
+            <p id="guide-intro" class="help-text" style="margin-top: 0; font-size: 0.9rem;"></p>
+            <div id="guide-steps"></div>
+            <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.8rem; color: #475569; font-weight: normal;">
+                <input type="checkbox" id="guide-off" onchange="setGuideOff(this.checked)" style="width: auto;"> Ne plus afficher ce guide automatiquement (il reste accessible par le bouton ❔)
+            </label>
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="closeGuideModal()" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Plus tard</button>
+                <button onclick="guideOpenConfig()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">⚙️ Ouvrir la Configuration</button>
+            </div>
         </div>
     </div>
 
@@ -1615,9 +1630,11 @@
             document.getElementById('config-modal').style.display = 'flex'; 
         }
         
-        function closeConfigModal() { 
-            document.getElementById('config-modal').style.display = 'none'; 
-            initApp(); 
+        function closeConfigModal() {
+            document.getElementById('config-modal').style.display = 'none';
+            initApp();
+            // Si l'on venait du guide de démarrage, on y revient pour voir ce qui est fait et ce qui reste
+            if (guideReturn) { guideReturn = false; openGuideModal(); }
         }
 
         function setTool(tool) {
@@ -3607,7 +3624,10 @@
             updateTeamUI();
             const ok = await cloudSync();
             refreshAfterCloud();
-            if (ok) closeTeamModal();
+            if (ok) { 
+                closeTeamModal(); 
+                maybeOpenGuide(); 
+            }
         }
 
         function teamLogout() {
@@ -3624,7 +3644,7 @@
             if (new URLSearchParams(window.location.search).get('mode') === 'eleve') return;
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
             if (cloudTeam) {
-                cloudSync();
+                cloudSync().then(() => maybeOpenGuide());
                 return;
             }
             // Tant que l'on n'est connecté à aucune équipe, l'accueil s'affiche à chaque ouverture
@@ -3647,6 +3667,89 @@
             closeWelcomeModal();
             openTeamModal();
             if (!cloudTeam) showTeamPanel(panel);
+        }
+
+        // --- Guide de démarrage : accompagne une équipe dans le réglage de son espace ---
+        let guideReturn = false;
+
+        function openHelp() {
+            if (cloudTeam) openGuideModal(); else openWelcomeModal();
+        }
+
+        function guideState() {
+            const names = Object.keys(getImportedPhotos());
+            return {
+                voies: names.filter(n => !isBlocPhoto(n)).length,
+                blocsPhotos: names.filter(n => isBlocPhoto(n)).length,
+                routes: (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_')).length,
+                blocs: (schoolConfig.customRoutes || []).filter(isSharedBloc).length
+            };
+        }
+
+        function setGuideOff(off) {
+            try { if (off) localStorage.setItem('eps_guide_off', '1'); else localStorage.removeItem('eps_guide_off'); } catch (e) { /* rien */ }
+        }
+
+        function isGuideOff() {
+            try { return !!localStorage.getItem('eps_guide_off'); } catch (e) { return false; }
+        }
+
+        // S'ouvre tout seul tant que l'espace de l'équipe n'a ni photos ni blocs
+        function maybeOpenGuide() {
+            if (!cloudTeam || isGuideOff()) return;
+            const st = guideState();
+            if (st.voies + st.blocsPhotos === 0 || st.blocs === 0) openGuideModal();
+        }
+
+        function closeGuideModal() {
+            document.getElementById('guide-modal').style.display = 'none';
+        }
+
+        function guideOpenConfig() {
+            closeGuideModal();
+            guideReturn = true;
+            openConfigModal();
+        }
+
+        function openGuideModal() {
+            const st = guideState();
+            const team = cloudTeam ? cloudTeam.equipe : "";
+            const steps = [
+                { done: st.voies > 0, title: "Importer les photos des voies", 
+                  state: st.voies > 0 ? `${st.voies} photo(s) en mémoire` : "à faire",
+                  how: "⚙️ Configuration, point 1, bouton « Photos des VOIES ». Nommez chaque photo avec les numéros des secteurs visibles : « voie 1 2 3 », « voie 4 5 6 »…" },
+                { done: st.blocsPhotos > 0, title: "Importer les photos des murs de blocs", 
+                  state: st.blocsPhotos > 0 ? `${st.blocsPhotos} photo(s) en mémoire` : "à faire",
+                  how: "⚙️ Configuration, point 1, bouton « Photos des BLOCS ». Le nom est libre. Photographiez le bas du mur, de face." },
+                { done: st.routes > 0, title: "Importer le topo des voies", 
+                  state: st.routes > 0 ? `${st.routes} voie(s) en mémoire` : "à faire (facultatif si vous ne faites que du bloc)",
+                  how: "⚙️ Configuration, point 2 : téléchargez « topo voies escalade », remplacez les secteurs, les cotations et les couleurs par ceux de votre mur, puis importez le fichier." },
+                { done: st.blocs > 0, title: "Créer votre premier bloc", 
+                  state: st.blocs > 0 ? `${st.blocs} bloc(s) créé(s)` : "à faire",
+                  how: "Fermez la Configuration, choisissez un mur dans « Choix du mur de blocs », posez les balises en cliquant sur les prises, puis cliquez sur « + Créer un Bloc » pour lui donner un nom, un niveau et un thème." },
+                { done: null, title: "Inviter vos collègues", 
+                  state: "",
+                  how: `Donnez-leur le lien de l'appli, le nom de l'équipe (« ${team} ») et son mot de passe. Ils cliquent sur « Mon équipe existe déjà » et retrouvent tout.` },
+                { done: null, title: "Aller plus loin", 
+                  state: "",
+                  how: "Le bouton 📱 d'un bloc affiche son QR code pour les élèves. « 🌍 Les équipes » montre les blocs des autres établissements. La fiche de suivi des élèves se télécharge dans la Configuration, point 3." }
+            ];
+            const remaining = steps.filter(x => x.done === false).length;
+            document.getElementById('guide-intro').textContent = remaining > 0
+                ? `Votre équipe « ${team} » est créée. Voici les étapes pour régler votre espace. Tout ce que vous importez est enregistré en ligne et partagé avec votre équipe.`
+                : `L'espace de l'équipe « ${team} » est prêt. Vous pouvez inviter vos collègues.`;
+            document.getElementById('guide-steps').innerHTML = steps.map((x, i) => {
+                const icon = x.done === true ? "✅" : (x.done === false ? "⬜" : "➡️");
+                const color = x.done === true ? "#166534" : "#1e293b";
+                const bg = x.done === true ? "#f0fdf4" : "#f8fafc";
+                const border = x.done === true ? "#bbf7d0" : "#cbd5e1";
+                return `<div style="border: 2px solid ${border}; background: ${bg}; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;">`
+                    + `<div style="font-weight: bold; color: ${color};">${icon} ${i + 1}. ${escapeHtml(x.title)}`
+                    + (x.state ? ` <span style="font-weight: normal; font-size: 0.8rem; color: #64748b;">· ${escapeHtml(x.state)}</span>` : "") + `</div>`
+                    + `<div style="font-size: 0.82rem; color: #475569; margin-top: 3px; line-height: 1.35;">${escapeHtml(x.how)}</div></div>`;
+            }).join('');
+            document.getElementById('guide-off').checked = isGuideOff();
+            document.getElementById('guide-modal').style.display = 'flex';
         }
 
         let teamsData = null;       // annuaire reçu du stockage en ligne
