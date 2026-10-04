@@ -841,10 +841,9 @@
                 <label>2. Importer le fichier Excel avec les difficultés des voies :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xlsm, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
                 <div class="help-text">
-                    📋 Pour être sûr d'avoir le bon modèle, partez de notre base :<br>
-                    <button class="template-btn" onclick="downloadExcelTemplate()" style="margin: 6px 0; white-space: nowrap;">📥 Télécharger le modèle Excel type</button><br>
-                    Colonnes simples : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>. Une ligne par voie, puis importez le fichier ici.<br>
-                    <span style="font-size: 0.75rem;">(La fiche de suivi escalade, onglet « LISTE A SAISIR », est aussi acceptée.)</span>
+                    📋 Pour être sûr d'avoir le bon modèle, partez de notre topo et modifiez-le :<br>
+                    <a href="topo_voies_escalade.xlsx" download="topo voies escalade.xlsx" style="display: inline-block; background: #2563eb; color: white; padding: 6px 12px; margin: 6px 0; border-radius: 4px; text-decoration: none; font-weight: bold; white-space: nowrap;">📥 Télécharger « topo voies escalade »</a><br>
+                    Une ligne par voie : le <b>numéro du secteur</b> à gauche, la <b>cotation</b> à droite, et la <b>couleur de la voie</b> en couleur de remplissage de la case. Enregistrez, puis importez le fichier ici.
                 </div>
             </div>
             <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
@@ -1725,24 +1724,6 @@
             renderMarkers();
         }
 
-        function downloadExcelTemplate() {
-            if (typeof XLSX === 'undefined') { 
-                alert("❌ Module Excel introuvable (vérifiez la connexion Internet)."); 
-                return; 
-            }
-            const templateData = [
-                { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
-                { Secteur: 1, Voie: 2, Cotation: "6A", Couleur: "bleue" },
-                { Secteur: 1, Voie: 3, Cotation: "6B", Couleur: "noire" },
-                { Secteur: 2, Voie: 4, Cotation: "5B", Couleur: "verte" },
-                { Secteur: 2, Voie: 5, Cotation: "5C", Couleur: "rouge" }
-            ];
-            const worksheet = XLSX.utils.json_to_sheet(templateData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Voies EPS");
-            XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
-        }
-
         function handleImagesUpload(input) {
             if (input.files.length > 20) { 
                 alert("❌ Limite de 20 photos max !"); 
@@ -1799,23 +1780,32 @@
             const pool = voieIdx.length > 0 ? voieIdx : allIdx;
             const secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
 
-            let hit;
+            // Score de chaque photo : 3 = numéro au milieu du nom (voie bien centrée sur la photo),
+            // 2 = numéro au bord, 1 = numéro entre parenthèses (voie visible en partie seulement)
+            let hit, bestScore = 0;
             if (namesOk) {
-                hit = pool.find(i => {
-                    let n = names[i].toLowerCase(), nums = n.match(/\d+/g) || [];
-                    if (nums.includes(voieNumStr)) return true;
-                    let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
-                    if (ranges) { 
-                        for (let r of ranges) { 
-                            let bounds = r.match(/\d+/g); 
-                            if (bounds && bounds.length === 2) { 
-                                if (vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) return true; 
+                pool.forEach(i => {
+                    const n = names[i].toLowerCase().replace(/\.[^.]+$/, '');
+                    const inParens = ((n.match(/\([^)]*\)/g) || []).join(' ').match(/\d+/g)) || [];
+                    const plain = (n.replace(/\([^)]*\)/g, ' ').match(/\d+/g)) || [];
+                    const pos = plain.indexOf(voieNumStr);
+                    let score = 0;
+
+                    if (pos !== -1) {
+                        score = (pos > 0 && pos < plain.length - 1) ? 3 : 2;
+                    } else if (inParens.includes(voieNumStr)) {
+                        score = 1;
+                    } else {
+                        let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
+                        if (ranges) { 
+                            for (let r of ranges) { 
+                                let bounds = r.match(/\d+/g); 
+                                if (bounds && bounds.length === 2 && vNum >= parseInt(bounds[0]) && vNum <= parseInt(bounds[1])) score = 0.5; 
                             } 
-                        } 
+                        }
+                        if (n.includes("secteur " + secteurNumStr) || n.includes("s" + secteurNumStr)) score = 0.5;
                     }
-                    if (n.includes("secteur " + secteurNumStr) || n.includes("s" + secteurNumStr)) return true;
-                    if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
-                    return false;
+                    if (score > bestScore) { bestScore = score; hit = i; }
                 });
             }
             if (hit === undefined) hit = pool[Math.max(0, secteurNum - 1)];
@@ -1868,6 +1858,63 @@
             return null;
         }
 
+        // Nom de couleur d'une voie à partir de la couleur de remplissage d'une case Excel
+        function colorNameFromRgb(rgb) {
+            if (!rgb || !/^[0-9a-f]{6,8}$/i.test(rgb)) return "";
+            const hex = rgb.slice(-6);
+            const r = parseInt(hex.substr(0, 2), 16) / 255, g = parseInt(hex.substr(2, 2), 16) / 255, b = parseInt(hex.substr(4, 2), 16) / 255;
+            const max = Math.max(r, g, b), min = Math.min(r, g, b), diff = max - min;
+            const l = (max + min) / 2;
+            const sat = diff === 0 ? 0 : diff / (1 - Math.abs(2 * l - 1));
+            if (l < 0.2) return "noir";
+            if (sat < 0.2) return l > 0.85 ? "blanc" : "gris";
+            let h = 0;
+            if (max === r) h = 60 * (((g - b) / diff) % 6);
+            else if (max === g) h = 60 * (((b - r) / diff) + 2);
+            else h = 60 * (((r - g) / diff) + 4);
+            if (h < 0) h += 360;
+            if (h < 15 || h >= 345) return "rouge";
+            if (h < 45) return "orange";
+            if (h < 70) return "jaune";
+            if (h < 170) return "vert";
+            if (h < 255) return "bleu";
+            if (h < 320) return "violet";
+            return "rose";
+        }
+
+        // Modèle « topo voies escalade » : colonne Secteur (cases fusionnées) + colonne des cotations,
+        // la couleur de la voie étant la couleur de remplissage de la case de cotation.
+        function parseTopoModel(workbook) {
+            for (const sheetName of workbook.SheetNames) {
+                const ws = workbook.Sheets[sheetName];
+                if (!ws || !ws['!ref']) continue;
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                const cellAt = (r, c) => ws[XLSX.utils.encode_cell({ r: r, c: c })];
+                const textAt = (r, c) => { const cell = cellAt(r, c); return cell && cell.v != null ? cellText(cell.v) : ""; };
+
+                for (let r = range.s.r; r <= Math.min(range.e.r, range.s.r + 15); r++) {
+                    for (let c = range.s.c; c < range.e.c; c++) {
+                        if (!textAt(r, c).toLowerCase().startsWith('secteur')) continue;
+                        if (!textAt(r, c + 1).toLowerCase().includes('cotation')) continue;
+
+                        const list = [];
+                        let secteur = null;
+                        for (let k = r + 1; k <= range.e.r; k++) {
+                            const sVal = parseInt(textAt(k, c));
+                            if (!isNaN(sVal)) secteur = sVal;
+                            const cotation = textAt(k, c + 1).toUpperCase();
+                            if (secteur === null || !cotation) continue;
+                            const cell = cellAt(k, c + 1);
+                            const fill = (cell && cell.s && cell.s.patternType === 'solid' && cell.s.fgColor) ? cell.s.fgColor.rgb : "";
+                            list.push({ relais: secteur, type: "", couleur: colorNameFromRgb(fill), rgb: fill ? fill.slice(-6) : "", cotation: cotation });
+                        }
+                        if (list.length > 0) return list;
+                    }
+                }
+            }
+            return null;
+        }
+
         function handleExcelUpload(input) {
             if (typeof XLSX === 'undefined') { 
                 alert("❌ Module Excel introuvable."); 
@@ -1888,23 +1935,27 @@
             reader.onload = async function(e) {
                 let workbook;
                 try {
-                    workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                    workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellStyles: true });
                 } catch (err) {
-                    alert("❌ Fichier illisible. Utilisez la base Excel proposée au téléchargement.");
+                    alert("❌ Fichier illisible. Utilisez le fichier « topo voies escalade » proposé au téléchargement.");
                     input.value = "";
                     return;
                 }
                 let parsedRoutes = [];
 
-                const baseRows = parseBaseModel(workbook);
+                const topoRows = parseTopoModel(workbook);
+                const baseRows = topoRows || parseBaseModel(workbook);
                 if (baseRows) {
-                    // --- Modèle de la base (relais / type / couleurs / difficultés) ---
+                    // --- Modèle « topo voies escalade » (secteur / cotation colorée) ou fiche de suivi (relais / couleurs / difficultés) ---
                     const usedIds = {};
+                    const unit = topoRows ? 'Secteur' : 'Relais';
+                    const canonical = { noire: 'noir', violette: 'violet', bleue: 'bleu', verte: 'vert' };
                     baseRows.forEach(item => {
                         const photo = findPhotoIndexForVoie(item.relais, item.relais);
-                        let id = `route_r${item.relais}_${item.couleur.replace(/[^a-z0-9]/g, '')}`;
+                        const couleurId = (canonical[item.couleur] || item.couleur).replace(/[^a-z0-9]/g, '') || 'x';
+                        let id = `route_r${item.relais}_${couleurId}`;
                         if (usedIds[id]) id += `_${++usedIds[id]}`; else usedIds[id] = 1;
-                        const couleurLabel = item.couleur === 'tp' ? 'TP' : ucFirst(item.couleur);
+                        const couleurLabel = item.couleur === 'tp' ? 'TP' : (item.couleur ? ucFirst(item.couleur) : 'Sans couleur');
                         
                         parsedRoutes.push({ 
                             id: id, 
@@ -1913,8 +1964,8 @@
                             cotation: item.cotation, 
                             couleur: item.couleur, 
                             type: item.type,
-                            label: `Relais ${item.relais} · ${couleurLabel} · ${item.cotation}` + (item.type ? ` (${item.type})` : ""),
-                            hexColor: colorMap[item.couleur] || "#64748b", 
+                            label: `${unit} ${item.relais} · ${couleurLabel} · ${item.cotation}` + (item.type ? ` (${item.type})` : ""),
+                            hexColor: colorMap[item.couleur] || (item.rgb ? '#' + item.rgb : "#64748b"), 
                             imageSrc: photo.src,
                             imageName: photo.name 
                         });
@@ -1925,7 +1976,7 @@
                     const keys = rows.length > 0 ? Object.keys(rows[0]).map(k => k.trim().toLowerCase()) : [];
                     
                     if (!keys.includes('voie') && !keys.includes('cotation')) {
-                        alert("❌ Modèle non reconnu.\nTéléchargez la base Excel proposée dans la Configuration, remplissez l'onglet « LISTE A SAISIR » puis importez-la.");
+                        alert("❌ Modèle non reconnu.\nTéléchargez le fichier « topo voies escalade » proposé dans la Configuration, modifiez-le puis importez-le.");
                         input.value = "";
                         return;
                     }
