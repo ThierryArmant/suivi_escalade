@@ -422,6 +422,9 @@
         #marker-layer .marker { pointer-events: auto; }
         body.eleve #marker-layer .marker { pointer-events: auto; cursor: help; }
 
+        .pulse-save { animation: pulse-save 1.1s ease-in-out infinite; }
+        @keyframes pulse-save { 0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.8); } 50% { box-shadow: 0 0 0 9px rgba(22,163,74,0); } }
+
         /* Notification : un grimpeur descend en rappel jusqu'au bouton « Les équipes » */
         #climber-notif { position: fixed; top: 0; z-index: 900; width: 0; pointer-events: none; display: none; }
         #climber-notif .rope { position: absolute; left: -1px; top: 0; width: 3px; height: 0; background: repeating-linear-gradient(#f97316 0 6px, #fdba74 6px 12px); border-radius: 2px; box-shadow: 0 0 3px rgba(0,0,0,0.5); }
@@ -1156,6 +1159,11 @@
                 <button onclick="closeTeamsModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
+    </div>
+
+    <div id="unsaved-bar" style="display: none; position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 800; align-items: center; gap: 10px; max-width: 94vw; box-sizing: border-box; background: #fef3c7; color: #78350f; border: 3px solid #f59e0b; border-radius: 12px; padding: 8px 12px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);">
+        <span id="unsaved-text"></span>
+        <button id="unsaved-action" onclick="unsavedAction()" style="background: #16a34a; color: white; border: none; padding: 8px 12px; font-weight: bold; white-space: nowrap;"></button>
     </div>
 
     <div id="climber-notif" onclick="hideClimber(); openTeamsModal();">
@@ -2089,11 +2097,96 @@
             selectMarker(index);
         }
 
-        function changeBlocWall() {
-            if (hasUnsavedChanges) { 
-                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer ?")) {
-                    return; 
+        // =========================================
+        // TRACÉ NON ENREGISTRÉ : rappel, question avant de quitter, brouillon de secours
+        // =========================================
+        const DRAFT_KEY = 'eps_draft';
+
+        function markersCopy() {
+            return activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale }));
+        }
+
+        function readDraft() {
+            try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
+        }
+
+        function clearDraft() {
+            try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* rien */ }
+        }
+
+        // true = on est sur un mur de blocs, avec des balises posées, sans bloc créé
+        function isNewBlocInProgress() {
+            return !currentRouteId && activeMarkers.length > 0 && document.getElementById('blocWallSelect').value !== "";
+        }
+
+        // À appeler avant de quitter le tracé affiché. Renvoie false s'il faut rester.
+        function guardUnsaved() {
+            if (!hasUnsavedChanges) return true;
+            if (currentRouteId) {
+                if (confirm("💾 Ce tracé a été modifié et n'est pas enregistré.\n\nOK = enregistrer les modifications\nAnnuler = ne pas les enregistrer")) {
+                    writeRouteMarkers(currentRouteId, markersCopy());
                 }
+                hasUnsavedChanges = false;
+                return true;
+            }
+            if (confirm("⚠️ Votre bloc n'est pas encore enregistré : il va être perdu.\n\nOK = l'enregistrer maintenant (« Créer un Bloc »)\nAnnuler = l'abandonner")) {
+                openCreateModal('bloc');
+                return false;
+            }
+            clearDraft();
+            hasUnsavedChanges = false;
+            return true;
+        }
+
+        function unsavedAction() {
+            if (currentRouteId) saveCurrentRoute(); else openCreateModal('bloc');
+        }
+
+        // Toutes les secondes : affiche le rappel et garde un brouillon du bloc en cours sur cet appareil
+        let lastDraft = "";
+        function watchUnsaved() {
+            const bar = document.getElementById('unsaved-bar');
+            if (!bar) return;
+            const dirty = hasUnsavedChanges && !studentMode && (currentRouteId || activeMarkers.length > 0);
+            bar.style.display = dirty ? 'flex' : 'none';
+            document.querySelector('.btn-save').classList.toggle('pulse-save', !!(dirty && currentRouteId));
+            if (!dirty) return;
+            document.getElementById('unsaved-text').textContent = currentRouteId
+                ? "⚠️ Modifications non enregistrées."
+                : "⚠️ Ce bloc n'est pas encore enregistré.";
+            document.getElementById('unsaved-action').textContent = currentRouteId ? "💾 Enregistrer" : "+ Créer le bloc";
+            if (isNewBlocInProgress()) {
+                const text = JSON.stringify({ image: schoolConfig.imageNames[currentImageIndex] || "", markers: markersCopy() });
+                if (text !== lastDraft) {
+                    lastDraft = text;
+                    try { localStorage.setItem(DRAFT_KEY, text); } catch (e) { /* rien */ }
+                }
+            }
+        }
+
+        // À l'ouverture : propose de reprendre un bloc qui n'avait pas été enregistré
+        function offerDraft() {
+            const draft = readDraft();
+            if (!draft || !draft.image || !Array.isArray(draft.markers) || draft.markers.length === 0) return;
+            if (hasUnsavedChanges || currentRouteId) return;
+            const index = (schoolConfig.imageNames || []).indexOf(draft.image);
+            const select = document.getElementById('blocWallSelect');
+            if (index === -1 || !Array.from(select.options).some(o => o.value === String(index))) return;
+            if (!confirm(`🧗 Un bloc commencé sur « ${draft.image.replace(/\.[^/.]+$/, "")} » n'avait pas été enregistré (${draft.markers.length} balise(s)).\n\nOK = le reprendre\nAnnuler = l'abandonner`)) {
+                clearDraft();
+                return;
+            }
+            select.value = String(index);
+            changeBlocWall();
+            activeMarkers = draft.markers;
+            hasUnsavedChanges = true;
+            renderMarkers();
+        }
+
+        function changeBlocWall() {
+            if (!guardUnsaved()) {
+                document.getElementById('blocWallSelect').value = (!currentRouteId && activeMarkers.length) ? String(currentImageIndex) : "";
+                return;
             }
             
             const select = document.getElementById('blocWallSelect');
@@ -2191,6 +2284,7 @@
             };
 
             schoolConfig.customRoutes.push(newRoute);
+            clearDraft();
             schoolConfig.localUpdate = Date.now();
             await saveConfig();
 
@@ -2224,11 +2318,7 @@
         }
 
         function selectCustomRoute(routeId) {
-            if (hasUnsavedChanges) { 
-                if (!confirm("⚠️ Vous avez des modifications non enregistrées. Continuer et les perdre ?")) {
-                    return; 
-                }
-            }
+            if (!guardUnsaved()) return;
 
             document.getElementById('routeSelect').value = ""; 
             document.getElementById('blocWallSelect').value = "";
@@ -2971,11 +3061,9 @@
         }
 
         function changeRoute() {
-            if (hasUnsavedChanges) { 
-                if (!confirm("⚠️ Modifications non enregistrées. Continuer ?")) { 
-                    routeSelect.value = currentRouteId || ""; 
-                    return; 
-                } 
+            if (!guardUnsaved()) { 
+                routeSelect.value = currentRouteId || ""; 
+                return; 
             }
             
             isFilterActive = false; 
@@ -4153,6 +4241,8 @@
             if (new URLSearchParams(window.location.search).get('mode') === 'eleve') return;
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
             setTimeout(checkTeamsNews, 5000);
+            setInterval(watchUnsaved, 1000);
+            setTimeout(offerDraft, 3500);
             setInterval(checkTeamsNews, 120000);
             document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTeamsNews(); });
             if (cloudTeam) {
@@ -4592,7 +4682,7 @@
 
         // Affiche sur le mur le bloc d'une autre équipe (qui nous a donné accès)
         async function previewTeamBloc(teamName, index) {
-            if (hasUnsavedChanges && !confirm("⚠️ Vous avez des modifications non enregistrées. Continuer et les perdre ?")) return;
+            if (!guardUnsaved()) { closeTeamsModal(); return; }
             setTeamsMessage("Chargement du bloc…");
             try {
                 if (!sharedBlocs[teamName]) {
