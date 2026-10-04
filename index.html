@@ -1051,6 +1051,12 @@
             </div>
 
             <div id="howto-bloc">
+                <div style="background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 0.86rem; color: #134e4a;">
+                    <b>Deux façons d'avoir des blocs :</b>
+                    <div style="margin-top: 4px;">1️⃣ <b>Les créer vous-même</b> sur vos photos de murs : suivez les étapes ci-dessous.</div>
+                    <div style="margin-top: 4px;">2️⃣ <b>En demander à des collègues</b> d'autres établissements : vous voyez les titres de leurs blocs, vous demandez l'accès, et s'ils acceptent vous pouvez les afficher et les recopier chez vous.</div>
+                    <button onclick="howToAskColleagues()" style="background: #0f766e; color: white; border: none; padding: 8px 12px; margin-top: 8px; font-size: 0.85rem;">🌍 Demander des blocs à des collègues</button>
+                </div>
                 <p class="help-text" style="margin-top: 0; font-size: 0.86rem;">Un bloc est un exercice que vous inventez sur une photo de mur de blocs : vous choisissez les prises, puis le niveau et le thème.</p>
                 <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
                     <li><b>Choisissez le mur</b> dans le menu « Choix du mur de blocs », en haut. La photo s'affiche en grand.</li>
@@ -1120,8 +1126,28 @@
             <div id="teams-requests"></div>
             <div id="teams-list" style="max-height: 55vh; overflow-y: auto;"></div>
             <div style="text-align: right; margin-top: 15px;">
+                <button onclick="openShareHelp()" style="background-color: #1e3a8a; color: white; border: none; padding: 10px 15px; margin-right: 10px;">📖 Comment demander des blocs ?</button>
                 <button onclick="refreshTeams()" style="background-color: #2563eb; color: white; border: none; padding: 10px 15px; margin-right: 10px;">🔄 Actualiser</button>
                 <button onclick="closeTeamsModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="share-help-modal" class="modal-overlay" style="z-index: 3000;">
+        <div class="modal-content" style="max-width: 520px;">
+            <h2>✉️ Demander les blocs d'une équipe</h2>
+            <div id="share-help-state" class="config-status" style="margin-bottom: 10px;"></div>
+            <ol style="padding-left: 20px; line-height: 1.5; font-size: 0.92rem; color: #1e293b;">
+                <li><b>Vous voyez les titres</b> des blocs de chaque équipe, mais pas encore les blocs eux-mêmes.</li>
+                <li>Cliquez sur <b>« Demander à consulter leurs blocs »</b>. Le responsable de l'équipe est prévenu par e-mail.</li>
+                <li><b>L'équipe accepte ou refuse</b> depuis sa propre fenêtre « Les équipes ». Vous êtes prévenu par e-mail de sa réponse.</li>
+                <li>Si elle accepte, les titres deviennent <b>bleus et cliquables</b> : un clic affiche le bloc sur le mur de cette équipe.</li>
+                <li>Pour garder un bloc, cliquez sur <b>« + Créer un Bloc »</b> : il est recopié dans votre équipe. Les blocs de l'autre équipe ne sont jamais modifiés.</li>
+            </ol>
+            <p class="help-text">L'équipe peut retirer son accès à tout moment. Pour poser une question avant de demander, utilisez « Écrire à cette équipe ».</p>
+            <div style="text-align: right; margin-top: 12px;">
+                <button id="share-help-ask" style="background-color: #0f766e; color: white; border: none; padding: 10px 15px; margin-right: 10px;">✉️ Envoyer la demande</button>
+                <button onclick="closeShareHelp()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">J'ai compris</button>
             </div>
         </div>
     </div>
@@ -4334,7 +4360,9 @@
                                 el.onclick = (e) => { e.preventDefault(); previewTeamBloc(team.equipe, item.index); };
                             } else {
                                 el = document.createElement('span');
-                                el.style.cssText = "color: #334155; margin-right: 10px; white-space: nowrap;";
+                                el.style.cssText = "color: #334155; margin-right: 10px; white-space: nowrap; cursor: pointer;";
+                                el.title = "Comment consulter ce bloc ?";
+                                el.onclick = () => openShareHelp(team);
                             }
                             el.textContent = text;
                             line.appendChild(el);
@@ -4365,6 +4393,41 @@
                 if (team.contact) card.appendChild(teamButton("💬 Écrire à cette équipe", "#2563eb", () => contactTeam(team.equipe)));
                 list.appendChild(card);
             });
+        }
+
+        // Depuis « Comment faire ? » : ouvre « Les équipes » avec l'explication de la demande
+        function howToAskColleagues() {
+            document.getElementById('howto-modal').style.display = 'none';
+            openTeamsModal();
+            if (cloudTeam) openShareHelp();
+        }
+
+        // Fenêtre d'explication : comment demander les blocs d'une autre équipe
+        function closeShareHelp() {
+            document.getElementById('share-help-modal').style.display = 'none';
+        }
+
+        function openShareHelp(team) {
+            const state = document.getElementById('share-help-state');
+            const ask = document.getElementById('share-help-ask');
+            let text = "", canAsk = false;
+            state.className = 'config-status';
+            state.style.cssText = "margin-bottom: 10px; background: #eff6ff; color: #1e3a8a; border: 1px solid #93c5fd;";
+            if (!team) {
+                text = "Voici comment consulter les blocs d'une autre équipe.";
+            } else if (team.acces === 'demande') {
+                text = `⏳ Votre demande à l'équipe « ${team.equipe} » est déjà envoyée. Il reste à attendre sa réponse.`;
+            } else if (team.acces === 'refuse') {
+                text = `L'équipe « ${team.equipe} » n'a pas donné suite à votre demande. Vous pouvez la renouveler ou lui écrire.`;
+                canAsk = true;
+            } else {
+                text = `🔒 Vous voyez les titres des blocs de l'équipe « ${team.equipe} », mais vous n'avez pas encore son accord pour les afficher.`;
+                canAsk = true;
+            }
+            state.textContent = text;
+            ask.style.display = canAsk ? '' : 'none';
+            ask.onclick = canAsk ? () => { closeShareHelp(); requestShare(team.equipe); } : null;
+            document.getElementById('share-help-modal').style.display = 'flex';
         }
 
         async function requestShare(target) {
