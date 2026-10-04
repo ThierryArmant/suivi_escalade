@@ -1004,8 +1004,46 @@
         async function saveConfig() {
             try { 
                 await saveToDB("school_config_master", schoolConfig); 
+                return true;
             } catch (err) { 
                 console.error(err); 
+                return false;
+            }
+        }
+
+        // --- Balises d'un tracé : mémoire rapide du navigateur, avec secours dans la grande mémoire si elle est pleine ---
+        const MARKER_PREFIX = 'eps_route_';
+
+        function readRouteMarkers(id) {
+            let raw = null;
+            try { raw = localStorage.getItem(MARKER_PREFIX + id); } catch (e) { /* mémoire inaccessible */ }
+            if (raw) {
+                try { 
+                    const list = JSON.parse(raw); 
+                    if (Array.isArray(list)) return list; 
+                } catch (e) { /* contenu illisible : on regarde le secours */ }
+            }
+            const backup = schoolConfig.markerStore && schoolConfig.markerStore[id];
+            return Array.isArray(backup) ? backup : null;
+        }
+
+        function writeRouteMarkers(id, points) {
+            const list = Array.isArray(points) ? points : [];
+            try { 
+                localStorage.setItem(MARKER_PREFIX + id, JSON.stringify(list)); 
+                if (schoolConfig.markerStore) delete schoolConfig.markerStore[id];
+            } catch (e) { 
+                schoolConfig.markerStore = schoolConfig.markerStore || {}; 
+                schoolConfig.markerStore[id] = list; 
+                saveConfig();
+            }
+        }
+
+        function removeRouteMarkers(id) {
+            try { localStorage.removeItem(MARKER_PREFIX + id); } catch (e) { /* rien à faire */ }
+            if (schoolConfig.markerStore && schoolConfig.markerStore[id]) { 
+                delete schoolConfig.markerStore[id]; 
+                saveConfig(); 
             }
         }
 
@@ -1162,7 +1200,7 @@
                     e.stopPropagation();
                     if (confirm(`Voulez-vous supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
-                        localStorage.removeItem(`eps_route_${r.id}`);
+                        removeRouteMarkers(r.id);
                         schoolConfig.localUpdate = Date.now(); 
                         await saveConfig();
                         
@@ -1441,7 +1479,7 @@
                 const pointsToSave = activeMarkers.map(m => ({ 
                     x: m.x, y: m.y, type: m.type, color: routeColor, rotation: m.rotation, scale: m.scale 
                 }));
-                localStorage.setItem(`eps_route_${routeId}`, JSON.stringify(pointsToSave));
+                writeRouteMarkers(routeId, pointsToSave);
             }
 
             document.getElementById('create-modal').style.display = 'none';
@@ -2147,12 +2185,12 @@
         function loadRouteMarkers(routeId) {
             clearMarkersDOM(); 
             activeMarkers = [];
-            const savedData = localStorage.getItem(`eps_route_${routeId}`);
+            const savedData = readRouteMarkers(routeId);
             const customRoute = (schoolConfig.customRoutes || []).find(r => r.id === routeId);
             const forcedColor = (customRoute && customRoute.color) ? customRoute.color : null;
             
             if (savedData) {
-                activeMarkers = JSON.parse(savedData).map(p => ({ 
+                activeMarkers = savedData.map(p => ({ 
                     x: p.x, 
                     y: p.y, 
                     type: p.type || 'dot', 
@@ -2181,7 +2219,7 @@
                 scale: m.scale 
             }));
             
-            localStorage.setItem(`eps_route_${currentRouteId}`, JSON.stringify(pointsToSave));
+            writeRouteMarkers(currentRouteId, pointsToSave);
             hasUnsavedChanges = false; 
             alert("✅ Modifications enregistrées !");
             
@@ -2204,7 +2242,7 @@
         function deleteCurrentRoute() {
             if (!currentRouteId) return;
             if (confirm("Voulez-vous vraiment supprimer ce tracé ?")) {
-                localStorage.removeItem(`eps_route_${currentRouteId}`);
+                removeRouteMarkers(currentRouteId);
                 selectMarker(null); 
                 activeMarkers = []; 
                 hasUnsavedChanges = false; 
@@ -2230,17 +2268,19 @@
             let exportObj = { customRoutes: schoolConfig.customRoutes, markers: {} };
             
             schoolConfig.customRoutes.forEach(r => { 
-                let data = localStorage.getItem('eps_route_' + r.id); 
-                if (data) exportObj.markers[r.id] = JSON.parse(data); 
+                let data = readRouteMarkers(r.id); 
+                if (data) exportObj.markers[r.id] = data; 
             });
             
-            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
+            const blob = new Blob([JSON.stringify(exportObj)], { type: "application/json" });
+            const blobUrl = URL.createObjectURL(blob);
             let downloadAnchorNode = document.createElement('a'); 
-            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("href", blobUrl);
             downloadAnchorNode.setAttribute("download", "blocs_equipe_eps.json"); 
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click(); 
             downloadAnchorNode.remove();
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
         }
 
         async function importData(input) {
@@ -2249,33 +2289,50 @@
             
             let reader = new FileReader();
             reader.onload = async function(e) {
-                try {
-                    let imported = JSON.parse(e.target.result);
-                    if (imported.customRoutes && imported.markers) {
-                        let newCount = 0;
-                        imported.customRoutes.forEach(nr => {
-                            if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
-                                schoolConfig.customRoutes.push(nr); 
-                                localStorage.setItem('eps_route_' + nr.id, JSON.stringify(imported.markers[nr.id])); 
-                                newCount++;
-                            }
-                        });
-                        
-                        if (newCount > 0) {
-                            schoolConfig.localUpdate = Date.now(); 
-                            await saveConfig(); 
-                            renderCustomLists();
-                            updateConfigStatus();
-                            alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !`);
-                        } else { 
-                            alert("ℹ️ Ces blocs étaient déjà présents."); 
-                        }
-                    }
-                } catch(err) { 
-                    alert("❌ Erreur de lecture."); 
-                }
                 input.value = ""; 
+                let imported;
+                try {
+                    imported = JSON.parse(e.target.result);
+                } catch (err) {
+                    alert("❌ Ce fichier est illisible : ce n'est pas un export de blocs, ou il est incomplet.\nRefaites « Exporter mes blocs » sur l'appareil d'origine.");
+                    return;
+                }
+                if (!imported || !Array.isArray(imported.customRoutes) || typeof imported.markers !== 'object' || imported.markers === null) {
+                    alert("❌ Ce fichier ne contient pas de blocs.\nChoisissez un fichier créé avec « Exporter mes blocs ».");
+                    return;
+                }
+
+                try {
+                    if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+                    let newCount = 0;
+                    imported.customRoutes.forEach(nr => {
+                        if (!nr || !nr.id) return;
+                        if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
+                            schoolConfig.customRoutes.push(nr); 
+                            writeRouteMarkers(nr.id, imported.markers[nr.id]);
+                            newCount++;
+                        }
+                    });
+                    
+                    if (newCount > 0) {
+                        schoolConfig.localUpdate = Date.now(); 
+                        const saved = await saveConfig(); 
+                        renderCustomLists();
+                        updateConfigStatus();
+                        if (saved) {
+                            alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !`);
+                        } else {
+                            alert(`⚠️ ${newCount} bloc(s) affiché(s), mais l'enregistrement a échoué : la mémoire du navigateur est pleine ou bloquée (navigation privée ?). Ils disparaîtront à la fermeture de la page.`);
+                        }
+                    } else { 
+                        alert("ℹ️ Ces blocs étaient déjà présents."); 
+                    }
+                } catch (err) { 
+                    console.error(err);
+                    alert("❌ Import impossible : " + (err && err.message ? err.message : err)); 
+                }
             };
+            reader.onerror = () => alert("❌ Le fichier n'a pas pu être lu sur cet appareil.");
             reader.readAsText(file);
         }
 
@@ -2384,13 +2441,13 @@
                 found = schoolConfig.customRoutes.find(r => r.id === routeId);
                 if (!found) return;
                 
-                const savedData = localStorage.getItem(`eps_route_${routeId}`);
-                if (!savedData || JSON.parse(savedData).length === 0) { 
+                const savedData = readRouteMarkers(routeId);
+                if (!savedData || savedData.length === 0) { 
                     alert("❌ Ce tracé est vide."); 
                     return; 
                 }
                 
-                targetMarkers = JSON.parse(savedData); 
+                targetMarkers = savedData; 
                 targetImage = found.imageSrc || (schoolConfig.images[0] || "");
             } else {
                 if (!currentRouteId || activeMarkers.length === 0) { 
