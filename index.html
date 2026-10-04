@@ -556,6 +556,8 @@
         .marker.tech-md { background-color: #475569; }
         .marker.tech-jete { background-color: #ec4899; }
         .marker.tech-pied { background-color: #f59e0b; }
+        .marker.tech-pg { background-color: #b45309; }
+        .marker.tech-pd { background-color: #b45309; }
         .marker.tech-joker { background-color: #10b981; border: 2px dashed #6ee7b7; }
         .marker.tech-pme { background-color: #2b6cb0; }
         /* PME : triangle reliant les 3 appuis (1 main et 2 pieds), à pivoter et agrandir pour le caler sur les prises */
@@ -687,6 +689,9 @@
 
                     <button class="tool-btn" id="tool-mg" onclick="setTool('mg')">🖐️ MG</button>
                     <button class="tool-btn" id="tool-md" onclick="setTool('md')">🤚 MD</button>
+
+                    <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche">🦶 PG</button>
+                    <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit">🦶 PD</button>
                     
                     <button class="tool-btn" id="tool-zone" onclick="setTool('zone')">🎯 Zone</button>
                     <button class="tool-btn" id="tool-pied" onclick="setTool('pied')">👟 Pied</button>
@@ -815,7 +820,7 @@
                 <div class="legend-category">🎓 Éléments Pédagogiques</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">👟 Prise de Pied Imposée</div>
-                    <div class="legend-body"><strong>Pied exclusif :</strong> Ne peut être utilisée *que* par les pieds. Force le travail des appuis.</div>
+                    <div class="legend-body"><strong>Pied exclusif :</strong> Ne peut être utilisée *que* par les pieds. Force le travail des appuis.<br><b>PG</b> impose le pied gauche, <b>PD</b> le pied droit, comme MG et MD pour les mains.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🎁 Prise Facilitante (Joker)</div>
@@ -1035,7 +1040,7 @@
                     <li><b>Départ bloc et Arrivée bloc :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
                     <li><b>⬆️ Flèche :</b>une direction de déplacement (à faire pivoter). <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
-                    <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD, 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b> les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
+                    <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD (main gauche, main droite), 🦶 PG, 🦶 PD (pied gauche, pied droit), 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
                 <p class="help-text" style="font-size: 0.82rem;">N'oubliez pas d'enregistrer : « + Créer un Bloc » pour un nouveau bloc, « 💾 Enregistrer » pour une voie ou un bloc déjà créé.</p>
             </div>
@@ -2175,7 +2180,7 @@
                 if (isPme(p.type)) {
                     marker.className = 'marker pme-triangle';
                     marker.innerHTML = pmeSvg(p.type, true);
-                } else if (['sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
+                } else if (['sd', 'top', 'zone', 'mg', 'md', 'pg', 'pd', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
@@ -2888,7 +2893,7 @@
         // QR CODE & MODE ÉLÈVE
         // =========================================
         // Les nouveaux types s'ajoutent toujours À LA FIN : les QR codes déjà imprimés restent lisibles
-        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end'];
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
         function escapeHtml(text) {
