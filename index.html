@@ -4654,9 +4654,41 @@
             });
 
             // 2. Les autres équipes et les titres de leurs blocs
+            // 2. Notre propre équipe, en premier : un clic ramène à nos blocs
+            const mine = (teamsData.equipes || []).find(t => t.acces === 'moi');
+            const myBlocs = (schoolConfig.customRoutes || []).filter(isSharedBloc);
+            const home = document.createElement('div');
+            home.id = 'teams-home';
+            home.style.cssText = "border: 3px solid #16a34a; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #f0fdf4; cursor: pointer;";
+            home.title = "Revenir à mes blocs";
+            home.onclick = () => goHome();
+            const homeTitle = document.createElement('div');
+            homeTitle.innerHTML = `🏠 <b>Mon équipe : ${escapeHtml((mine && mine.etablissement) || cloudTeam.etablissement || cloudTeam.equipe)}</b> <span style="color: #64748b; font-size: 0.8rem;">· équipe « ${escapeHtml(cloudTeam.equipe)} » · ${myBlocs.length} bloc(s)</span>`;
+            home.appendChild(homeTitle);
+            if (myBlocs.length > 0) {
+                const titles = document.createElement('div');
+                titles.style.cssText = "margin: 6px 0; font-size: 0.82rem; max-height: 110px; overflow-y: auto; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 8px;";
+                myBlocs.forEach(r => {
+                    const link = document.createElement('a');
+                    link.href = "#";
+                    link.style.cssText = "color: #15803d; font-weight: bold; margin-right: 10px; white-space: nowrap;";
+                    link.textContent = r.name + (r.grade ? ` (${String(r.grade).split(' ')[0]})` : "");
+                    link.title = "Afficher mon bloc";
+                    link.onclick = (e) => { e.preventDefault(); e.stopPropagation(); goHome(r.id); };
+                    titles.appendChild(link);
+                });
+                home.appendChild(titles);
+            }
+            const homeHint = document.createElement('div');
+            homeHint.style.cssText = "font-size: 0.8rem; font-weight: bold; color: #166534;";
+            homeHint.textContent = "👉 Cliquez ici pour revenir à vos blocs" + (myBlocs.length ? ", ou sur un titre pour l'afficher." : ".");
+            home.appendChild(homeHint);
+            list.appendChild(home);
+
+            // 3. Les autres équipes et les titres de leurs blocs
             const others = (teamsData.equipes || []).filter(t => t.acces !== 'moi');
             if (others.length === 0) {
-                list.innerHTML = '<p style="color: #64748b; text-align: center;">Aucune autre équipe pour le moment.</p>';
+                list.insertAdjacentHTML('beforeend', '<p style="color: #64748b; text-align: center;">Aucune autre équipe pour le moment.</p>');
                 return;
             }
             others.forEach(team => {
@@ -4799,6 +4831,31 @@
             }
         }
 
+        // Quitte l'aperçu d'une autre équipe et revient à nos propres blocs
+        let previewingTeam = false;
+        function goHome(routeId) {
+            closeTeamsModal();
+            if (routeId) { selectCustomRoute(routeId); return; }
+            const inPreview = !currentRouteId && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
+            if (inPreview) {
+                document.getElementById('blocWallSelect').value = "";
+                changeBlocWall();   // demande d'abord s'il faut garder un bloc modifié
+                if (activeMarkers.length > 0) return;
+            }
+            if (inPreview || !currentRouteId) {
+                activeBanner.style.background = "#dcfce7";
+                activeBanner.style.color = "#166534";
+                activeBanner.innerHTML = "🏠 <b>Vous êtes revenu chez vous.</b><br><span style=\"font-size:0.85rem; font-weight:normal;\">Choisissez un de vos blocs dans « Exercices bloc », ou une voie dans le menu du haut.</span>";
+            }
+            const box = document.getElementById('bloc-list');
+            if (box) {
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                box.style.transition = "box-shadow 0.3s";
+                box.style.boxShadow = "0 0 0 4px #16a34a";
+                setTimeout(() => { box.style.boxShadow = ""; }, 2500);
+            }
+        }
+
         // Affiche sur le mur le bloc d'une autre équipe (qui nous a donné accès)
         async function previewTeamBloc(teamName, index) {
             if (!guardUnsaved()) { closeTeamsModal(); return; }
@@ -4837,7 +4894,9 @@
                 activeBanner.style.color = "#5b21b6";
                 activeBanner.innerHTML = `👁️ <b>Bloc « ${escapeHtml(route.name)} » de l'équipe ${escapeHtml(teamName)}</b>`
                     + `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((route.grade || '?').split(' ')[0])} | Gabarit: ${escapeHtml(route.height || '?')} | Thème: ${escapeHtml(route.theme || '?')}</span>`
+                    + `<br><button onclick="goHome()" style="background: #16a34a; color: white; border: none; padding: 5px 10px; font-size: 0.8rem; margin: 4px 0;">🏠 Revenir à mes blocs</button>`
                     + `<br><span style="font-size:0.8rem; font-weight:normal;">Aperçu seulement. Pour le recopier dans votre équipe, cliquez sur « + Créer un Bloc ».</span>`;
+                previewingTeam = true;
                 setTeamsMessage("");
                 closeTeamsModal();
             } catch (e) {
