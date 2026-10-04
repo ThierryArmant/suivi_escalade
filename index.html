@@ -1770,6 +1770,14 @@
                 alert("Synchronisation avec l'équipe en cours : réessayez dans un instant."); 
                 return; 
             }
+            // La démo remplace tout ce qui est sur cet appareil : on prévient et on sauvegarde d'abord
+            const blocCount = (schoolConfig.customRoutes || []).length;
+            const realRoutes = (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_')).length;
+            const photoCount = Object.keys(getImportedPhotos()).length;
+            if (blocCount + realRoutes + photoCount > 0) {
+                if (!confirm(`⚠️ La démo RETIRE de cet appareil vos ${photoCount} photo(s), vos ${realRoutes} voie(s) et vos ${blocCount} bloc(s), pour afficher un exemple.\n\nOK = lancer la démo (une sauvegarde de vos blocs est téléchargée avant)\nAnnuler = ne rien changer`)) return;
+                if (blocCount > 0) exportData();
+            }
             const demoPhotoUrl = "voies 1 2 3.jpg";
             schoolConfig = {
                 images: [demoPhotoUrl], 
