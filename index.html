@@ -410,7 +410,17 @@
             height: auto; 
             max-height: 82vh; 
             object-fit: contain; 
+            -webkit-user-drag: none; 
         }
+
+        #marker-layer { 
+            position: absolute; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            pointer-events: none; 
+        }
+
+        #marker-layer .marker { pointer-events: auto; }
+        body.eleve #marker-layer .marker { pointer-events: none; }
 
         /* =========================================
            MENU FLOTTANT (DOUBLE CLIC)
@@ -480,6 +490,7 @@
             transition: box-shadow 0.2s; 
         }
 
+        .marker { touch-action: none; } /* déplacement au doigt sans faire défiler la page */
         .marker:active { cursor: grabbing; }
         .marker.selected { outline: 3px dashed #007bff; outline-offset: 3px; z-index: 50; }
         
@@ -658,7 +669,9 @@
         <!-- ZONE CENTRALE : LE MUR -->
         <div class="center-col">
             <div id="wall-container" onclick="placeMarker(event)">
-                <img id="wall-image" alt="Mur d'escalade">
+                <img id="wall-image" alt="Mur d'escalade" draggable="false">
+                <!-- Calque des balises : il épouse exactement la photo affichée -->
+                <div id="marker-layer"></div>
                 
                 <!-- MENU FLOTTANT (Double Clic) -->
                 <div id="selection-panel" class="selection-panel" onclick="event.stopPropagation();">
@@ -842,6 +855,7 @@
             <h2 id="qr-modal-title" style="color: #1e3a8a; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
             <p style="font-size: 0.95rem; color: #475569; margin-top: 0;">L'élève scanne ce code pour afficher le tracé en plein écran.</p>
             <div id="qrcode-container" style="display: flex; justify-content: center; margin: 25px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 3px dashed #cbd5e1;"></div>
+            <p id="qr-warning" style="display: none; font-size: 0.85rem; font-weight: bold; color: #991b1b; background: #fee2e2; border: 2px solid #fca5a5; border-radius: 8px; padding: 8px; margin: 0 0 15px 0;"></p>
             <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #475569; color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">Fermer</button>
         </div>
     </div>
@@ -928,6 +942,7 @@
 
         const container = document.getElementById('wall-container');
         const img = document.getElementById('wall-image');
+        const markerLayer = document.getElementById('marker-layer');
         const routeSelect = document.getElementById('routeSelect');
         const activeBanner = document.getElementById('active-route-banner');
 
@@ -937,6 +952,31 @@
         let activeMarkers = [];
         let selectedMarkerIndex = null;
         let isFilterActive = false;
+
+        // Le calque des balises suit la photo réellement affichée (et non le cadre noir autour) :
+        // une balise reste ainsi sur la même prise quel que soit l'écran (ordinateur, tablette, téléphone).
+        function updateMarkerLayer() {
+            const bw = img.clientWidth, bh = img.clientHeight;
+            const nw = img.naturalWidth, nh = img.naturalHeight;
+            let w = bw, h = bh, l = 0, t = 0;
+            if (nw && nh && bw && bh) {
+                const ratio = Math.min(bw / nw, bh / nh);
+                w = nw * ratio; 
+                h = nh * ratio; 
+                l = (bw - w) / 2; 
+                t = (bh - h) / 2;
+            }
+            markerLayer.style.left = l + 'px'; 
+            markerLayer.style.top = t + 'px';
+            markerLayer.style.width = w + 'px'; 
+            markerLayer.style.height = h + 'px';
+        }
+
+        img.addEventListener('load', updateMarkerLayer);
+        window.addEventListener('resize', updateMarkerLayer);
+        if (typeof ResizeObserver !== 'undefined') {
+            new ResizeObserver(updateMarkerLayer).observe(img);
+        }
 
         function toggleLegendBanner(element) {
             const allBanners = document.querySelectorAll('.legend-banner');
@@ -1235,6 +1275,7 @@
             document.getElementById('routeSelect').value = "";
             currentImageIndex = parseInt(select.value);
             img.src = schoolConfig.images[currentImageIndex];
+            currentRouteColor = "#FFD700";
             
             currentRouteId = null; 
             clearMarkersDOM(); 
@@ -1272,7 +1313,17 @@
                 return; 
             }
 
-            let activeImageSrc = (img.src && img.src !== window.location.href && img.src !== "") ? img.src : (schoolConfig.images[0] || "");
+            // Photo du mur : on part de la photo d'origine (jamais de l'image filtrée)
+            const wallSel = document.getElementById('blocWallSelect').value;
+            let activeImageSrc;
+            if (wallSel !== "" && schoolConfig.images[parseInt(wallSel)]) {
+                activeImageSrc = schoolConfig.images[parseInt(wallSel)];
+            } else if (currentRouteId || isFilterActive) {
+                activeImageSrc = getBaseImageSource();
+            } else {
+                activeImageSrc = (img.src && img.src !== window.location.href && img.src !== "") ? img.src : (schoolConfig.images[0] || "");
+            }
+            const activeImageName = getImageNameFor(activeImageSrc);
             const routeId = `custom_${Date.now()}`;
             
             let routeColor = blocColorMap["Défaut"];
@@ -1293,6 +1344,7 @@
                 type: type, 
                 color: routeColor, 
                 imageSrc: activeImageSrc,
+                imageName: activeImageName,
                 grade: routeGrade, 
                 height: routeHeight, 
                 theme: routeTheme
@@ -1303,8 +1355,9 @@
             await saveConfig();
 
             if (activeMarkers.length > 0) {
+                // Les cercles prennent la couleur de difficulté choisie
                 const pointsToSave = activeMarkers.map(m => ({ 
-                    x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale 
+                    x: m.x, y: m.y, type: m.type, color: routeColor, rotation: m.rotation, scale: m.scale 
                 }));
                 localStorage.setItem(`eps_route_${routeId}`, JSON.stringify(pointsToSave));
             }
@@ -1512,7 +1565,8 @@
             
             if (event.target.classList.contains('marker') || currentTool === 'eraser') return;
 
-            const rect = img.getBoundingClientRect();
+            const rect = markerLayer.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
             const x = ((event.clientX - rect.left) / rect.width) * 100;
             const y = ((event.clientY - rect.top) / rect.height) * 100;
             
@@ -1579,7 +1633,7 @@
                     openFloatingMenu(index, e); 
                 };
                 
-                container.appendChild(marker); 
+                markerLayer.appendChild(marker); 
                 p.element = marker;
             });
         }
@@ -1600,12 +1654,14 @@
         
         function startDrag(e, index) {
             e.stopPropagation(); 
+            e.preventDefault(); // empêche le navigateur de "glisser" la photo à la place de la balise
             selectMarker(index); 
             draggingIndex = index;
             
             const onMove = (moveEvent) => {
                 if (draggingIndex === null) return;
-                const rect = img.getBoundingClientRect();
+                const rect = markerLayer.getBoundingClientRect();
+                if (!rect.width || !rect.height) return;
                 const x = ((moveEvent.clientX - rect.left) / rect.width) * 100;
                 const y = ((moveEvent.clientY - rect.top) / rect.height) * 100;
                 
@@ -1613,8 +1669,12 @@
                     activeMarkers[draggingIndex].x = x; 
                     activeMarkers[draggingIndex].y = y;
                     hasUnsavedChanges = true; 
-                    renderMarkers(); 
-                    selectMarker(draggingIndex);
+                    // On déplace la balise existante (sans tout redessiner) pour un glissement fluide
+                    const el = activeMarkers[draggingIndex].element;
+                    if (el) { 
+                        el.style.left = x + '%'; 
+                        el.style.top = y + '%'; 
+                    }
                 }
             };
             
@@ -1622,10 +1682,12 @@
                 draggingIndex = null; 
                 window.removeEventListener('pointermove', onMove); 
                 window.removeEventListener('pointerup', onUp); 
+                window.removeEventListener('pointercancel', onUp); 
             };
             
             window.addEventListener('pointermove', onMove); 
             window.addEventListener('pointerup', onUp);
+            window.addEventListener('pointercancel', onUp);
         }
 
         function rotateSelected(angleDelta) {
@@ -1729,11 +1791,18 @@
                     let couleurInput = (row.Couleur || row.couleur || "jaune").trim().toLowerCase();
                     let hexColor = colorMap[couleurInput] || "#eab308";
                     
-                    let targetImage = "", secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
-                    
-                    if (schoolConfig.imageNames && schoolConfig.imageNames.length === schoolConfig.images.length) {
-                        let matchedIndex = schoolConfig.imageNames.findIndex(name => {
-                            let n = name.toLowerCase(), nums = n.match(/\d+/g) || [];
+                    let secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
+                    const names = schoolConfig.imageNames || [];
+                    const namesOk = names.length === schoolConfig.images.length;
+                    const allIdx = schoolConfig.images.map((_, i) => i);
+                    // Les photos dont le nom contient "bloc" sont réservées aux blocs
+                    const voieIdx = namesOk ? allIdx.filter(i => !/bloc/i.test(names[i])) : [];
+                    const pool = voieIdx.length > 0 ? voieIdx : allIdx;
+
+                    let hit;
+                    if (namesOk) {
+                        hit = pool.find(i => {
+                            let n = names[i].toLowerCase(), nums = n.match(/\d+/g) || [];
                             if (nums.includes(voieNumStr)) return true;
                             let ranges = n.match(/(\d+)\s*(?:-|à|a|au|_)\s*(\d+)/g);
                             if (ranges) { 
@@ -1748,10 +1817,11 @@
                             if (nums.length === 1 && parseInt(nums[0]) === secteurNum) return true;
                             return false;
                         });
-                        targetImage = matchedIndex !== -1 ? schoolConfig.images[matchedIndex] : (schoolConfig.images[Math.max(0, secteurNum - 1)] || schoolConfig.images[0] || "");
-                    } else {
-                        targetImage = schoolConfig.images[Math.max(0, secteurNum - 1)] || schoolConfig.images[0] || "";
                     }
+                    if (hit === undefined) hit = pool[Math.max(0, secteurNum - 1)];
+                    if (hit === undefined) hit = pool[0];
+                    let targetImage = (hit !== undefined && schoolConfig.images[hit]) || "";
+                    let targetImageName = (namesOk && hit !== undefined && names[hit]) || "";
 
                     parsedRoutes.push({ 
                         id: `route_excel_${idx}`, 
@@ -1760,7 +1830,8 @@
                         cotation: cotation, 
                         couleur: couleurInput, 
                         hexColor: hexColor, 
-                        imageSrc: targetImage 
+                        imageSrc: targetImage,
+                        imageName: targetImageName 
                     });
                 });
                 
@@ -1831,13 +1902,15 @@
             clearMarkersDOM(); 
             activeMarkers = [];
             const savedData = localStorage.getItem(`eps_route_${routeId}`);
+            const customRoute = (schoolConfig.customRoutes || []).find(r => r.id === routeId);
+            const forcedColor = (customRoute && customRoute.color) ? customRoute.color : null;
             
             if (savedData) {
                 activeMarkers = JSON.parse(savedData).map(p => ({ 
                     x: p.x, 
                     y: p.y, 
                     type: p.type || 'dot', 
-                    color: p.color || currentRouteColor, 
+                    color: forcedColor || p.color || currentRouteColor, 
                     rotation: p.rotation || 0, 
                     scale: p.scale || 1 
                 }));
@@ -1959,18 +2032,110 @@
             reader.readAsText(file);
         }
 
+        // =========================================
+        // QR CODE & MODE ÉLÈVE
+        // =========================================
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp'];
+        const DEFAULT_WALL = "voies 1 2 3.jpg";
+
+        function escapeHtml(text) {
+            return String(text == null ? "" : text).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        // Retrouve le nom du fichier photo (c'est lui que le téléphone de l'élève va charger)
+        function getImageNameFor(src, route) {
+            if (route && route.imageName) return route.imageName;
+            if (!src) return "";
+            const i = schoolConfig.images.indexOf(src);
+            if (i !== -1 && schoolConfig.imageNames && schoolConfig.imageNames[i]) return schoolConfig.imageNames[i];
+            if (!src.startsWith('data:')) {
+                try { return decodeURIComponent(src.split('?')[0].split('/').pop()); } catch (e) { return ""; }
+            }
+            return "";
+        }
+
+        function toB36(value, len) {
+            const max = Math.pow(36, len) - 1;
+            const n = Math.max(0, Math.min(max, Math.round(value) || 0));
+            return n.toString(36).padStart(len, '0');
+        }
+
+        // Format compact : 8 caractères par balise (type, x, y, couleur, rotation, taille)
+        function encodeMarkers(markers) {
+            const palette = [];
+            const body = markers.map(m => {
+                let ti = QR_TYPES.indexOf(m.type || m.t); 
+                if (ti < 0) ti = 0;
+                let col = String(m.color || m.c || '#FFD700').replace('#', '').toLowerCase();
+                let ci = palette.indexOf(col);
+                if (ci < 0) { 
+                    if (palette.length < 36) { palette.push(col); ci = palette.length - 1; } else { ci = 0; }
+                }
+                let rot = ((Math.round((m.rotation || 0) / 15) % 24) + 24) % 24;
+                let scl = Math.round((m.scale || 1) * 10);
+                return toB36(ti, 1) + toB36(m.x * 10, 2) + toB36(m.y * 10, 2) + toB36(ci, 1) + toB36(rot, 1) + toB36(scl, 1);
+            }).join('');
+            return { r: body, c: palette.join('.') };
+        }
+
+        function decodeMarkers(body, colors) {
+            const palette = (colors || "").split('.').filter(c => /^[0-9a-f]{3,8}$/i.test(c));
+            const list = [];
+            for (let i = 0; i + 8 <= body.length; i += 8) {
+                const chunk = body.substr(i, 8);
+                const ti = parseInt(chunk[0], 36);
+                const x = parseInt(chunk.substr(1, 2), 36) / 10;
+                const y = parseInt(chunk.substr(3, 2), 36) / 10;
+                const ci = parseInt(chunk[5], 36);
+                const rot = parseInt(chunk[6], 36) * 15;
+                const scl = parseInt(chunk[7], 36) / 10;
+                if ([ti, x, y, ci, rot, scl].some(v => isNaN(v))) continue;
+                list.push({ 
+                    x: Math.min(100, x), 
+                    y: Math.min(100, y), 
+                    type: QR_TYPES[ti] || 'dot', 
+                    color: palette[ci] ? '#' + palette[ci] : '#FFD700', 
+                    rotation: rot, 
+                    scale: Math.max(0.5, Math.min(3, scl || 1)) 
+                });
+            }
+            return list;
+        }
+
+        function drawQRCode(text) {
+            const box = document.getElementById('qrcode-container');
+            // La bibliothèque échoue pour certaines longueurs précises : on rallonge un peu le lien et on réessaie
+            for (let pad = 0; pad < 8; pad++) {
+                box.innerHTML = "";
+                try {
+                    new QRCode(box, { 
+                        text: text + (pad ? "&z=" + "0".repeat(pad * 3) : ""), 
+                        width: 280, 
+                        height: 280, 
+                        colorDark : "#0f172a", 
+                        colorLight : "#ffffff", 
+                        correctLevel : QRCode.CorrectLevel.L 
+                    });
+                    return true;
+                } catch (e) { /* on réessaie */ }
+            }
+            box.innerHTML = "";
+            return false;
+        }
+
         function generateQRCode(routeId = null) {
+            if (typeof QRCode === 'undefined') { 
+                alert("❌ Module QR Code introuvable (vérifiez la connexion Internet)."); 
+                return; 
+            }
+
             let targetMarkers = [], targetImage = "", targetName = "le Bloc";
             let qTheme = "?", qGrade = "?", qHeight = "?";
+            let found = null;
 
             if (routeId) {
-                const found = schoolConfig.customRoutes.find(r => r.id === routeId);
+                found = schoolConfig.customRoutes.find(r => r.id === routeId);
                 if (!found) return;
-                
-                targetName = found.name; 
-                qTheme = found.theme || "?"; 
-                qGrade = found.grade || "?"; 
-                qHeight = found.height || "?";
                 
                 const savedData = localStorage.getItem(`eps_route_${routeId}`);
                 if (!savedData || JSON.parse(savedData).length === 0) { 
@@ -1987,46 +2152,48 @@
                 }
                 
                 targetMarkers = activeMarkers; 
-                targetImage = img.src;
-                
-                const found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
-                if(found) { 
-                    targetName = found.name; 
-                    qTheme = found.theme || "?"; 
-                    qGrade = found.grade || "?"; 
-                    qHeight = found.height || "?"; 
-                }
+                targetImage = getBaseImageSource();
+                found = schoolConfig.customRoutes.find(r => r.id === currentRouteId) || null;
             }
 
-            const miniMarkers = targetMarkers.map(m => ({ 
-                x: Math.round(m.x * 10) / 10, 
-                y: Math.round(m.y * 10) / 10, 
-                t: m.type || m.t, 
-                c: m.color || m.c 
-            }));
-            
-            const payload = { 
-                m: miniMarkers, 
-                n: targetName, 
-                g: qGrade.split(' ')[0], 
-                h: qHeight, 
-                t: qTheme 
-            };
-            
-            const dataStr = encodeURIComponent(JSON.stringify(payload));
-            let bgParam = (targetImage && !targetImage.startsWith('data:image')) ? encodeURIComponent(targetImage) : "default";
+            if (found) { 
+                targetName = found.name; 
+                qTheme = found.theme || "?"; 
+                qGrade = found.grade || "?"; 
+                qHeight = found.height || "?"; 
+                // Un bloc s'affiche toujours dans sa couleur de difficulté
+                if (found.color) targetMarkers = targetMarkers.map(m => Object.assign({}, m, { color: found.color }));
+            }
 
-            const shareUrl = window.location.origin + window.location.pathname + "?mode=eleve&bg=" + bgParam + "&route=" + dataStr;
+            const imageName = getImageNameFor(targetImage, found);
+            const packed = encodeMarkers(targetMarkers);
+            const enc = encodeURIComponent;
 
-            document.getElementById('qrcode-container').innerHTML = "";
-            new QRCode(document.getElementById('qrcode-container'), { 
-                text: shareUrl, 
-                width: 220, 
-                height: 220, 
-                colorDark : "#0f172a", 
-                colorLight : "#ffffff", 
-                correctLevel : QRCode.CorrectLevel.L 
-            });
+            const shareUrl = window.location.origin + window.location.pathname 
+                + "?mode=eleve&bg=" + (imageName ? enc(imageName) : "default") 
+                + "&v=2&c=" + packed.c + "&r=" + packed.r 
+                + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
+
+            if (!drawQRCode(shareUrl)) {
+                alert(`❌ Ce tracé est trop long pour un QR code (${targetMarkers.length} balises). Retirez quelques balises.`);
+                return;
+            }
+
+            // Le téléphone de l'élève charge la photo depuis le site : on vérifie qu'elle y est
+            const warning = document.getElementById('qr-warning');
+            warning.style.display = 'none';
+            warning.textContent = "";
+            if (!imageName) {
+                warning.textContent = "⚠️ Photo du mur inconnue pour ce tracé : l'élève verra la photo par défaut. Recréez le bloc après avoir importé vos photos.";
+                warning.style.display = 'block';
+            } else {
+                const probe = new Image();
+                probe.onerror = () => {
+                    warning.textContent = `⚠️ La photo « ${imageName} » n'est pas en ligne : l'élève ne verra pas le mur. Ajoutez-la dans le dépôt GitHub, avec exactement ce nom.`;
+                    warning.style.display = 'block';
+                };
+                probe.src = enc(imageName);
+            }
             
             document.getElementById('qr-modal-title').textContent = `📱 Scanner : ${targetName}`;
             document.getElementById('qr-modal').style.display = "flex";
@@ -2042,23 +2209,47 @@
             banner.style.color = "#0369a1"; 
             banner.style.maxWidth = "900px";
 
+            // Photo du mur : nom de fichier présent sur le site (ou adresse complète pour les anciens QR codes)
             const bg = params.get('bg');
-            img.src = (bg && bg !== "default") ? decodeURIComponent(bg) : "voies 1 2 3.jpg";
+            let wallSrc = encodeURIComponent(DEFAULT_WALL);
+            if (bg && bg !== "default") {
+                if (/^https?:\/\//i.test(bg)) wallSrc = bg;
+                else wallSrc = encodeURIComponent(bg.split('/').pop());
+            }
+            img.onerror = () => {
+                img.onerror = null;
+                banner.style.background = "#fee2e2"; 
+                banner.style.color = "#991b1b";
+                banner.innerHTML = "⚠️ <b>Photo du mur introuvable.</b><br><span style=\"font-size:0.85rem; font-weight:normal;\">Préviens ton professeur.</span>";
+            };
+            img.src = wallSrc;
             
-            document.getElementById('wall-container').style.maxWidth = '100%';
+            document.body.classList.add('eleve');
+            const wall = document.getElementById('wall-container');
+            wall.style.maxWidth = '100%';
+            wall.style.pointerEvents = 'none';
+            img.style.maxHeight = 'none'; // sinon les balises se décalent sur un écran peu haut
 
-            const routeData = params.get('route');
-            if (routeData) {
-                try {
-                    const parsed = JSON.parse(decodeURIComponent(routeData));
+            const infoLine = (g, h, t) => `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml(g || '?')} | Gabarit: ${escapeHtml(h || '?')} | Thème: ${escapeHtml(t || '?')}</span>`;
+
+            try {
+                if (params.get('r') !== null) {
+                    // Nouveau format compact
+                    activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
+                    banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'));
+                } else if (params.get('route')) {
+                    // Ancien format (QR codes déjà imprimés)
+                    const raw = params.get('route');
+                    let parsed;
+                    try { parsed = JSON.parse(raw); } catch (e) { parsed = JSON.parse(decodeURIComponent(raw)); }
                     let markersList = [];
                     
                     if (Array.isArray(parsed)) { 
                         markersList = parsed; 
                         banner.innerHTML = "📱 <b>Mode Élève : Consultez votre tracé</b>"; 
                     } else { 
-                        markersList = parsed.m; 
-                        banner.innerHTML = `📱 <b>Bloc : ${parsed.n}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${parsed.g} | Gabarit: ${parsed.h} | Thème: ${parsed.t}</span>`; 
+                        markersList = parsed.m || []; 
+                        banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(parsed.n)}</b>` + infoLine(parsed.g, parsed.h, parsed.t); 
                     }
 
                     activeMarkers = markersList.map(m => ({ 
@@ -2069,14 +2260,16 @@
                         rotation: 0, 
                         scale: 1 
                     }));
-                    
-                    renderMarkers(); 
-                    document.getElementById('wall-container').style.pointerEvents = 'none';
-                } catch(e) { 
-                    console.error("Erreur QR Code", e); 
+                } else {
+                    banner.innerHTML = "📱 <b>Mode Élève</b>";
                 }
+                renderMarkers(); 
+            } catch(e) { 
+                console.error("Erreur QR Code", e); 
+                banner.innerHTML = "⚠️ <b>QR code illisible.</b>";
             }
         }
+
 
         window.onload = initApp;
     </script>
