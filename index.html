@@ -513,7 +513,29 @@
             box-shadow: 0 0 3px rgba(0,0,0,0.8), inset 0 0 3px rgba(0,0,0,0.8); 
         }
         
-        .marker.arrow { font-size: 26px; color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        /* Blocs : cercle noir simple = départ, double cercle noir = arrivée (toujours noirs, quel que soit le niveau) */
+        .marker.bloc-start { 
+            width: 34px; height: 34px; border-radius: 50%; 
+            border: 4px solid #000000; 
+            box-shadow: 0 0 0 2px #ffffff, inset 0 0 0 2px #ffffff; 
+        }
+        .marker.bloc-end { 
+            width: 44px; height: 44px; border-radius: 50%; 
+            border: 4px solid #000000; 
+            box-shadow: 0 0 0 2px #ffffff, inset 0 0 0 2px #ffffff; 
+        }
+        .marker.bloc-end::after { 
+            content: ""; position: absolute; inset: 5px; border-radius: 50%; 
+            border: 4px solid #000000; 
+            box-shadow: inset 0 0 0 2px #ffffff; 
+            pointer-events: none; 
+        }
+        .ring-icon { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 3px solid #000000; margin-bottom: 2px; }
+        .ring-icon.double { box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 5px #000000; width: 14px; height: 14px; border-width: 2px; }
+        .tool-btn.active-tool .ring-icon { border-color: #ffffff; }
+        .tool-btn.active-tool .ring-icon.double { box-shadow: inset 0 0 0 2px #2563eb, inset 0 0 0 5px #ffffff; }
+
+        .marker.arrow { font-size: 26px;color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .marker.cross { font-size: 24px; color: #dc3545; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px;}
         
         .marker.tech-tag { 
@@ -653,6 +675,9 @@
                 <div class="tools-grid">
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
                     <button class="tool-btn" id="tool-dot-small" onclick="setTool('dot-small')">⚪ P'tit Cercle</button>
+
+                    <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Cercle noir simple : prise de départ du bloc"><span class="ring-icon"></span> Départ bloc</button>
+                    <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Double cercle noir : prise d'arrivée du bloc"><span class="ring-icon double"></span> Arrivée bloc</button>
                     
                     <button class="tool-btn" id="tool-arrow" onclick="setTool('arrow')">⬆️ Flèche</button>
                     <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
@@ -979,7 +1004,7 @@
                 <p class="help-text" style="margin-top: 0; font-size: 0.86rem;">Un bloc est un exercice que vous inventez sur une photo de mur de blocs : vous choisissez les prises, puis le niveau et le thème.</p>
                 <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
                     <li><b>Choisissez le mur</b> dans le menu « Choix du mur de blocs », en haut. La photo s'affiche en grand.</li>
-                    <li><b>Choisissez un outil</b> à gauche (par exemple « Cercle ») et <b>cliquez sur chaque prise</b> du bloc. Marquez le départ avec « Départ (SD) » et l'arrivée avec « TOP ».</li>
+                    <li><b>Choisissez un outil</b> à gauche (par exemple « Cercle ») et <b>cliquez sur chaque prise</b> du bloc. Marquez la prise de départ avec « Départ bloc » (cercle noir simple) et la prise d'arrivée avec « Arrivée bloc » (double cercle noir).</li>
                     <li><b>Cliquez sur « + Créer un Bloc »</b> : donnez un nom, un niveau (c'est lui qui donne leur couleur aux cercles), un gabarit et un thème, puis « Valider ».</li>
                     <li>Le bloc apparaît dans <b>« Exercices bloc »</b>, rangé par thème. Cliquez sur son nom pour le revoir.</li>
                     <li><b>Pour le modifier</b> : affichez-le, déplacez ou ajoutez des balises, puis cliquez sur « 💾 Enregistrer » en haut.</li>
@@ -1007,7 +1032,8 @@
                     <li><b>Pivoter, agrandir, réduire, supprimer :</b> double-cliquez sur la balise, un petit menu s'ouvre.</li>
                     <li><b>Effacer vite :</b> « 🧼 Gomme Magique », puis cliquez sur les balises à retirer. « 🧹 Tout nettoyer » les retire toutes.</li>
                     <li><b>⭕ Cercle et ⚪ P'tit Cercle :</b> les prises à utiliser, dans la couleur du niveau.</li>
-                    <li><b>⬆️ Flèche :</b> une direction de déplacement (à faire pivoter). <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
+                    <li><b>Départ bloc et Arrivée bloc :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
+                    <li><b>⬆️ Flèche :</b>une direction de déplacement (à faire pivoter). <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
                     <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD, 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b> les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
@@ -2862,7 +2888,7 @@
         // QR CODE & MODE ÉLÈVE
         // =========================================
         // Les nouveaux types s'ajoutent toujours À LA FIN : les QR codes déjà imprimés restent lisibles
-        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f'];
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
         function escapeHtml(text) {
