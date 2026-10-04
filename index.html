@@ -1031,7 +1031,19 @@
                         <option value="Mouvement dynamique et coord.">Mouvement dynamique et coordination</option>
                         <option value="Positionnement / Orientation">Position du corps / Orientation</option>
                         <option value="Préhension différentes">Préhension de prises différentes</option>
+                        <option value="Échauffement">Échauffement</option>
+                        <option value="S'équilibrer et se déplacer">S'équilibrer et se déplacer</option>
+                        <option value="S'informer pour décider">S'informer pour décider</option>
+                        <option value="Chuter et se réceptionner">Chuter et se réceptionner</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>Consigne pour l'élève <span style="font-weight: normal;">(facultatif, affichée aussi sur son téléphone)</span> :</label>
+                    <textarea id="create-consigne" rows="2" maxlength="300" placeholder="Ex : Traverse de gauche à droite sans poser le pied au sol." style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Notes pour l'enseignant <span style="font-weight: normal;">(facultatif : objectif, plus facile, plus difficile)</span> :</label>
+                    <textarea id="create-fiche" rows="3" maxlength="1200" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
                 </div>
             </div>
             <div style="text-align: right; margin-top: 25px;">
@@ -1247,6 +1259,24 @@
             <div style="text-align: right; margin-top: 12px;">
                 <button id="share-help-ask" style="background-color: #0f766e; color: white; border: none; padding: 10px 15px; margin-right: 10px;">✉️ Envoyer la demande</button>
                 <button onclick="closeShareHelp()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">J'ai compris</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="consigne-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 560px;">
+            <h2>✏️ Consigne du bloc</h2>
+            <div class="form-group">
+                <label>Consigne pour l'élève <span style="font-weight: normal;">(affichée aussi sur son téléphone)</span> :</label>
+                <textarea id="edit-consigne" rows="3" maxlength="300" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Notes pour l'enseignant <span style="font-weight: normal;">(objectif, plus facile, plus difficile)</span> :</label>
+                <textarea id="edit-fiche" rows="7" maxlength="1200" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+            </div>
+            <div style="text-align: right; margin-top: 12px;">
+                <button onclick="document.getElementById('consigne-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
+                <button onclick="saveConsigne()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Enregistrer</button>
             </div>
         </div>
     </div>
@@ -2307,6 +2337,8 @@
         function openCreateModal(type) {
             document.getElementById('create-type').value = type;
             document.getElementById('create-name').value = "";
+            document.getElementById('create-consigne').value = "";
+            document.getElementById('create-fiche').value = "";
             document.getElementById('create-modal-title').textContent = type === 'individualise' ? "Créer un Élève" : "Créer un Bloc";
             document.getElementById('bloc-options').style.display = type === 'bloc' ? 'block' : 'none';
             document.getElementById('create-modal').style.display = 'flex';
@@ -2356,6 +2388,12 @@
                 height: routeHeight, 
                 theme: routeTheme
             };
+            if (type === 'bloc') {
+                const consigne = document.getElementById('create-consigne').value.trim();
+                const fiche = document.getElementById('create-fiche').value.trim();
+                if (consigne) newRoute.consigne = consigne;
+                if (fiche) newRoute.fiche = fiche;
+            }
 
             schoolConfig.customRoutes.push(newRoute);
             clearDraft();
@@ -2420,7 +2458,7 @@
             activeBanner.style.color = bannerColor;
 
             if (found.type === 'bloc') {
-                activeBanner.innerHTML = `🎯 <b>Bloc : ${found.name}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${found.grade.split(' ')[0] || '?'} | Gabarit: ${found.height || '?'} | Thème: ${found.theme || '?'}</span>`;
+                activeBanner.innerHTML = `🎯 <b>Bloc : ${escapeHtml(found.name)}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((found.grade || '').split(' ')[0] || '?')} | Gabarit: ${escapeHtml(found.height || '?')} | Thème: ${escapeHtml(found.theme || '?')}</span>` + consigneHtml(found);
             } else {
                 activeBanner.innerHTML = `🎯 <b>Élève : ${found.name}</b>`;
             }
@@ -3424,6 +3462,9 @@
                     imported.customRoutes.forEach(nr => {
                         if (!nr || !nr.id) return;
                         if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
+                            // Si la photo du même nom est déjà sur cet appareil, on l'utilise (pas de doublon)
+                            const localPhotos = getImportedPhotos();
+                            if (nr.imageName && localPhotos[nr.imageName]) nr.imageSrc = localPhotos[nr.imageName];
                             schoolConfig.customRoutes.push(nr); 
                             writeRouteMarkers(nr.id, imported.markers[nr.id]);
                             newCount++;
@@ -3607,7 +3648,9 @@
                 + "&v=2&c=" + packed.c + "&r=" + packed.r 
                 + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
 
-            if (!drawQRCode(shareUrl)) {
+            // La consigne voyage dans le QR code si elle tient (sinon le code serait trop dense à scanner)
+            const consigneQR = found && found.consigne ? found.consigne.replace(/\s+/g, ' ').slice(0, 220) : "";
+            if (!(consigneQR && drawQRCode(shareUrl + "&k=" + enc(consigneQR))) && !drawQRCode(shareUrl)) {
                 alert(`❌ Ce tracé est trop long pour un QR code (${targetMarkers.length} balises). Retirez quelques balises.`);
                 return;
             }
@@ -3687,7 +3730,8 @@
                 if (params.get('r') !== null) {
                     // Nouveau format compact
                     activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
-                    banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'));
+                    banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'))
+                        + (params.get('k') ? `<div style="margin-top: 6px; padding: 6px 10px; background: #ffffff; border: 2px solid #f59e0b; border-radius: 8px; color: #1e293b; font-size: 0.9rem; font-weight: normal; text-align: left;"><b>📋 Consigne :</b> ${escapeHtml(params.get('k'))}</div>` : "");
                 } else if (params.get('route')) {
                     // Ancien format (QR codes déjà imprimés)
                     const raw = params.get('route');
@@ -4811,6 +4855,44 @@
                 if (team.contact) card.appendChild(teamButton("💬 Écrire à cette équipe", "#2563eb", () => contactTeam(team.equipe)));
                 list.appendChild(card);
             });
+        }
+
+        // --- Consigne d'un bloc : texte pour l'élève + notes pour l'enseignant ---
+        function consigneHtml(route) {
+            const box = (title, text, bg, border) => `<div style="margin-top: 6px; padding: 6px 10px; background: ${bg}; border: 2px solid ${border}; border-radius: 8px; color: #1e293b; font-size: 0.85rem; font-weight: normal; text-align: left; white-space: pre-wrap;"><b>${title}</b> ${escapeHtml(text)}</div>`;
+            let html = "";
+            if (route.consigne) html += box("📋 Consigne :", route.consigne, "#ffffff", "#f59e0b");
+            if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (objectif, variantes)</summary>${box("", route.fiche, "#f8fafc", "#cbd5e1")}</details>`;
+            html += `<br><button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 4px;">✏️ ${route.consigne || route.fiche ? "Modifier la consigne" : "Ajouter une consigne"}</button>`;
+            return html;
+        }
+
+        function openConsigneModal() {
+            const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
+            if (!route) return;
+            document.getElementById('edit-consigne').value = route.consigne || "";
+            document.getElementById('edit-fiche').value = route.fiche || "";
+            document.getElementById('consigne-modal').style.display = 'flex';
+        }
+
+        async function saveConsigne() {
+            const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
+            if (!route) return;
+            const consigne = document.getElementById('edit-consigne').value.trim();
+            const fiche = document.getElementById('edit-fiche').value.trim();
+            if (consigne) route.consigne = consigne; else delete route.consigne;
+            if (fiche) route.fiche = fiche; else delete route.fiche;
+            document.getElementById('consigne-modal').style.display = 'none';
+            schoolConfig.localUpdate = Date.now();
+            await saveConfig();
+            cloudSchedule();
+            if (hasUnsavedChanges) {
+                // On ne recharge pas le tracé en cours de modification : seul le bandeau est mis à jour
+                const old = activeBanner.innerHTML;
+                activeBanner.innerHTML = old.split('<div style="margin-top: 6px;')[0].split('<details')[0].split('<br><button onclick="openConsigneModal()"')[0] + consigneHtml(route);
+            } else {
+                selectCustomRoute(route.id);
+            }
         }
 
         // --- Les blocs d'une équipe, rangés par thème ---
