@@ -571,6 +571,10 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #334155; }
         .form-group input, .form-group select { width: 100%; box-sizing: border-box; }
         .help-text { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+        .config-status { font-size: 0.85rem; font-weight: bold; margin-top: 6px; padding: 6px 10px; border-radius: 6px; line-height: 1.35; }
+        .config-status.ok { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .config-status.empty { background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; }
+        .config-status span { font-weight: normal; font-size: 0.78rem; }
 
         /* Media Query pour écrans plus petits */
         @media (max-width: 1100px) {
@@ -832,6 +836,7 @@
             <div class="form-group">
                 <label>1. Importer les photos des murs (Max 20) :</label>
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <div id="photos-status" class="config-status empty"></div>
                 <div class="help-text">
                     ✏️ <b>Renommez vos photos avant de les importer</b> : « voie 1 2 3 », « voie 4 5 6 »… pour les voies, et « bloc 1 », « bloc 2 »… pour les blocs.<br>
                     C'est le nom du fichier qui sert à classer : les numéros associent chaque voie à sa photo, et le mot « bloc » réserve la photo aux blocs.
@@ -840,6 +845,7 @@
             <div class="form-group">
                 <label>2. Importer le fichier Excel avec les difficultés des voies :</label>
                 <input type="file" id="excelInput" accept=".xlsx, .xlsm, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <div id="excel-status" class="config-status empty"></div>
                 <div class="help-text">
                     📋 Pour être sûr d'avoir le bon modèle, partez de notre topo et modifiez-le :<br>
                     <a href="topo_voies_escalade.xlsx" download="topo voies escalade.xlsx" style="display: inline-block; background: #2563eb; color: white; padding: 6px 12px; margin: 6px 0; border-radius: 4px; text-decoration: none; font-weight: bold; white-space: nowrap;">📥 Télécharger « topo voies escalade »</a><br>
@@ -852,6 +858,7 @@
                 <button class="template-btn" style="background-color: #2563eb; color: white; width: 100%; margin-bottom: 12px; padding: 10px; font-weight: bold;" onclick="exportData()">📤 Exporter mes blocs (.json)</button>
                 <label style="font-weight: normal; font-size: 0.85rem; color: #475569;">📥 Importer les blocs d'un collègue :</label>
                 <input type="file" id="importInput" accept=".json" onchange="importData(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <div id="blocs-status" class="config-status empty"></div>
             </div>
             <div style="text-align: right; margin-top: 20px;">
                 <button onclick="closeConfigModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
@@ -1244,7 +1251,46 @@
             }
         }
 
+        // Affiche dans la Configuration ce qui est actuellement en mémoire
+        function updateConfigStatus() {
+            const setStatus = (id, ok, html) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.className = 'config-status ' + (ok ? 'ok' : 'empty');
+                el.innerHTML = html;
+            };
+            const images = schoolConfig.images || [], names = schoolConfig.imageNames || [];
+            const routes = schoolConfig.routes || [], customs = schoolConfig.customRoutes || [];
+            const imported = images.some(src => typeof src === 'string' && src.startsWith('data:'));
+
+            if (imported) {
+                const list = names.map(n => escapeHtml(n.replace(/\.[^/.]+$/, ""))).join(', ');
+                setStatus('photos-status', true, `✅ ${images.length} photo(s) en mémoire<br><span>${list}</span>`);
+            } else {
+                setStatus('photos-status', false, "Aucune photo importée (photo de démonstration affichée).");
+            }
+
+            const realRoutes = routes.filter(r => !String(r.id).startsWith('demo_'));
+            if (realRoutes.length > 0) {
+                const secteurs = new Set(realRoutes.map(r => r.secteur)).size;
+                const file = schoolConfig.excelName ? `« ${escapeHtml(schoolConfig.excelName)} »` : "Fichier Excel";
+                const when = schoolConfig.excelDate ? ` (importé le ${escapeHtml(schoolConfig.excelDate)})` : "";
+                setStatus('excel-status', true, `✅ ${file} en mémoire${when}<br><span>${realRoutes.length} voie(s) sur ${secteurs} secteur(s), à retrouver dans le menu « Choisir une Voie ».</span>`);
+            } else {
+                setStatus('excel-status', false, "Aucun fichier Excel importé.");
+            }
+
+            const blocs = customs.filter(r => r.type !== 'individualise').length;
+            const eleves = customs.length - blocs;
+            if (customs.length > 0) {
+                setStatus('blocs-status', true, `✅ En mémoire : ${blocs} bloc(s) et ${eleves} tracé(s) élève.`);
+            } else {
+                setStatus('blocs-status', false, "Aucun bloc en mémoire.");
+            }
+        }
+
         function openConfigModal() { 
+            updateConfigStatus();
             document.getElementById('config-modal').style.display = 'flex'; 
         }
         
@@ -1761,7 +1807,8 @@
                             schoolConfig.localUpdate = Date.now(); 
                             await saveConfig();
                             alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) !`); 
-                            initApp();
+                            await initApp();
+                            updateConfigStatus();
                         }
                     };
                     imgObj.src = e.target.result;
@@ -2002,11 +2049,14 @@
                 }
                 
                 schoolConfig.routes = parsedRoutes; 
+                schoolConfig.excelName = file.name;
+                schoolConfig.excelDate = new Date().toLocaleDateString('fr-FR');
                 schoolConfig.localUpdate = Date.now(); 
                 await saveConfig();
                 input.value = "";
                 alert(`✅ Fichier Excel importé : ${parsedRoutes.length} voie(s) !`); 
-                initApp();
+                await initApp();
+                updateConfigStatus();
             };
             reader.readAsArrayBuffer(file);
         }
@@ -2188,6 +2238,7 @@
                             schoolConfig.localUpdate = Date.now(); 
                             await saveConfig(); 
                             renderCustomLists();
+                            updateConfigStatus();
                             alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !`);
                         } else { 
                             alert("ℹ️ Ces blocs étaient déjà présents."); 
