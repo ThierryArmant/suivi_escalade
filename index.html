@@ -1251,6 +1251,19 @@
         </div>
     </div>
 
+    <div id="team-blocs-modal" class="modal-overlay" style="z-index: 2900;">
+        <div class="modal-content" style="max-width: 680px;">
+            <h2 id="team-blocs-title" style="margin-bottom: 2px;"></h2>
+            <div id="team-blocs-sub" style="color: #64748b; font-size: 0.85rem; margin-bottom: 8px;"></div>
+            <div id="team-blocs-state" class="config-status" style="margin-bottom: 10px;"></div>
+            <div id="team-blocs-list" style="max-height: 55vh; overflow-y: auto;"></div>
+            <div style="text-align: right; margin-top: 12px;">
+                <button id="team-blocs-ask" style="background-color: #0f766e; color: white; border: none; padding: 10px 15px; margin-right: 10px;">✉️ Demander à consulter ces blocs</button>
+                <button onclick="closeTeamBlocs()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
     <div id="team-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>👥 Espace d'équipe</h2>
@@ -4714,23 +4727,16 @@
             const homeTitle = document.createElement('div');
             homeTitle.innerHTML = `🏠 <b>Mon équipe : ${escapeHtml((mine && mine.etablissement) || cloudTeam.etablissement || cloudTeam.equipe)}</b> <span style="color: #64748b; font-size: 0.8rem;">· équipe « ${escapeHtml(cloudTeam.equipe)} » · ${myBlocs.length} bloc(s)</span>`;
             home.appendChild(homeTitle);
+            const myList = myBlocs.map(r => ({ name: r.name, grade: r.grade, theme: r.theme, id: r.id }));
             if (myBlocs.length > 0) {
-                const titles = document.createElement('div');
-                titles.style.cssText = "margin: 6px 0; font-size: 0.82rem; max-height: 110px; overflow-y: auto; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 6px; padding: 6px 8px;";
-                myBlocs.forEach(r => {
-                    const link = document.createElement('a');
-                    link.href = "#";
-                    link.style.cssText = "color: #15803d; font-weight: bold; margin-right: 10px; white-space: nowrap;";
-                    link.textContent = r.name + (r.grade ? ` (${String(r.grade).split(' ')[0]})` : "");
-                    link.title = "Afficher mon bloc";
-                    link.onclick = (e) => { e.preventDefault(); e.stopPropagation(); goHome(r.id); };
-                    titles.appendChild(link);
-                });
-                home.appendChild(titles);
+                home.appendChild(themeSummary(myList, "#16a34a"));
+                const see = teamButton(`📋 Voir mes ${myBlocs.length} blocs par thème`, "#15803d", (e) => { e.stopPropagation(); openTeamBlocs(null, myList); });
+                home.appendChild(see);
             }
             const homeHint = document.createElement('div');
             homeHint.style.cssText = "font-size: 0.8rem; font-weight: bold; color: #166534;";
-            homeHint.textContent = "👉 Cliquez ici pour revenir à vos blocs" + (myBlocs.length ? ", ou sur un titre pour l'afficher." : ".");
+            homeHint.style.marginTop = "6px";
+            homeHint.textContent = "👉 Cliquez sur ce cadre pour revenir à vos blocs.";
             home.appendChild(homeHint);
             list.appendChild(home);
 
@@ -4749,40 +4755,11 @@
                 title.innerHTML = `🏫 <b>${escapeHtml(team.etablissement || team.equipe)}</b> <span style="color: #64748b; font-size: 0.8rem;">· équipe « ${escapeHtml(team.equipe)} » · ${team.blocs.length} bloc(s)</span>`;
                 card.appendChild(title);
 
-                // Titres des blocs, rangés par thème
+                // Résumé par thème + fenêtre détaillée des blocs
                 if (team.blocs.length > 0) {
-                    const byTheme = {};
-                    team.blocs.forEach((b, index) => { (byTheme[b.theme || "Libre / Autre"] = byTheme[b.theme || "Libre / Autre"] || []).push({ b: b, index: index }); });
-                    const titles = document.createElement('div');
-                    titles.style.cssText = "margin: 6px 0; font-size: 0.82rem; max-height: 180px; overflow-y: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;";
-                    Object.keys(byTheme).forEach(theme => {
-                        const line = document.createElement('div');
-                        line.style.cssText = "display: flex; flex-wrap: wrap; gap: 2px 4px; margin-bottom: 6px;";
-                        const label = document.createElement('b');
-                        label.style.flexBasis = "100%";
-                        label.textContent = theme + " :";
-                        line.appendChild(label);
-                        byTheme[theme].forEach(item => {
-                            const text = item.b.name + (item.b.grade ? ` (${item.b.grade.split(' ')[0]})` : "");
-                            let el;
-                            if (granted) {
-                                el = document.createElement('a');
-                                el.href = "#";
-                                el.style.cssText = "color: #2563eb; font-weight: bold; margin-right: 10px; white-space: nowrap;";
-                                el.title = "Afficher ce bloc";
-                                el.onclick = (e) => { e.preventDefault(); previewTeamBloc(team.equipe, item.index); };
-                            } else {
-                                el = document.createElement('span');
-                                el.style.cssText = "color: #334155; margin-right: 10px; white-space: nowrap; cursor: pointer;";
-                                el.title = "Comment consulter ce bloc ?";
-                                el.onclick = () => openShareHelp(team);
-                            }
-                            el.textContent = text;
-                            line.appendChild(el);
-                        });
-                        titles.appendChild(line);
-                    });
-                    card.appendChild(titles);
+                    card.appendChild(themeSummary(team.blocs, "#6d28d9"));
+                    card.appendChild(teamButton(`📋 Voir les ${team.blocs.length} blocs par thème`, "#6d28d9", () => openTeamBlocs(team, team.blocs)));
+                    card.appendChild(document.createElement('br'));
                 }
 
                 // État de l'accès
@@ -4790,7 +4767,7 @@
                 state.style.cssText = "font-size: 0.8rem; font-weight: bold;";
                 if (granted) {
                     state.style.color = "#166534";
-                    state.textContent = "👁️ Accès accordé : cliquez sur un titre pour afficher le bloc.";
+                    state.textContent = "👁️ Accès accordé : ouvrez la liste des blocs et cliquez sur un titre pour l'afficher.";
                 } else if (team.acces === 'demande') {
                     state.style.color = "#92400e";
                     state.textContent = "⏳ Demande envoyée : en attente de la réponse de cette équipe.";
@@ -4806,6 +4783,93 @@
                 if (team.contact) card.appendChild(teamButton("💬 Écrire à cette équipe", "#2563eb", () => contactTeam(team.equipe)));
                 list.appendChild(card);
             });
+        }
+
+        // --- Les blocs d'une équipe, rangés par thème ---
+        function groupByTheme(blocs) {
+            const groups = {};
+            (blocs || []).forEach((b, index) => {
+                const theme = (b.theme || "").trim() || "Libre / Autre";
+                (groups[theme] = groups[theme] || []).push({ b: b, index: index });
+            });
+            return Object.keys(groups).sort((x, y) => x.localeCompare(y, 'fr')).map(theme => ({ theme: theme, items: groups[theme] }));
+        }
+
+        // Petites étiquettes « Thème (nombre) » affichées sur la carte de l'équipe
+        function themeSummary(blocs, color) {
+            const box = document.createElement('div');
+            box.style.cssText = "display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0;";
+            groupByTheme(blocs).forEach(group => {
+                const chip = document.createElement('span');
+                chip.style.cssText = `background: #ffffff; color: ${color}; border: 2px solid ${color}; border-radius: 12px; padding: 1px 8px; font-size: 0.76rem; font-weight: bold; white-space: nowrap;`;
+                chip.textContent = `${group.theme} · ${group.items.length}`;
+                box.appendChild(chip);
+            });
+            return box;
+        }
+
+        function closeTeamBlocs() {
+            document.getElementById('team-blocs-modal').style.display = 'none';
+        }
+
+        // Fenêtre flottante : tous les blocs d'un établissement, thème par thème.
+        // team = null pour notre propre équipe.
+        function openTeamBlocs(team, blocs) {
+            const mine = !team;
+            const granted = mine || team.acces === 'accorde';
+            const name = mine ? (cloudTeam.etablissement || cloudTeam.equipe) : (team.etablissement || team.equipe);
+            document.getElementById('team-blocs-title').textContent = (mine ? "🏠 " : "🏫 ") + name;
+            const groups = groupByTheme(blocs);
+            document.getElementById('team-blocs-sub').textContent = `${blocs.length} bloc(s) dans ${groups.length} thème(s)` + (mine ? " · votre équipe" : ` · équipe « ${team.equipe} »`);
+            const state = document.getElementById('team-blocs-state');
+            const ask = document.getElementById('team-blocs-ask');
+            ask.style.display = 'none';
+            if (granted) {
+                state.style.cssText = "margin-bottom: 10px; background: #dcfce7; color: #166534; border: 1px solid #86efac;";
+                state.textContent = mine ? "Cliquez sur un bloc pour l'afficher." : "👁️ Accès accordé : cliquez sur un bloc pour l'afficher sur le mur de cette équipe.";
+            } else if (team.acces === 'demande') {
+                state.style.cssText = "margin-bottom: 10px; background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;";
+                state.textContent = "⏳ Demande envoyée : vous pourrez afficher ces blocs quand l'équipe aura accepté.";
+            } else {
+                state.style.cssText = "margin-bottom: 10px; background: #eff6ff; color: #1e3a8a; border: 1px solid #93c5fd;";
+                state.textContent = "🔒 Vous voyez les titres. Pour afficher les blocs, demandez l'accès à cette équipe.";
+                ask.style.display = '';
+                ask.onclick = () => { closeTeamBlocs(); requestShare(team.equipe); };
+            }
+            const list = document.getElementById('team-blocs-list');
+            list.innerHTML = "";
+            const palette = ["#ea580c", "#0d9488", "#7c3aed", "#2563eb", "#be185d", "#4d7c0f", "#b45309", "#475569"];
+            groups.forEach((group, g) => {
+                const color = palette[g % palette.length];
+                const section = document.createElement('div');
+                section.className = 'team-blocs-theme';
+                section.style.cssText = `border: 3px solid ${color}; border-radius: 10px; margin-bottom: 10px; overflow: hidden;`;
+                const head = document.createElement('div');
+                head.style.cssText = `background: ${color}; color: #ffffff; font-weight: bold; padding: 6px 10px; font-size: 0.9rem; display: flex; justify-content: space-between;`;
+                head.innerHTML = `<span>${escapeHtml(group.theme)}</span><span>${group.items.length} bloc(s)</span>`;
+                section.appendChild(head);
+                const body = document.createElement('div');
+                body.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 8px; background: #ffffff;";
+                group.items.slice().sort((x, y) => String(x.b.name).localeCompare(String(y.b.name), 'fr')).forEach(item => {
+                    const el = document.createElement(granted ? 'button' : 'div');
+                    el.className = 'team-bloc-item';
+                    el.style.cssText = `text-align: left; padding: 6px 8px; border: 2px solid ${granted ? color : '#cbd5e1'}; border-radius: 8px; background: ${granted ? '#ffffff' : '#f1f5f9'}; color: #1e293b; font-size: 0.84rem; font-weight: bold;` + (granted ? " cursor: pointer;" : "");
+                    const grade = item.b.grade ? String(item.b.grade).split(' ')[0] : "";
+                    el.innerHTML = (granted ? "" : "🔒 ") + escapeHtml(item.b.name || "Sans nom")
+                        + (grade ? `<br><span style="font-weight: normal; font-size: 0.76rem; color: #475569;">Niveau : ${escapeHtml(grade)}</span>` : "");
+                    if (granted) {
+                        el.title = "Afficher ce bloc";
+                        el.onclick = () => {
+                            closeTeamBlocs();
+                            if (mine) goHome(item.b.id); else previewTeamBloc(team.equipe, item.index);
+                        };
+                    }
+                    body.appendChild(el);
+                });
+                section.appendChild(body);
+                list.appendChild(section);
+            });
+            document.getElementById('team-blocs-modal').style.display = 'flex';
         }
 
         // Depuis « Comment faire ? » : ouvre « Les équipes » avec l'explication de la demande
