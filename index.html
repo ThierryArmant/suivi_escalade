@@ -128,7 +128,7 @@
             align-items: flex-start; 
             gap: 15px; 
             flex-wrap: wrap; 
-            max-width: 2200px; 
+            max-width: 1600px; 
             margin: 0 auto; 
         }
 
@@ -146,7 +146,7 @@
         }
 
         .palette-bar { 
-            width: 300px; 
+            width: 240px; 
             text-align: left; 
         }
 
@@ -398,7 +398,7 @@
             position: relative; 
             display: inline-block; 
             width: 100%; 
-            max-width: 1000px; /* Par défaut, format VOIE (étroit) */
+            max-width: 800px; /* Par défaut, format VOIE (étroit) */
             box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
             border-radius: 10px; 
             border: 4px solid #ffffff; 
@@ -751,9 +751,6 @@
             <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9; position: relative;">🌍 Les équipes<span id="teams-badge" style="display: none; position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; line-height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; background: #dc2626; color: #ffffff; font-size: 0.78rem; font-weight: 900; text-align: center; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span></button>
             <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
-            <button class="config-btn side-btn" onclick="openSide('legend')" title="Légende : l'explication de tous les repères et outils, classés par famille." style="background-color: #15803d;">📖 Légende</button>
-            <button class="config-btn side-btn" onclick="openSide('suivi')" title="Fiche de suivi : votre fichier Excel d'évaluation, gardé sur cet ordinateur." style="background-color: #1d4ed8;">📊 Fiche de suivi</button>
-            <button class="config-btn side-btn" onclick="openSide('inst')" title="Textes officiels, protocoles de sécurité et liens utiles (iPackEPS, Hub EPS)." style="background-color: #0f766e;">⚖️ Textes & liens</button>
             <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo par défaut">🎁 Démo</button>
         </div>
     </div>
@@ -1333,15 +1330,6 @@
         </div>
     </div>
 
-    <div id="side-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 560px; max-height: 92vh; overflow-y: auto;">
-            <div id="side-body"></div>
-            <div style="text-align: right; margin-top: 12px;">
-                <button onclick="document.getElementById('side-modal').style.display='none'" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
-            </div>
-        </div>
-    </div>
-
     <div id="dup-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 640px;">
             <h2 id="dup-title"></h2>
@@ -1760,7 +1748,7 @@
             selectMarker(null); 
             currentRouteId = null; 
             routeSelect.value = "";
-            document.getElementById('wall-container').style.maxWidth = '1000px'; 
+            document.getElementById('wall-container').style.maxWidth = '800px'; 
             
             populateRouteDropdown(); 
             populateBlocWallDropdown(); 
@@ -1812,7 +1800,7 @@
 
             if (schoolConfig.images.length > 0 && !currentRouteId) {
                 img.src = schoolConfig.images[0];
-                document.getElementById('wall-container').style.maxWidth = '1000px';
+                document.getElementById('wall-container').style.maxWidth = '800px';
                 activeBanner.style.background = "#dcfce7"; 
                 activeBanner.style.color = "#166534";
                 activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
@@ -1950,7 +1938,7 @@
                                 img.src = schoolConfig.images[0];
                             }
                             
-                            document.getElementById('wall-container').style.maxWidth = '1000px';
+                            document.getElementById('wall-container').style.maxWidth = '800px';
                             document.getElementById('routeSelect').value = ""; 
                             document.getElementById('blocWallSelect').value = "";
                             
@@ -2213,28 +2201,6 @@
         }
 
         let studentMode = false;
-
-        // =========================================
-        // VOLET DE DROITE SUPPRIMÉ : ses trois parties s'ouvrent en fenêtre, depuis les boutons du haut.
-        // La place libérée profite à la photo du mur et aux menus de gauche.
-        // =========================================
-        function initSidePanels() {
-            const right = document.querySelector('.right-sidebar');
-            const body = document.getElementById('side-body');
-            if (!right || !body) return;
-            const keys = ['inst', 'suivi', 'legend'];
-            Array.from(right.children).forEach((zone, index) => {
-                zone.dataset.side = keys[index] || ('zone' + index);
-                zone.style.display = 'none';
-                body.appendChild(zone);
-            });
-            right.style.display = 'none';
-        }
-
-        function openSide(key) {
-            document.querySelectorAll('#side-body > [data-side]').forEach(zone => { zone.style.display = zone.dataset.side === key ? '' : 'none'; });
-            document.getElementById('side-modal').style.display = 'flex';
-        }
 
         // =========================================
         // BULLES D'EXPLICATION : chaque bouton et chaque menu explique ce qu'il fait
@@ -2585,7 +2551,7 @@
             
             if (select.value === "") {
                 setColorFilter("");
-                document.getElementById('wall-container').style.maxWidth = '1000px';
+                document.getElementById('wall-container').style.maxWidth = '800px';
                 activeBanner.style.background = "#fffde7"; 
                 activeBanner.style.color = "#1f2937";
                 activeBanner.innerHTML = "⚠️ Aucun mur ou voie sélectionné.";
@@ -2613,7 +2579,7 @@
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             hasUnsavedChanges = false;
             
-            document.getElementById('wall-container').style.maxWidth = '1750px';
+            document.getElementById('wall-container').style.maxWidth = '1300px';
             
             let imgName = schoolConfig.imageNames[currentImageIndex] || "Photo sans nom";
             let cleanName = imgName.replace(/\.[^/.]+$/, ""); 
@@ -2727,7 +2693,7 @@
             
             document.getElementById('routeSelect').value = ""; 
             document.getElementById('blocWallSelect').value = "";
-            document.getElementById('wall-container').style.maxWidth = '1000px'; 
+            document.getElementById('wall-container').style.maxWidth = '800px'; 
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
             activeBanner.style.background = "#dcfce7"; 
@@ -2755,7 +2721,7 @@
             resetFilterUI();
             closeSelectionPanel();
 
-            document.getElementById('wall-container').style.maxWidth = '1750px';
+            document.getElementById('wall-container').style.maxWidth = '1300px';
 
             let bannerBg = (found.type === 'individualise') ? "#e0f2fe" : "#fef3c7";
             let bannerColor = (found.type === 'individualise') ? "#0369a1" : "#b45309";
@@ -3021,7 +2987,7 @@
                 return; 
             }
 
-            if (!currentRouteId && document.getElementById('wall-container').style.maxWidth !== '1750px') { 
+            if (!currentRouteId && document.getElementById('wall-container').style.maxWidth !== '1300px') { 
                 alert("Veuillez sélectionner une Voie ou un Bloc (ou cliquez d'abord sur '+ Créer un bloc') !"); 
                 return; 
             }
@@ -3606,7 +3572,7 @@
             const selectedId = routeSelect.value;
             if (!selectedId) {
                 currentRouteId = null; 
-                document.getElementById('wall-container').style.maxWidth = '1000px'; 
+                document.getElementById('wall-container').style.maxWidth = '800px'; 
                 activeBanner.style.background = "#fffde7"; 
                 activeBanner.style.color = "#1f2937";
                 activeBanner.innerHTML = "⚠️ Aucune voie sélectionnée.";
@@ -3627,7 +3593,7 @@
                 if (foundRoute.imageSrc) img.src = foundRoute.imageSrc;
                 const missingPhoto = !foundRoute.imageSrc;
                 
-                document.getElementById('wall-container').style.maxWidth = '1000px';
+                document.getElementById('wall-container').style.maxWidth = '800px';
                 
                 let bannerBg = foundRoute.hexColor;
                 let bannerText = (bannerBg === "#FFD700" || bannerBg === "#eab308") ? "#000" : "#fff";
@@ -3695,7 +3661,7 @@
             
             document.getElementById('routeSelect').value = ""; 
             document.getElementById('blocWallSelect').value = "";
-            document.getElementById('wall-container').style.maxWidth = '1000px';
+            document.getElementById('wall-container').style.maxWidth = '800px';
             document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
             
             activeBanner.style.background = "#dcfce7"; 
@@ -4864,7 +4830,6 @@
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
             setTimeout(checkTeamsNews, 5000);
             setInterval(watchUnsaved, 1000);
-            initSidePanels();
             updatePasteButton();
             initUiTips();
             setTimeout(offerDraft, 3500);
@@ -5450,26 +5415,12 @@
             return html;
         }
 
-        // Bandeau du bloc, côté enseignant : la consigne reste visible, le reste de la fiche se déplie à la demande
-        // (pour laisser un maximum de place à la photo du mur).
-        let ficheOpen = false;
         function consigneHtml(route) {
-            const more = route.attendus || route.competences || route.fiche || route.source;
-            const filled = route.consigne || more;
-            let html = `<div class="fiche-zone">`;
-            if (route.consigne) html += ficheBox("📋 Ce que tu dois faire", route.consigne, "#f59e0b");
-            const edit = `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button>`;
-            if (more) {
-                html += `<details id="fiche-details" ${ficheOpen ? "open" : ""} ontoggle="ficheOpen = this.open" style="margin-top: 6px; text-align: left;">`
-                    + `<summary style="cursor: pointer; font-size: 0.85rem;">Voir toute la fiche : attendus, compétences, notes pour l'enseignant, source</summary>`
-                    + studentFicheHtml({ attendus: route.attendus, competences: route.competences }, true)
-                    + (route.fiche ? ficheBox("👩‍🏫 Notes pour l'enseignant (non montrées aux élèves)", route.fiche, "#94a3b8") : "")
-                    + `<div style="text-align: center;">${edit}</div>` + sourceHtml(route)
-                    + `</details>`;
-            } else {
-                html += edit;
-            }
-            return html + `</div>`;
+            let html = `<div class="fiche-zone">` + studentFicheHtml(route, true);
+            if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (non montrées aux élèves)</summary>${ficheBox("", route.fiche, "#94a3b8")}</details>`;
+            const filled = route.consigne || route.attendus || route.competences || route.fiche || route.source;
+            html += `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button>` + sourceHtml(route) + `</div>`;
+            return html;
         }
 
         function openConsigneModal() {
@@ -5713,7 +5664,7 @@
                 closeSelectionPanel();
                 document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
                 img.src = photo;
-                document.getElementById('wall-container').style.maxWidth = '1750px';
+                document.getElementById('wall-container').style.maxWidth = '1300px';
                 currentRouteColor = route.color || "#FFD700";
                 previewRoute = route;
                 activeMarkers = (bloc.markers || []).map(m => ({
