@@ -985,8 +985,9 @@
                 <p class="help-text" style="margin-top: 0;">Créez l'espace de votre établissement. Vous donnerez ensuite le nom d'équipe et le mot de passe à vos collègues. Le code d'invitation vous est fourni par le référent de l'outil.</p>
                 <div class="form-group">
                     <label>Nom de l'équipe :</label>
-                    <input type="text" id="team-new-name" placeholder="Ex : college-dupont" autocomplete="off">
-                    <div class="help-text">3 à 30 caractères : lettres sans accent, chiffres, espaces ou tirets.</div>
+                    <input type="text" id="team-new-name" placeholder="Ex : college dupont" autocomplete="off" oninput="showTeamNamePreview()">
+                    <div class="help-text">De 3 à 30 caractères. Vous pouvez utiliser des lettres, des chiffres, des espaces et des tirets. Les majuscules et les accents sont retirés automatiquement.</div>
+                    <div id="team-name-preview" class="help-text" style="font-weight: bold; color: #0f766e; min-height: 1.2em;"></div>
                 </div>
                 <div class="form-group">
                     <label>Établissement :</label>
@@ -3402,6 +3403,25 @@
             });
         }
 
+        // Nom d'équipe tel qu'il est enregistré : minuscules, sans accent, lettres, chiffres, espaces et tirets
+        function normalizeTeamName(text) {
+            return String(text || "")
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')     // retire les accents
+                .toLowerCase()
+                .replace(/[’']/g, ' ')
+                .replace(/[^a-z0-9 _-]+/g, '-')
+                .replace(/\s+/g, ' ')
+                .replace(/-{2,}/g, '-')
+                .replace(/^[\s_-]+|[\s_-]+$/g, '');
+        }
+
+        function showTeamNamePreview() {
+            const typed = document.getElementById('team-new-name').value;
+            const name = normalizeTeamName(typed);
+            const box = document.getElementById('team-name-preview');
+            box.textContent = (name && name !== typed) ? `Nom enregistré : « ${name} »` : "";
+        }
+
         function checkTeamPasswords() {
             const first = document.getElementById('team-new-pass').value;
             const second = document.getElementById('team-new-pass2').value;
@@ -3421,7 +3441,7 @@
         async function teamCreate() {
             const errorBox = document.getElementById('team-create-error');
             const value = id => document.getElementById(id).value;
-            const equipe = value('team-new-name').trim().toLowerCase();
+            const equipe = normalizeTeamName(value('team-new-name'));
             const etablissement = value('team-new-etab').trim();
             const email = value('team-new-email').trim();
             const mdp = value('team-new-pass'), mdp2 = value('team-new-pass2');
@@ -3429,7 +3449,8 @@
             errorBox.textContent = "";
 
             let problem = "";
-            if (!/^[a-z0-9][a-z0-9 _-]{2,29}$/.test(equipe)) problem = "Nom d'équipe invalide : 3 à 30 caractères, lettres sans accent, chiffres, espaces ou tirets.";
+            if (!equipe) problem = "Indiquez le nom de l'équipe.";
+            else if (!/^[a-z0-9][a-z0-9 _-]{2,29}$/.test(equipe)) problem = `Le nom d'équipe « ${equipe} » doit faire entre 3 et 30 caractères.`;
             else if (!ACADEMIC_EMAIL.test(email)) problem = "L'adresse e-mail doit être une adresse académique (se terminant par @ac-….fr).";
             else if (mdp.length < 6) problem = "Le mot de passe doit faire au moins 6 caractères.";
             else if (mdp !== mdp2) problem = "Les deux mots de passe sont différents : saisissez le même deux fois.";
@@ -3457,16 +3478,17 @@
 
             ['team-new-pass', 'team-new-pass2', 'team-new-invit'].forEach(id => { document.getElementById(id).value = ""; });
             document.getElementById('team-pass-match').textContent = "";
-            alert(`✅ Équipe « ${answer.equipe} » créée.\nNotez le nom de l'équipe et le mot de passe : vos collègues en auront besoin pour se connecter.`);
+            document.getElementById('team-name-preview').textContent = "";
+            alert(`✅ Équipe créée.\n\nNom de l'équipe : ${answer.equipe}\n\nNotez ce nom et le mot de passe : vos collègues en auront besoin pour se connecter.`);
             pendingTeam = { equipe: answer.equipe, mdp: mdp, etablissement: answer.etablissement || "" };
             await proceedWithPendingTeam();
         }
 
         async function teamForgot() {
             const errorBox = document.getElementById('team-error');
-            const equipe = document.getElementById('team-input-name').value.trim();
+            const equipe = normalizeTeamName(document.getElementById('team-input-name').value);
             errorBox.style.color = "#991b1b";
-            if (!equipe) { errorBox.textContent = "Saisissez d'abord le nom de l'équipe, puis cliquez sur « Mot de passe oublié ? »."; return; }
+            if (!equipe) {errorBox.textContent = "Saisissez d'abord le nom de l'équipe, puis cliquez sur « Mot de passe oublié ? »."; return; }
             errorBox.style.color = "#475569";
             errorBox.textContent = "Envoi en cours…";
             let answer = null;
@@ -3511,7 +3533,7 @@
 
         async function teamLogin() {
             const errorBox = document.getElementById('team-error');
-            const equipe = document.getElementById('team-input-name').value.trim();
+            const equipe = normalizeTeamName(document.getElementById('team-input-name').value);
             const mdp = document.getElementById('team-input-pass').value;
             errorBox.style.color = "#991b1b";
             errorBox.textContent = "";
