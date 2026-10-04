@@ -422,6 +422,15 @@
         #marker-layer .marker { pointer-events: auto; }
         body.eleve #marker-layer .marker { pointer-events: auto; cursor: help; }
 
+        /* Notification : un grimpeur descend en rappel jusqu'au bouton « Les équipes » */
+        #climber-notif { position: fixed; top: 0; z-index: 900; width: 0; pointer-events: none; display: none; }
+        #climber-notif .rope { position: absolute; left: -1px; top: 0; width: 3px; height: 0; background: repeating-linear-gradient(#f97316 0 6px, #fdba74 6px 12px); border-radius: 2px; box-shadow: 0 0 3px rgba(0,0,0,0.5); }
+        #climber-notif .climber { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); font-size: 2.1rem; line-height: 1; cursor: pointer; pointer-events: auto; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.6)); }
+        #climber-notif .bubble { position: absolute; left: 24px; top: 0; transform: translateY(-120%); white-space: nowrap; background: #ffffff; color: #1e293b; border: 2px solid #dc2626; border-radius: 10px; padding: 5px 9px; font-size: 0.8rem; font-weight: bold; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.4s; }
+        #climber-notif.landed .bubble { opacity: 1; }
+        #climber-notif.landed .climber { animation: climber-swing 1.6s ease-in-out infinite; transform-origin: 50% -40px; }
+        @keyframes climber-swing { 0%, 100% { transform: translate(-50%, -100%) rotate(-7deg); } 50% { transform: translate(-50%, -100%) rotate(7deg); } }
+
         /* Bulle d'explication d'une balise (survol à la souris, ou appui du doigt côté élève) */
         #marker-tip { 
             display: none; position: absolute; z-index: 90; max-width: 230px; 
@@ -688,7 +697,7 @@
 
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
-            <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9;">🌍 Les équipes</button>
+            <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9; position: relative;">🌍 Les équipes<span id="teams-badge" style="display: none; position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; line-height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; background: #dc2626; color: #ffffff; font-size: 0.78rem; font-weight: 900; text-align: center; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span></button>
             <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
             <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo par défaut">🎁 Démo</button>
@@ -1147,6 +1156,12 @@
                 <button onclick="closeTeamsModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
+    </div>
+
+    <div id="climber-notif" onclick="hideClimber(); openTeamsModal();">
+        <div class="rope"></div>
+        <div class="climber" title="Du nouveau dans « Les équipes »">🧗</div>
+        <div class="bubble"></div>
     </div>
 
     <div id="share-help-modal" class="modal-overlay" style="z-index: 3000;">
@@ -4137,6 +4152,9 @@
             updateTeamUI();
             if (new URLSearchParams(window.location.search).get('mode') === 'eleve') return;
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
+            setTimeout(checkTeamsNews, 5000);
+            setInterval(checkTeamsNews, 120000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) checkTeamsNews(); });
             if (cloudTeam) {
                 cloudSync().then(() => maybeOpenGuide());
                 return;
@@ -4315,7 +4333,92 @@
             return btn;
         }
 
+        // --- Pastille de notification sur le bouton « Les équipes » ---
+        // Elle compte les demandes reçues à traiter et les accès que l'on vient de nous accorder.
+        function seenGrantsKey() { return 'eps_teams_seen_' + (cloudTeam ? cloudTeam.equipe : ''); }
+
+        function readSeenGrants() {
+            try { return JSON.parse(localStorage.getItem(seenGrantsKey()) || '[]'); } catch (e) { return []; }
+        }
+
+        function updateTeamsBadge(markSeen) {
+            const badge = document.getElementById('teams-badge');
+            const btn = document.getElementById('teams-btn');
+            if (!badge || !btn) return;
+            if (!cloudTeam || !teamsData) { badge.style.display = 'none'; return; }
+            const granted = (teamsData.equipes || []).filter(t => t.acces === 'accorde').map(t => t.equipe);
+            if (markSeen) {
+                try { localStorage.setItem(seenGrantsKey(), JSON.stringify(granted)); } catch (e) { /* rien */ }
+            }
+            const seen = readSeenGrants();
+            const requests = (teamsData.demandesRecues || []).length;
+            const newGrants = granted.filter(name => seen.indexOf(name) === -1).length;
+            const total = requests + newGrants;
+            const before = badge.style.display === 'none' ? 0 : (parseInt(badge.textContent, 10) || 0);
+            badge.textContent = String(total);
+            badge.style.display = total > 0 ? 'block' : 'none';
+            if (total === 0) hideClimber();
+            else if (total > before && !markSeen) showClimber(requests ? "Une équipe vous demande vos blocs !" : "Une équipe vous a ouvert ses blocs !");
+            const parts = [];
+            if (requests) parts.push(requests + " demande(s) d'une autre équipe à traiter");
+            if (newGrants) parts.push(newGrants + " équipe(s) vous ont ouvert leurs blocs");
+            btn.title = parts.length ? "🔔 " + parts.join(" · ") : "Les autres équipes : titres de leurs blocs, demande de consultation, contact";
+        }
+
+        // Le grimpeur descend en rappel depuis le haut de l'écran jusqu'au bouton « Les équipes »
+        let climberTimer = null, climberFrame = null;
+        function hideClimber() {
+            const box = document.getElementById('climber-notif');
+            if (!box) return;
+            clearTimeout(climberTimer);
+            cancelAnimationFrame(climberFrame);
+            box.style.display = 'none';
+            box.classList.remove('landed');
+        }
+
+        function showClimber(text) {
+            const box = document.getElementById('climber-notif');
+            const btn = document.getElementById('teams-btn');
+            if (!box || !btn) return;
+            const rect = btn.getBoundingClientRect();
+            if (!rect.width) return;
+            hideClimber();
+            const rope = box.querySelector('.rope'), climber = box.querySelector('.climber'), bubble = box.querySelector('.bubble');
+            const target = Math.max(60, rect.top + 4);
+            bubble.textContent = "🔔 " + text;
+            box.style.left = (rect.left + 18) + 'px';
+            box.style.display = 'block';
+            const place = (y) => { rope.style.height = Math.max(0, y - 30) + 'px'; climber.style.top = y + 'px'; bubble.style.top = y + 'px'; };
+            const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const duration = still ? 0 : 2600, start = performance.now();
+            const step = (now) => {
+                const t = duration ? Math.min(1, (now - start) / duration) : 1;
+                // descente en rappel : par petits bonds
+                const eased = t + Math.sin(t * Math.PI * 5) * 0.025 * (1 - t);
+                place(target * eased);
+                if (t < 1) { climberFrame = requestAnimationFrame(step); return; }
+                place(target);
+                if (!still) box.classList.add('landed'); else bubble.style.opacity = 1;
+                climberTimer = setTimeout(hideClimber, 12000);
+            };
+            climberFrame = requestAnimationFrame(step);
+        }
+
+        // Regarde en arrière-plan s'il y a du nouveau (sans rien afficher en cas d'échec)
+        let teamsNewsBusy = false;
+        async function checkTeamsNews() {
+            if (!cloudTeam || teamsNewsBusy || document.hidden || !navigator.onLine) return;
+            if (document.getElementById('teams-modal').style.display === 'flex') return;
+            teamsNewsBusy = true;
+            try {
+                teamsData = await cloudCall({ action: 'annuaire' });
+                updateTeamsBadge(false);
+            } catch (e) { /* stockage pas à jour ou hors ligne : pas de pastille */ }
+            teamsNewsBusy = false;
+        }
+
         function renderTeams() {
+            updateTeamsBadge(document.getElementById('teams-modal').style.display === 'flex');
             const requests = document.getElementById('teams-requests');
             const list = document.getElementById('teams-list');
             requests.innerHTML = "";
