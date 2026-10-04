@@ -1102,6 +1102,9 @@
             if (!schoolConfig.routes) schoolConfig.routes = [];
             if (!schoolConfig.imageNames) schoolConfig.imageNames = [];
 
+            // Remet chaque voie sur sa photo (corrige aussi les mémoires enregistrées avec une ancienne version)
+            if (Object.keys(getImportedPhotos()).length > 0) relinkRoutesToPhotos();
+
             populateRouteDropdown(); 
             populateBlocWallDropdown(); 
             renderCustomLists();
@@ -1128,7 +1131,11 @@
         function populateBlocWallDropdown() {
             const blocSelect = document.getElementById('blocWallSelect');
             blocSelect.innerHTML = '<option value="">-- Choix du mur de blocs --</option>';
+            // Ce menu ne propose que les photos de blocs (nom contenant « bloc »).
+            // S'il n'y en a aucune, il propose toutes les photos.
+            const hasBlocPhotos = schoolConfig.imageNames.some(n => /bloc/i.test(n));
             schoolConfig.imageNames.forEach((name, index) => {
+                if (hasBlocPhotos && !/bloc/i.test(name)) return;
                 const opt = document.createElement('option');
                 opt.value = index;
                 opt.textContent = `📸 ${name.replace(/\.[^/.]+$/, "")}`;
@@ -1857,13 +1864,18 @@
             const names = Object.keys(photos).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
             schoolConfig.images = names.map(n => photos[n]);
             schoolConfig.imageNames = names;
+            schoolConfig.routes = (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_'));
+            relinkRoutesToPhotos();
+        }
+
+        // Rattache chaque voie du topo à la photo de voies qui porte son numéro
+        function relinkRoutesToPhotos() {
             (schoolConfig.routes || []).forEach(r => {
                 if (String(r.id).startsWith('demo_')) return;
                 const photo = findPhotoIndexForVoie(r.voie, parseInt(r.secteur) || 1);
                 r.imageSrc = photo.src;
                 r.imageName = photo.name;
             });
-            schoolConfig.routes = (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_'));
         }
 
         // Les nouvelles photos S'AJOUTENT à celles déjà en mémoire (même nom = photo remplacée)
@@ -1954,6 +1966,8 @@
             const allIdx = schoolConfig.images.map((_, i) => i);
             // Les photos dont le nom contient "bloc" sont réservées aux blocs
             const voieIdx = namesOk ? allIdx.filter(i => !/bloc/i.test(names[i])) : [];
+            // S'il n'y a que des photos de blocs, la voie reste sans photo (jamais sur une photo de bloc)
+            if (namesOk && voieIdx.length === 0 && allIdx.length > 0) return { src: "", name: "" };
             const pool = voieIdx.length > 0 ? voieIdx : allIdx;
             const secteurNumStr = secteurNum.toString(), voieNumStr = voieNum.toString(), vNum = parseInt(voieNum);
 
@@ -2232,6 +2246,7 @@
                 currentRouteId = foundRoute.id; 
                 currentRouteColor = foundRoute.hexColor;
                 if (foundRoute.imageSrc) img.src = foundRoute.imageSrc;
+                const missingPhoto = !foundRoute.imageSrc;
                 
                 document.getElementById('wall-container').style.maxWidth = '800px';
                 
@@ -2243,6 +2258,11 @@
                 activeBanner.innerHTML = foundRoute.label 
                     ? `🎯 Voie active : ${escapeHtml(foundRoute.label)}` 
                     : `🎯 Voie active : Voie ${escapeHtml(foundRoute.voie)} (${escapeHtml(foundRoute.cotation)} - ${escapeHtml(ucFirst(foundRoute.couleur))}) - Secteur ${escapeHtml(foundRoute.secteur)}`;
+                if (missingPhoto) {
+                    activeBanner.style.background = "#fee2e2"; 
+                    activeBanner.style.color = "#991b1b";
+                    activeBanner.innerHTML += `<br><span style="font-size:0.85rem; font-weight:normal;">⚠️ Aucune photo de voies pour le secteur ${escapeHtml(foundRoute.secteur)}. Importez une photo nommée par exemple « voie ${escapeHtml(foundRoute.secteur)} » dans la Configuration.</span>`;
+                }
             }
             loadRouteMarkers(currentRouteId);
         }
