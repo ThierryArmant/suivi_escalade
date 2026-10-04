@@ -468,6 +468,15 @@
             box-shadow: 0 6px 18px rgba(0,0,0,0.5); pointer-events: none; 
         }
         #marker-tip b { color: #fde047; }
+        /* Panneau « Fiche de l'exercice », dans le volet de droite */
+        .fiche-panel { background: #fffbeb; padding: 12px; border-radius: 8px; border: 3px solid #f59e0b; margin-bottom: 12px; }
+        .fiche-panel h3 { margin: 0 0 8px 0; font-size: 0.95rem; color: #92400e; text-transform: uppercase; text-align: center; border-bottom: 2px solid #fcd34d; padding-bottom: 6px; }
+        .fiche-panel-title { font-weight: 800; color: #7c2d12; font-size: 0.95rem; text-align: center; margin-bottom: 2px; }
+        .fiche-panel-empty { color: #92400e; font-size: 0.82rem; text-align: center; margin: 6px 0; }
+        .fiche-panel .fiche-body { font-size: 0.84rem; padding: 7px 9px; }
+        .fiche-panel .fiche-consigne .fiche-body { font-size: 0.9rem; }
+        .fiche-panel .fiche-zone { text-align: center; }
+
         /* Fiches des exercices : cartes colorées, cases à cocher */
         .fiche-card { margin-top: 8px; background: #ffffff; border: 2px solid #94a3b8; border-radius: 12px; overflow: hidden; color: #1e293b; font-weight: normal; text-align: left; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
         .fiche-head { color: #ffffff; font-weight: 800; font-size: 0.9rem; padding: 5px 12px; letter-spacing: 0.01em; }
@@ -784,6 +793,7 @@
             <!-- Bleu Pastel -->
             <div class="sidebar-section tools-section">
                 <button onclick="openHowTo()" style="background: #1e3a8a; color: white; border: none; padding: 7px; font-size: 0.8rem; margin-bottom: 4px;">📖 Comment faire ?</button>
+                <button onclick="openLegend()" title="Légende : l'explication de tous les repères et outils, classés par famille." style="background: #15803d; color: white; border: none; padding: 7px; font-size: 0.8rem; margin-bottom: 4px;">🗂️ Légende des repères</button>
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
                     <button class="tool-btn btn-full" id="tool-cursor" onclick="setTool('cursor')" title="Souris : cliquer sur le mur ne pose rien">🖱️ Souris (ne rien poser)</button>
@@ -940,6 +950,12 @@
                 <div class="inst-item" style="border-left-color: #f59e0b; background: #fffbeb;">
                     <b>Déclaration APPN IpackEPS :</b> Obligatoire si la sortie comporte <b>au moins 1 relai</b>.
                 </div>
+            </div>
+
+            <!-- Fiche de l'exercice affiché : consigne, attendus, compétences, vidéo, source -->
+            <div class="fiche-panel" id="fiche-panel">
+                <h3>📋 Fiche de l'exercice</h3>
+                <div id="fiche-panel-body"></div>
             </div>
 
             <!-- Bleu Pastel -->
@@ -1344,6 +1360,15 @@
             <div style="text-align: right; margin-top: 12px;">
                 <button onclick="document.getElementById('bulk-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
                 <button id="bulk-go" onclick="bulkDelete()" style="background-color: #b91c1c; color: white; border: none; padding: 10px 20px; font-weight: bold;">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="legend-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 560px; max-height: 92vh; overflow-y: auto;">
+            <div id="legend-body"></div>
+            <div style="text-align: right; margin-top: 12px;">
+                <button onclick="document.getElementById('legend-modal').style.display='none'" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
     </div>
@@ -2531,6 +2556,7 @@
         // Toutes les secondes : affiche le rappel et garde un brouillon du bloc en cours sur cet appareil
         let lastDraft = "";
         function watchUnsaved() {
+            syncFichePanel(false);
             const bar = document.getElementById('unsaved-bar');
             if (!bar) return;
             const dirty = hasUnsavedChanges && !studentMode && (currentRouteId || activeMarkers.length > 0);
@@ -2759,7 +2785,8 @@
             activeBanner.style.color = bannerColor;
 
             if (found.type === 'bloc') {
-                activeBanner.innerHTML = `🎯 <b>Bloc : ${escapeHtml(found.name)}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((found.grade || '').split(' ')[0] || '?')} | Gabarit: ${escapeHtml(found.height || '?')} | Thème: ${escapeHtml(found.theme || '?')}</span>` + consigneHtml(found);
+                activeBanner.innerHTML = `🎯 <b>Bloc : ${escapeHtml(found.name)}</b><br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((found.grade || '').split(' ')[0] || '?')} | Gabarit: ${escapeHtml(found.height || '?')} | Thème: ${escapeHtml(found.theme || '?')}</span>`;
+                syncFichePanel(true);
             } else {
                 activeBanner.innerHTML = `🎯 <b>Élève : ${found.name}</b>`;
             }
@@ -4867,6 +4894,8 @@
             if (new URLSearchParams(window.location.search).get('mode') === 'eleve') return;
             window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
             setTimeout(checkTeamsNews, 5000);
+            initLegendModal();
+            syncFichePanel(true);
             setInterval(watchUnsaved, 1000);
             updatePasteButton();
             initUiTips();
@@ -5490,6 +5519,37 @@
             return html;
         }
 
+        // Le panneau « Fiche de l'exercice » (volet de droite) suit ce qui est affiché sur le mur
+        let fichePanelKey = null;
+        function syncFichePanel(force) {
+            const body = document.getElementById('fiche-panel-body');
+            if (!body) return;
+            const bloc = currentRouteId ? (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId && r.type === 'bloc') : null;
+            const inPreview = !currentRouteId && previewRoute && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
+            const key = bloc ? bloc.id : (inPreview ? 'apercu:' + (previewRoute.id || previewRoute.name) : '');
+            if (!force && key === fichePanelKey) return;
+            fichePanelKey = key;
+            const title = (name) => `<div class="fiche-panel-title">${escapeHtml(name)}</div>`;
+            if (bloc) {
+                body.innerHTML = title(bloc.name) + consigneHtml(bloc);
+            } else if (inPreview) {
+                body.innerHTML = title(previewRoute.name || "Bloc d'une autre équipe") + (studentFicheHtml(previewRoute) || '<p class="fiche-panel-empty">Ce bloc n\'a pas de fiche.</p>');
+            } else {
+                body.innerHTML = '<p class="fiche-panel-empty">Ouvrez un exercice dans la liste « Exercices bloc » : sa consigne, ses attendus, ses compétences, sa vidéo et sa source s\'afficheront ici.</p>';
+            }
+        }
+
+        function openLegend() {
+            document.getElementById('legend-modal').style.display = 'flex';
+        }
+
+        // La légende des repères quitte le volet de droite : elle s'ouvre en fenêtre (les bulles d'explication la remplacent au quotidien)
+        function initLegendModal() {
+            const zone = document.querySelector('.right-sidebar .technical-zone');
+            const body = document.getElementById('legend-body');
+            if (zone && body) body.appendChild(zone);
+        }
+
         function openConsigneModal() {
             const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
             if (!route) return;
@@ -5513,8 +5573,7 @@
             schoolConfig.localUpdate = Date.now();
             await saveConfig();
             cloudSchedule();
-            const zone = activeBanner.querySelector('.fiche-zone');
-            if (zone) zone.outerHTML = consigneHtml(route); else if (!hasUnsavedChanges) selectCustomRoute(route.id);
+            syncFichePanel(true);
         }
 
         // --- Les blocs d'une équipe, rangés par thème ---
@@ -5735,6 +5794,7 @@
                 document.getElementById('wall-container').style.maxWidth = '1300px';
                 currentRouteColor = route.color || "#FFD700";
                 previewRoute = route;
+                setTimeout(() => syncFichePanel(true), 50);
                 activeMarkers = (bloc.markers || []).map(m => ({
                     x: m.x, y: m.y, type: m.type || 'dot', color: route.color || m.color || currentRouteColor, rotation: m.rotation || 0, scale: m.scale || 1
                 }));
