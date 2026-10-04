@@ -536,6 +536,9 @@
         .marker.tech-pied { background-color: #f59e0b; }
         .marker.tech-joker { background-color: #10b981; border: 2px dashed #6ee7b7; }
         .marker.tech-pme { background-color: #2b6cb0; }
+        /* PME : triangle reliant les 3 appuis (1 main et 2 pieds), à pivoter et agrandir pour le caler sur les prises */
+        .marker.pme-triangle { width: 72px; height: 64px; }
+        .marker.pme-triangle svg { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
         .marker.tech-cm { background-color: #0d9488; }
         .marker.tech-cp { background-color: #16a34a; }
 
@@ -640,6 +643,7 @@
             
             <!-- Bleu Pastel -->
             <div class="sidebar-section tools-section">
+                <button onclick="openHowTo()" style="background: #1e3a8a; color: white; border: none; padding: 7px; font-size: 0.8rem; margin-bottom: 4px;">📖 Comment faire ?</button>
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
@@ -787,7 +791,7 @@
                 <div class="legend-category">🤸 Gestes & Postures</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">📌 PME (Repos)</div>
-                    <div class="legend-body"><strong>PME :</strong> Bassin collé à la paroi, bras tendus, genoux fléchis pour se relâcher.</div>
+                    <div class="legend-body"><strong>PME :</strong> Bassin collé à la paroi, bras tendus, genoux fléchis pour se relâcher. Le triangle relie les 3 appuis : 1 main et 2 pieds. Double-cliquez dessus pour le pivoter ou l'agrandir.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header">🔄 Chang. de Main (CM)</div>
@@ -936,6 +940,60 @@
             <button onclick="welcomeGo('create')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #2563eb;">➕ J'ai reçu mon code : créer l'équipe de mon établissement</button>
             <button onclick="welcomeGo('login')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #475569;">👥 Mon équipe existe déjà : me connecter</button>
             <button onclick="closeWelcomeModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #94a3b8; margin-bottom: 0;">👀 Simplement regarder la démonstration</button>
+        </div>
+    </div>
+
+    <div id="howto-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 640px;">
+            <h2>📖 Comment faire ?</h2>
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                <button id="howto-tab-bloc" onclick="showHowTo('bloc')" style="flex: 1; padding: 9px;">🧱 Créer un bloc</button>
+                <button id="howto-tab-voie" onclick="showHowTo('voie')" style="flex: 1; padding: 9px;">🧗 Tracer une voie</button>
+                <button id="howto-tab-outils" onclick="showHowTo('outils')" style="flex: 1; padding: 9px;">🛠️ Les outils</button>
+            </div>
+
+            <div id="howto-bloc">
+                <p class="help-text" style="margin-top: 0; font-size: 0.86rem;">Un bloc est un exercice que vous inventez sur une photo de mur de blocs : vous choisissez les prises, puis le niveau et le thème.</p>
+                <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
+                    <li><b>Choisissez le mur</b> dans le menu « Choix du mur de blocs », en haut. La photo s'affiche en grand.</li>
+                    <li><b>Choisissez un outil</b> à gauche (par exemple « Cercle ») et <b>cliquez sur chaque prise</b> du bloc. Marquez le départ avec « Départ (SD) » et l'arrivée avec « TOP ».</li>
+                    <li><b>Cliquez sur « + Créer un Bloc »</b> : donnez un nom, un niveau (c'est lui qui donne leur couleur aux cercles), un gabarit et un thème, puis « Valider ».</li>
+                    <li>Le bloc apparaît dans <b>« Exercices bloc »</b>, rangé par thème. Cliquez sur son nom pour le revoir.</li>
+                    <li><b>Pour le modifier</b> : affichez-le, déplacez ou ajoutez des balises, puis cliquez sur « 💾 Enregistrer » en haut.</li>
+                    <li><b>Pour le montrer aux élèves</b> : le bouton 📱 affiche un QR code. L'élève le scanne et voit le tracé sur son téléphone.</li>
+                </ol>
+                <p class="help-text" style="font-size: 0.82rem;">Le bouton ❌ supprime le bloc pour toute l'équipe. « + Créer un Élève » fait un tracé personnel pour un élève : il reste sur cet appareil et n'est jamais partagé.</p>
+            </div>
+
+            <div id="howto-voie" style="display: none;">
+                <p class="help-text" style="margin-top: 0; font-size: 0.86rem;">Les voies viennent de votre topo (Configuration, point 2). Chacune a sa couleur et sa cotation ; vous y ajoutez vos repères et vos consignes.</p>
+                <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
+                    <li><b>Choisissez la voie</b> dans le menu « Choisir une Voie », en haut. La photo de son secteur s'affiche.</li>
+                    <li><b>« ✨ Isoler couleur »</b> met en évidence les prises de la couleur de la voie et grise le reste du mur. Recliquez pour revenir à la photo normale.</li>
+                    <li><b>Choisissez un outil</b> à gauche et <b>cliquez sur les prises</b> à signaler : cercles, flèches de direction, points de repos (PME), changements de main ou de pied…</li>
+                    <li><b>Cliquez sur « 💾 Enregistrer »</b> en haut. Le tracé est gardé et partagé avec votre équipe.</li>
+                    <li><b>Pour le retrouver</b> : choisissez de nouveau la voie dans le menu.</li>
+                </ol>
+                <p class="help-text" style="font-size: 0.82rem;">Si le menu des voies est vide, importez d'abord le topo. Si une voie s'affiche sans photo, il manque la photo de son secteur : son nom doit contenir le numéro du secteur (« voie 4 5 6 »).</p>
+            </div>
+
+            <div id="howto-outils" style="display: none;">
+                <ul style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
+                    <li><b>Poser une balise :</b> choisissez l'outil, puis cliquez sur la photo.</li>
+                    <li><b>Déplacer :</b> faites glisser la balise, à la souris ou au doigt.</li>
+                    <li><b>Pivoter, agrandir, réduire, supprimer :</b> double-cliquez sur la balise, un petit menu s'ouvre.</li>
+                    <li><b>Effacer vite :</b> « 🧼 Gomme Magique », puis cliquez sur les balises à retirer. « 🧹 Tout nettoyer » les retire toutes.</li>
+                    <li><b>⭕ Cercle et ⚪ P'tit Cercle :</b> les prises à utiliser, dans la couleur du niveau.</li>
+                    <li><b>⬆️ Flèche :</b> une direction de déplacement (à faire pivoter). <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
+                    <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (1 main et 2 pieds). Double-cliquez dessus pour le pivoter et l'agrandir jusqu'à ce que ses pointes touchent les prises.</li>
+                    <li><b>🏁 Départ (SD), 🏆 TOP, 🎯 Zone, 🖐️ MG, 🤚 MD, 👟 Pied, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b> les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
+                </ul>
+                <p class="help-text" style="font-size: 0.82rem;">N'oubliez pas d'enregistrer : « + Créer un Bloc » pour un nouveau bloc, « 💾 Enregistrer » pour une voie ou un bloc déjà créé.</p>
+            </div>
+
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="document.getElementById('howto-modal').style.display='none'" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">J'ai compris</button>
+            </div>
         </div>
     </div>
 
@@ -1667,6 +1725,7 @@
 
             document.getElementById('routeSelect').value = "";
             currentImageIndex = parseInt(select.value);
+            howToOnce('bloc');
             img.src = schoolConfig.images[currentImageIndex];
             currentRouteColor = "#FFD700";
             
@@ -1985,7 +2044,17 @@
             activeMarkers.forEach((p, index) => {
                 const marker = document.createElement('div');
                 
-                if (['sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp'].includes(p.type)) {
+                if (p.type === 'pme') {
+                    marker.className = 'marker pme-triangle';
+                    marker.innerHTML = '<svg viewBox="0 0 72 64" aria-label="PME">'
+                        + '<polygon points="36,4 68,60 4,60" fill="rgba(43,108,176,0.22)" stroke="#ffffff" stroke-width="7" stroke-linejoin="round"/>'
+                        + '<polygon points="36,4 68,60 4,60" fill="none" stroke="#2b6cb0" stroke-width="4" stroke-linejoin="round"/>'
+                        + '<circle cx="36" cy="4" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
+                        + '<circle cx="68" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
+                        + '<circle cx="4" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
+                        + '<text x="36" y="50" text-anchor="middle" font-size="13" font-weight="bold" font-family="Arial, sans-serif" fill="#ffffff" stroke="#1e3a8a" stroke-width="3" paint-order="stroke">PME</text>'
+                        + '</svg>';
+                } else if (['sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
                     marker.textContent = p.type.toUpperCase();
                 } else {
@@ -2514,6 +2583,7 @@
             }
 
             let foundRoute = schoolConfig.routes.find(r => r.id === selectedId);
+            if (foundRoute && !String(foundRoute.id).startsWith('demo_')) howToOnce('voie');
             if (foundRoute) {
                 currentRouteId = foundRoute.id; 
                 currentRouteColor = foundRoute.hexColor;
@@ -3061,7 +3131,13 @@
                 return copy;
             });
             if (routes.length === 0) return null;
-            return { excelName: schoolConfig.excelName || "", excelDate: schoolConfig.excelDate || "", routes: routes };
+            // Les balises posées sur les voies voyagent avec le topo
+            const markers = {};
+            routes.forEach(r => { 
+                const list = readRouteMarkers(r.id); 
+                if (list && list.length > 0) markers[r.id] = list; 
+            });
+            return { excelName: schoolConfig.excelName || "", excelDate: schoolConfig.excelDate || "", routes: routes, markers: markers };
         }
 
         function isSharedBloc(route) {
@@ -3128,6 +3204,12 @@
                     meta.topo = remotePrint;
                 } else if (!local || meta.topo === undefined || meta.topo === localPrint) {
                     // topo local absent, jamais partagé, ou inchangé depuis le dernier enregistrement : on prend celui de l'équipe
+                    const remoteMarkers = data.topo.markers || {};
+                    const alreadyShared = meta.topo !== undefined;
+                    data.topo.routes.forEach(r => {
+                        if (remoteMarkers[r.id]) writeRouteMarkers(r.id, remoteMarkers[r.id]);
+                        else if (alreadyShared && data.topo.markers) removeRouteMarkers(r.id);   // tracé effacé par un collègue
+                    });
                     schoolConfig.routes = data.topo.routes.map(r => Object.assign({}, r));
                     schoolConfig.excelName = data.topo.excelName || "";
                     schoolConfig.excelDate = data.topo.excelDate || "";
@@ -3322,7 +3404,9 @@
                     if (found.imageSrc) img.src = found.imageSrc;
                     loadRouteMarkers(currentRouteId);
                 }
-            } else if (!currentRouteId && !selectedWall && activeMarkers.length === 0 && schoolConfig.images.length > 0) {
+            } else if (currentRouteId && !hasUnsavedChanges && schoolConfig.routes.some(r => r.id === currentRouteId)) {
+                loadRouteMarkers(currentRouteId);   // tracé de voie mis à jour par un collègue
+            } else if(!currentRouteId && !selectedWall && activeMarkers.length === 0 && schoolConfig.images.length > 0) {
                 img.src = schoolConfig.images[0];
                 activeBanner.style.background = "#dcfce7";
                 activeBanner.style.color = "#166534";
@@ -3669,6 +3753,30 @@
             if (!cloudTeam) showTeamPanel(panel);
         }
 
+        // --- Mode d'emploi : s'ouvre tout seul la première fois que l'on choisit un mur de blocs ou une voie ---
+        function showHowTo(tab) {
+            ['bloc', 'voie', 'outils'].forEach(name => {
+                document.getElementById('howto-' + name).style.display = name === tab ? 'block' : 'none';
+                const btn = document.getElementById('howto-tab-' + name);
+                btn.style.background = name === tab ? '#1e3a8a' : '#f1f5f9';
+                btn.style.color = name === tab ? '#ffffff' : '#334155';
+            });
+        }
+
+        function openHowTo(tab) {
+            showHowTo(tab || 'bloc');
+            document.getElementById('howto-modal').style.display = 'flex';
+        }
+
+        function howToOnce(tab) {
+            const key = 'eps_howto_' + tab;
+            try {
+                if (localStorage.getItem(key)) return;
+                localStorage.setItem(key, '1');
+            } catch (e) { return; }
+            openHowTo(tab);
+        }
+
         // --- Guide de démarrage : accompagne une équipe dans le réglage de son espace ---
         let guideReturn = false;
 
@@ -3726,7 +3834,7 @@
                   how: "⚙️ Configuration, point 2 : téléchargez « topo voies escalade », remplacez les secteurs, les cotations et les couleurs par ceux de votre mur, puis importez le fichier." },
                 { done: st.blocs > 0, title: "Créer votre premier bloc", 
                   state: st.blocs > 0 ? `${st.blocs} bloc(s) créé(s)` : "à faire",
-                  how: "Fermez la Configuration, choisissez un mur dans « Choix du mur de blocs », posez les balises en cliquant sur les prises, puis cliquez sur « + Créer un Bloc » pour lui donner un nom, un niveau et un thème." },
+                  how: "Choisissez un mur dans « Choix du mur de blocs », posez les balises en cliquant sur les prises, puis cliquez sur « + Créer un Bloc ». Le mode d'emploi détaillé s'ouvre tout seul la première fois ; vous le retrouvez avec le bouton « 📖 Comment faire ? », au-dessus des outils." },
                 { done: null, title: "Inviter vos collègues", 
                   state: "",
                   how: `Donnez-leur le lien de l'appli, le nom de l'équipe (« ${team} ») et son mot de passe. Ils cliquent sur « Mon équipe existe déjà » et retrouvent tout.` },
