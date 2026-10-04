@@ -693,6 +693,7 @@
                 <button onclick="openHowTo()" style="background: #1e3a8a; color: white; border: none; padding: 7px; font-size: 0.8rem; margin-bottom: 4px;">📖 Comment faire ?</button>
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
+                    <button class="tool-btn btn-full" id="tool-cursor" onclick="setTool('cursor')" title="Souris : cliquer sur le mur ne pose rien">🖱️ Souris (ne rien poser)</button>
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
                     <button class="tool-btn" id="tool-dot-small" onclick="setTool('dot-small')">⚪ P'tit Cercle</button>
 
@@ -1824,7 +1825,8 @@
             'cm':         ["Changement de main", "Sur cette prise, remplace une main par l'autre."],
             'cp':         ["Changement de pied", "Sur cette prise, remplace un pied par l'autre."],
             'jete':       ["Jeté", "Mouvement dynamique : prends de l'élan pour attraper une prise éloignée."],
-            'eraser':     ["Gomme magique", "Cliquez ensuite sur les balises à effacer."]
+            'eraser':     ["Gomme magique", "Cliquez ensuite sur les balises à effacer."],
+            'cursor':     ["Souris", "Aucun outil : un clic sur le mur ne pose rien. Vous pouvez toujours déplacer une balise ou double-cliquer dessus."]
         };
         const PME_HELP = [
             "", 
@@ -2215,6 +2217,8 @@
             const btn = document.getElementById('magic-filter-btn');
             
             if (isFilterActive) { 
+                // On repasse en mode souris : un clic sur le mur ne pose plus de balise par erreur
+                setTool('cursor');
                 btn.classList.add('active-magic'); 
                 applyColorFilter(); 
             } else { 
@@ -2350,7 +2354,7 @@
                 return; 
             }
             
-            if (event.target.classList.contains('marker') || currentTool === 'eraser') return;
+            if (event.target.classList.contains('marker') || currentTool === 'eraser' || currentTool === 'cursor') return;
 
             const rect = markerLayer.getBoundingClientRect();
             if (!rect.width || !rect.height) return;
