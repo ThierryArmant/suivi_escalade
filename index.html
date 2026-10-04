@@ -1120,6 +1120,7 @@
                 <label style="font-weight: normal; font-size: 0.85rem; color: #475569;">📥 Importer les blocs d'un collègue :</label>
                 <input type="file" id="importInput" accept=".json" onchange="importData(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
                 <div id="blocs-status" class="config-status empty"></div>
+                <button class="template-btn" style="background-color: #b91c1c; color: white; width: 100%; margin-top: 10px; padding: 9px; font-weight: bold;" onclick="openBulkDelete()">🗑️ Supprimer plusieurs blocs d'un coup…</button>
             </div>
             <div style="text-align: right; margin-top: 20px;">
                 <button onclick="closeConfigModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
@@ -1278,6 +1279,22 @@
             <div style="text-align: right; margin-top: 12px;">
                 <button id="share-help-ask" style="background-color: #0f766e; color: white; border: none; padding: 10px 15px; margin-right: 10px;">✉️ Envoyer la demande</button>
                 <button onclick="closeShareHelp()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">J'ai compris</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bulk-modal" class="modal-overlay" style="z-index: 2950;">
+        <div class="modal-content" style="max-width: 620px;">
+            <h2>🗑️ Supprimer plusieurs blocs</h2>
+            <p class="help-text" style="margin-top: 0;">Cochez les blocs à supprimer, ou tout un thème d'un seul clic. La suppression vaut pour toute l'équipe. Une sauvegarde de vos blocs est téléchargée juste avant.</p>
+            <div style="margin-bottom: 8px;">
+                <button onclick="bulkCheckAll(true)" style="background: #475569; color: white; border: none; padding: 6px 10px; font-size: 0.8rem;">Tout cocher</button>
+                <button onclick="bulkCheckAll(false)" style="background: #94a3b8; color: white; border: none; padding: 6px 10px; font-size: 0.8rem; margin-left: 6px;">Tout décocher</button>
+            </div>
+            <div id="bulk-list" style="max-height: 52vh; overflow-y: auto;"></div>
+            <div style="text-align: right; margin-top: 12px;">
+                <button onclick="document.getElementById('bulk-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
+                <button id="bulk-go" onclick="bulkDelete()" style="background-color: #b91c1c; color: white; border: none; padding: 10px 20px; font-weight: bold;">Supprimer</button>
             </div>
         </div>
     </div>
@@ -4969,6 +4986,80 @@
                 if (team.contact) card.appendChild(teamButton("💬 Écrire à cette équipe", "#2563eb", () => contactTeam(team.equipe)));
                 list.appendChild(card);
             });
+        }
+
+        // --- Suppression de plusieurs blocs d'un coup ---
+        function bulkCount() {
+            const count = document.querySelectorAll('#bulk-list input.bulk-bloc:checked').length;
+            const btn = document.getElementById('bulk-go');
+            btn.textContent = count ? `Supprimer ${count} bloc(s)` : "Supprimer";
+            btn.disabled = count === 0;
+            btn.style.opacity = count ? "1" : "0.5";
+        }
+
+        function bulkCheckAll(checked) {
+            document.querySelectorAll('#bulk-list input[type=checkbox]').forEach(box => { box.checked = checked; });
+            bulkCount();
+        }
+
+        function openBulkDelete() {
+            const blocs = (schoolConfig.customRoutes || []).filter(r => r.type === 'bloc');
+            if (blocs.length === 0) { alert("Aucun bloc à supprimer."); return; }
+            const list = document.getElementById('bulk-list');
+            list.innerHTML = "";
+            groupByTheme(blocs).forEach(group => {
+                const section = document.createElement('div');
+                section.style.cssText = "border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 8px; overflow: hidden;";
+                const head = document.createElement('label');
+                head.style.cssText = "display: flex; align-items: center; gap: 8px; background: #e2e8f0; padding: 6px 10px; font-weight: bold; cursor: pointer;";
+                const all = document.createElement('input');
+                all.type = 'checkbox';
+                all.onchange = () => { section.querySelectorAll('input.bulk-bloc').forEach(box => { box.checked = all.checked; }); bulkCount(); };
+                head.appendChild(all);
+                head.appendChild(document.createTextNode(`${group.theme} (${group.items.length}) — tout le thème`));
+                section.appendChild(head);
+                group.items.forEach(item => {
+                    const line = document.createElement('label');
+                    line.style.cssText = "display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 26px; font-size: 0.88rem; cursor: pointer;";
+                    const box = document.createElement('input');
+                    box.type = 'checkbox';
+                    box.className = 'bulk-bloc';
+                    box.value = item.b.id;
+                    box.onchange = bulkCount;
+                    line.appendChild(box);
+                    line.appendChild(document.createTextNode(item.b.name + (item.b.grade ? ` (${String(item.b.grade).split(' ')[0]})` : "")));
+                    section.appendChild(line);
+                });
+                list.appendChild(section);
+            });
+            bulkCount();
+            document.getElementById('bulk-modal').style.display = 'flex';
+        }
+
+        async function bulkDelete() {
+            const ids = Array.from(document.querySelectorAll('#bulk-list input.bulk-bloc:checked')).map(box => box.value);
+            if (ids.length === 0) return;
+            if (!confirm(`Supprimer définitivement ${ids.length} bloc(s), pour toute l'équipe ?\nUne sauvegarde de vos blocs va d'abord être téléchargée.`)) return;
+            exportData();
+            schoolConfig.customRoutes = schoolConfig.customRoutes.filter(r => ids.indexOf(r.id) === -1);
+            ids.forEach(id => { cloudForgetBloc(id); removeRouteMarkers(id); });
+            if (ids.indexOf(currentRouteId) !== -1) {
+                currentRouteId = null;
+                clearMarkersDOM();
+                activeMarkers = [];
+                hasUnsavedChanges = false;
+                closeSelectionPanel();
+                activeBanner.style.background = "#fffde7";
+                activeBanner.style.color = "#1f2937";
+                activeBanner.innerHTML = "⚠️ Aucun mur ou voie sélectionné.";
+            }
+            schoolConfig.localUpdate = Date.now();
+            await saveConfig();
+            cloudSchedule();
+            renderCustomLists();
+            updateConfigStatus();
+            document.getElementById('bulk-modal').style.display = 'none';
+            alert(`🗑️ ${ids.length} bloc(s) supprimé(s).\nLa sauvegarde téléchargée permet de les réimporter en cas d'erreur.`);
         }
 
         // --- Fiche d'un bloc : textes pour l'élève (consigne, attendus, compétences) + notes pour l'enseignant ---
