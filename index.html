@@ -571,6 +571,11 @@
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #334155; }
         .form-group input, .form-group select { width: 100%; box-sizing: border-box; }
         .help-text { font-size: 0.8rem; color: #64748b; margin-top: 4px; }
+        .suivi-table { max-height: 55vh; overflow: auto; border: 1px solid #cbd5e1; border-radius: 6px; user-select: text; }
+        .suivi-table table { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+        .suivi-table th { position: sticky; top: 0; background: #1e3a8a; color: white; padding: 6px 8px; text-align: left; white-space: nowrap; }
+        .suivi-table td { padding: 4px 8px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; }
+        .suivi-table tr:nth-child(even) td { background: #f8fafc; }
         .config-status { font-size: 0.85rem; font-weight: bold; margin-top: 6px; padding: 6px 10px; border-radius: 6px; line-height: 1.35; }
         .config-status.ok { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
         .config-status.empty { background: #f1f5f9; color: #475569; border: 1px dashed #cbd5e1; }
@@ -727,10 +732,15 @@
             <div class="institutional-zone">
                 <h3>📊 Fiche de suivi escalade</h3>
                 <div class="inst-item">
-                    <b>Outil de gestion des séances :</b><br>
-                    Tableur automatisé pour le suivi des réussites et des cotations.
-                    <div style="margin-top: 8px; text-align: center;">
-                        <a href="base_escalade.xlsm" download="base_escalade.xlsm" style="display: inline-block; background: #2563eb; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 0.75rem; font-weight: bold;">📥 Télécharger l'outil Excel</a>
+                    <b>Ma fiche de suivi (fichier Excel de cet ordinateur) :</b>
+                    <div id="suivi-status" style="margin-top: 6px; padding: 6px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; font-weight: bold; line-height: 1.35;"></div>
+                    <div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;">
+                        <button id="suivi-open-btn" onclick="openSuiviFile()" style="display: none; background: #2563eb; color: white; border: none; padding: 6px 12px; font-size: 0.75rem;">📖 Ouvrir ma fiche</button>
+                        <button id="suivi-choose-btn" onclick="chooseSuiviFile()" style="background: #ffffff; color: #1e3a8a; border: 2px solid #93c5fd; padding: 6px 12px; font-size: 0.75rem;">📂 Choisir ma fiche de suivi</button>
+                        <input type="file" id="suivi-fallback-input" accept=".xlsm, .xlsx, .xls" onchange="handleSuiviFallback(this)" style="display: none;">
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.7rem; color: #64748b;">
+                        L'appli retient où se trouve le fichier et le relit à la demande. Rien n'est envoyé sur Internet. Le modèle vierge se télécharge dans ⚙️ Configuration.
                     </div>
                 </div>
             </div>
@@ -871,6 +881,23 @@
             </div>
             <div style="text-align: right; margin-top: 20px;">
                 <button onclick="closeConfigModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="suivi-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 1000px;">
+            <h2 id="suivi-modal-title">📊 Fiche de suivi</h2>
+            <p id="suivi-modal-info" class="help-text" style="margin-top: 0;"></p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px;">
+                <select id="suivi-sheet-select" onchange="renderSuiviSheet(true)"></select>
+                <select id="suivi-eleve-select" onchange="renderSuiviSheet(false)"></select>
+                <span id="suivi-count" style="font-size: 0.85rem; color: #475569; font-weight: bold;"></span>
+            </div>
+            <div id="suivi-table" class="suivi-table"></div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="openSuiviFile()" style="background-color: #2563eb; color: white; border: none; padding: 10px 15px; margin-right: 10px;">🔄 Relire le fichier</button>
+                <button onclick="document.getElementById('suivi-modal').style.display='none'" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
     </div>
@@ -2668,7 +2695,192 @@
         }
 
 
-        window.onload = initApp;
+        // =========================================
+        // FICHE DE SUIVI : fichier Excel resté sur cet ordinateur
+        // =========================================
+        // L'appli retient l'emplacement du fichier et le relit à la demande.
+        // Rien n'est envoyé sur Internet, et l'appli n'écrit jamais dans le fichier.
+        const SUIVI_KEY = "suivi_file_handle";
+        const canRememberFile = typeof window.showOpenFilePicker === 'function';
+        let suiviHandle = null;
+        let suiviWorkbook = null;
+
+        async function initSuivi() {
+            if (canRememberFile) {
+                try { suiviHandle = (await getFromDB(SUIVI_KEY)) || null; } catch (e) { suiviHandle = null; }
+            }
+            renderSuiviStatus();
+        }
+
+        function renderSuiviStatus(message, isError) {
+            const el = document.getElementById('suivi-status');
+            if (!el) return;
+            let html, ok = false;
+            if (message) {
+                html = message; 
+                ok = !isError;
+            } else if (suiviHandle) {
+                html = `✅ Fiche mémorisée : <b>${escapeHtml(suiviHandle.name)}</b>`; 
+                ok = true;
+            } else if (canRememberFile) {
+                html = "Aucune fiche mémorisée sur cet ordinateur.";
+            } else {
+                html = "Ce navigateur ne peut pas mémoriser l'emplacement d'un fichier (utilisez Chrome ou Edge sur ordinateur). Vous pouvez quand même ouvrir la fiche en la choisissant à chaque fois.";
+            }
+            el.style.background = isError ? "#fee2e2" : (ok ? "#dcfce7" : "#f1f5f9");
+            el.style.color = isError ? "#991b1b" : (ok ? "#166534" : "#475569");
+            el.style.borderColor = isError ? "#fca5a5" : (ok ? "#86efac" : "#cbd5e1");
+            el.innerHTML = html;
+            const openBtn = document.getElementById('suivi-open-btn');
+            if (openBtn) openBtn.style.display = suiviHandle ? 'inline-block' : 'none';
+            const chooseBtn = document.getElementById('suivi-choose-btn');
+            if (chooseBtn) chooseBtn.textContent = suiviHandle ? "📂 Changer de fichier" : "📂 Choisir ma fiche de suivi";
+        }
+
+        async function chooseSuiviFile() {
+            if (!canRememberFile) { 
+                document.getElementById('suivi-fallback-input').click(); 
+                return; 
+            }
+            try {
+                const picked = await window.showOpenFilePicker({
+                    multiple: false,
+                    types: [{ 
+                        description: 'Classeur Excel', 
+                        accept: { 
+                            'application/vnd.ms-excel.sheet.macroEnabled.12': ['.xlsm'], 
+                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'], 
+                            'application/vnd.ms-excel': ['.xls'] 
+                        } 
+                    }]
+                });
+                suiviHandle = picked[0];
+                try { await saveToDB(SUIVI_KEY, suiviHandle); } catch (e) { console.error(e); }
+                renderSuiviStatus();
+                openSuiviFile();
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // fenêtre refermée sans choisir
+                renderSuiviStatus("❌ Le fichier n'a pas pu être choisi.", true);
+            }
+        }
+
+        async function openSuiviFile() {
+            if (!suiviHandle) { chooseSuiviFile(); return; }
+            const name = escapeHtml(suiviHandle.name);
+            try {
+                if (suiviHandle.queryPermission) {
+                    let permission = await suiviHandle.queryPermission({ mode: 'read' });
+                    if (permission !== 'granted') permission = await suiviHandle.requestPermission({ mode: 'read' });
+                    if (permission !== 'granted') {
+                        renderSuiviStatus(`⚠️ Autorisation refusée pour <b>${name}</b>. Cliquez à nouveau sur « Ouvrir ma fiche » et acceptez la demande du navigateur.`, true);
+                        return;
+                    }
+                }
+                const file = await suiviHandle.getFile();
+                await showSuivi(file);
+                renderSuiviStatus();
+            } catch (e) {
+                if (e && e.name === 'NotFoundError') {
+                    renderSuiviStatus(`❌ Fichier introuvable : <b>${name}</b><br>Vérifiez qu'il n'a pas été déplacé, renommé ou supprimé (et que la clé USB est branchée s'il est dessus), puis cliquez sur « Changer de fichier » pour le désigner à nouveau.`, true);
+                } else if (e && e.name === 'NotReadableError') {
+                    renderSuiviStatus(`❌ <b>${name}</b> est illisible pour l'instant. S'il est ouvert dans Excel, enregistrez-le, fermez-le, puis réessayez.`, true);
+                } else {
+                    console.error(e);
+                    renderSuiviStatus(`❌ Lecture impossible de <b>${name}</b> : ${escapeHtml(e && e.message ? e.message : e)}`, true);
+                }
+            }
+        }
+
+        // Navigateurs sans mémorisation : le fichier est choisi à chaque fois
+        async function handleSuiviFallback(input) {
+            const file = input.files[0];
+            input.value = "";
+            if (!file) return;
+            try { 
+                await showSuivi(file); 
+            } catch (e) { 
+                renderSuiviStatus(`❌ Lecture impossible : ${escapeHtml(e && e.message ? e.message : e)}`, true); 
+            }
+        }
+
+        async function showSuivi(file) {
+            if (typeof XLSX === 'undefined') throw new Error("module Excel introuvable (vérifiez la connexion Internet)");
+            const buffer = await file.arrayBuffer();
+            suiviWorkbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+
+            const when = new Date(file.lastModified).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+            document.getElementById('suivi-modal-title').textContent = `📊 ${file.name}`;
+            document.getElementById('suivi-modal-info').textContent = `Dernier enregistrement du fichier : ${when}. Lecture seule : la saisie se fait dans Excel.`;
+
+            const sheetSelect = document.getElementById('suivi-sheet-select');
+            sheetSelect.innerHTML = "";
+            suiviWorkbook.SheetNames.forEach(sheetName => {
+                const opt = document.createElement('option');
+                opt.value = sheetName; 
+                opt.textContent = sheetName;
+                sheetSelect.appendChild(opt);
+            });
+            // On ouvre de préférence sur la dernière feuille de séance
+            const seances = suiviWorkbook.SheetNames.filter(n => /^s[ée]ance/i.test(n.trim()));
+            if (seances.length > 0) sheetSelect.value = seances[seances.length - 1];
+
+            document.getElementById('suivi-eleve-select').value = "";
+            renderSuiviSheet(true);
+            document.getElementById('suivi-modal').style.display = 'flex';
+        }
+
+        function renderSuiviSheet(resetFilter) {
+            if (!suiviWorkbook) return;
+            const sheetName = document.getElementById('suivi-sheet-select').value;
+            const rows = XLSX.utils.sheet_to_json(suiviWorkbook.Sheets[sheetName], { header: 1, defval: "", raw: false }) || [];
+            const eleveSelect = document.getElementById('suivi-eleve-select');
+            const box = document.getElementById('suivi-table');
+            const count = document.getElementById('suivi-count');
+            const text = v => cellText(v);
+
+            const header = (rows[0] || []).map(text);
+            const eleveCol = header.findIndex(h => /^[ée]l[èe]ves?$/i.test(h));
+            let cols = [], body = [], head = [];
+
+            if (eleveCol !== -1) {
+                // Feuille de séance : une ligne par passage d'élève, colonnes jusqu'au premier titre vide
+                let end = header.findIndex((h, i) => i > eleveCol && h === "");
+                if (end === -1) end = header.length;
+                cols = header.map((_, i) => i).filter(i => i < end);
+                head = cols.map(i => header[i]);
+                const all = rows.slice(1).filter(r => text(r[eleveCol]) !== "");
+
+                if (resetFilter) {
+                    const eleves = Array.from(new Set(all.map(r => text(r[eleveCol])))).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+                    eleveSelect.innerHTML = '<option value="">Tous les élèves</option>';
+                    eleves.forEach(n => { 
+                        const opt = document.createElement('option'); 
+                        opt.value = n; 
+                        opt.textContent = n; 
+                        eleveSelect.appendChild(opt); 
+                    });
+                }
+                eleveSelect.style.display = 'inline-block';
+                const chosen = eleveSelect.value;
+                body = all.filter(r => !chosen || text(r[eleveCol]) === chosen).map(r => cols.map(i => text(r[i])));
+                count.textContent = `${body.length} passage(s)` + (chosen ? ` pour ${chosen}` : ` saisi(s) sur cette feuille`);
+            } else {
+                // Autre feuille : aperçu simple, sans les lignes et colonnes vides
+                eleveSelect.style.display = 'none';
+                const limited = rows.slice(0, 120).map(r => r.slice(0, 30).map(text));
+                const width = limited.reduce((m, r) => Math.max(m, r.length), 0);
+                cols = [];
+                for (let i = 0; i < width; i++) if (limited.some(r => (r[i] || "") !== "")) cols.push(i);
+                body = limited.filter(r => r.some(v => v !== "")).map(r => cols.map(i => r[i] || ""));
+                count.textContent = rows.length > 120 ? "Aperçu des 120 premières lignes." : "";
+            }
+
+            const th = head.length ? `<tr>${head.map(h => `<th>${escapeHtml(h)}</th>`).join('')}</tr>` : "";
+            const tr = body.map(r => `<tr>${r.map(v => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('');
+            box.innerHTML = body.length ? `<table>${th}${tr}</table>` : '<p style="color:#64748b; text-align:center;">Aucune saisie sur cette feuille.</p>';
+        }
+
+        window.onload = () => { initApp(); initSuivi(); };
     </script>
 </body>
 </html>
