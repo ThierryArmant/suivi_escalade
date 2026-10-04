@@ -426,10 +426,6 @@
         #marker-layer .marker { pointer-events: auto; }
         body.eleve #marker-layer .marker { pointer-events: auto; cursor: help; }
 
-        /* Côté enseignant, la largeur du cadre est calculée pour remplir la place disponible (fitWall) */
-        body:not(.eleve) #wall-container { max-width: 100% !important; }
-        body:not(.eleve) #wall-image { max-height: none; }
-
         /* Vue élève (téléphone, tablette) : la photo du mur d'abord, le texte ensuite */
         body.eleve { padding: 4px !important; }
         body.eleve h1 { font-size: 0.95rem; margin: 2px 0; }
@@ -1662,22 +1658,7 @@
             return Math.max(0.32, Math.min(1, w / 950));
         }
 
-        // La photo occupe toute la place disponible : toute la largeur de la colonne centrale,
-        // sans dépasser la hauteur de l'écran (les photos de voies, en hauteur, restent entières).
-        function fitWall() {
-            if (studentMode) return;
-            const wall = document.getElementById('wall-container');
-            const col = document.querySelector('.center-col');
-            if (!wall || !col || !img.naturalWidth || !img.naturalHeight) return;
-            const available = col.clientWidth;
-            if (!available) return;
-            const maxHeight = Math.max(320, window.innerHeight * 0.86);
-            const width = Math.round(Math.min(available, maxHeight * img.naturalWidth / img.naturalHeight));
-            if (Math.abs((parseFloat(wall.style.width) || 0) - width) > 1) wall.style.width = width + 'px';
-        }
-
         function refreshMarkerLayer() {
-            fitWall();
             updateMarkerLayer();
             const zoom = markerZoom();
             if (Math.abs(zoom - lastMarkerZoom) > 0.02) {
