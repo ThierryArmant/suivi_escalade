@@ -3838,6 +3838,9 @@
             return route && route.type !== 'individualise';
         }
 
+        let cloudRemoteRoutes = 0;     // nombre de voies du topo en ligne, relevé à la dernière lecture
+        let cloudKeepTopo = false;     // l'utilisateur vient de choisir de garder le topo de cet appareil
+
         // --- RÉCUPÉRER ce que l'équipe a en ligne ---
         async function cloudPull() {
             const data = await cloudCall({ action: 'lire' });
@@ -3875,27 +3878,40 @@
                 meta.photos[nom] = { fp: fingerprint(dataUrl), stamp: remotePhotos[nom] };
                 photosChanged = true;
             }
-            // Photos retirées par un collègue
-            Object.keys(photos).forEach(nom => {
+            // Photos retirées en ligne : on demande avant de les retirer de cet appareil
+            const goneP = Object.keys(photos).filter(nom => {
                 const m = meta.photos[nom];
-                if (m && m.stamp && !(nom in remotePhotos) && fingerprint(photos[nom]) === m.fp && Object.keys(photos).length > 1) {
-                    delete photos[nom];
-                    delete meta.photos[nom];
-                    photosChanged = true;
-                }
+                return m && m.stamp && !(nom in remotePhotos) && fingerprint(photos[nom]) === m.fp;
             });
+            if (goneP.length > 0) {
+                const keep = confirm(`⚠️ SYNCHRONISATION\n${goneP.length} photo(s) de cet appareil n'existent plus dans l'espace en ligne de l'équipe :\n${goneP.slice(0, 8).join(", ")}${goneP.length > 8 ? "…" : ""}\n\nOK = les GARDER et les renvoyer en ligne\nAnnuler = les retirer aussi de cet appareil`);
+                goneP.forEach(nom => {
+                    if (keep) { delete meta.photos[nom]; return; }   // sans suivi : elle sera renvoyée
+                    if (Object.keys(photos).length > 1) {
+                        delete photos[nom];
+                        delete meta.photos[nom];
+                        photosChanged = true;
+                    }
+                });
+            }
             if (photosChanged && Object.keys(photos).length > 0) {
                 applyPhotos(photos);
                 changed = true;
             }
 
             // 2. Topo des voies
+            cloudRemoteRoutes = (data.topo && Array.isArray(data.topo.routes)) ? data.topo.routes.length : 0;
+            cloudKeepTopo = false;
             if (data.topo && Array.isArray(data.topo.routes)) {
                 const remotePrint = fingerprint(stableStringify(data.topo));
                 const local = topoPayload();
                 const localPrint = local ? fingerprint(stableStringify(local)) : "";
                 if (remotePrint === localPrint) {
                     meta.topo = remotePrint;
+                } else if (local && local.routes.length > data.topo.routes.length
+                    && confirm(`⚠️ SYNCHRONISATION\nL'espace en ligne de l'équipe contient ${data.topo.routes.length} voie(s), alors que cet appareil en contient ${local.routes.length}.\n\nOK = GARDER les ${local.routes.length} voies de cet appareil et les renvoyer en ligne\nAnnuler = prendre les ${data.topo.routes.length} voie(s) en ligne`)) {
+                    meta.topo = "garder-local";   // différent de l'empreinte locale : le topo de cet appareil sera renvoyé
+                    cloudKeepTopo = true;
                 } else if (!local || meta.topo === undefined || meta.topo === localPrint) {
                     // topo local absent, jamais partagé, ou inchangé depuis le dernier enregistrement : on prend celui de l'équipe
                     const remoteMarkers = data.topo.markers || {};
@@ -3942,7 +3958,12 @@
                 meta.blocs[rb.id] = remotePrint;
                 changed = true;
             }
-            // Blocs supprimés par un collègue
+            // Blocs supprimés en ligne : on demande avant de les retirer de cet appareil
+            const goneB = schoolConfig.customRoutes.filter(r => isSharedBloc(r) && meta.blocs[r.id] !== undefined && !remoteIds[r.id]
+                && blocPrint(blocPayload(r, photos, {})) === meta.blocs[r.id]);
+            if (goneB.length > 0 && confirm(`⚠️ SYNCHRONISATION\n${goneB.length} bloc(s) de cet appareil n'existent plus dans l'espace en ligne de l'équipe :\n${goneB.slice(0, 8).map(r => r.name).join(", ")}${goneB.length > 8 ? "…" : ""}\n\nOK = les GARDER et les renvoyer en ligne\nAnnuler = les supprimer aussi de cet appareil`)) {
+                goneB.forEach(r => { delete meta.blocs[r.id]; });   // sans suivi : ils seront renvoyés
+            }
             schoolConfig.customRoutes = schoolConfig.customRoutes.filter(r => {
                 if (!isSharedBloc(r)) return true;
                 const known = meta.blocs[r.id];
@@ -4005,9 +4026,16 @@
             if (topo) {
                 const print = fingerprint(stableStringify(topo));
                 if (print !== meta.topo) {
-                    setCloudState("🔄 envoi du topo…");
-                    await cloudCall({ action: 'enregistrerTopo', topo: topo });
-                    meta.topo = print;
+                    // Garde-fou : ne jamais remplacer sans prévenir un topo d'équipe plus complet
+                    if (!cloudKeepTopo && cloudRemoteRoutes > topo.routes.length
+                        && !confirm(`⚠️ SYNCHRONISATION\nLe topo de cet appareil (${topo.routes.length} voie(s)) va REMPLACER celui de l'équipe (${cloudRemoteRoutes} voies) pour tous les collègues.\n\nOK = remplacer le topo de l'équipe\nAnnuler = ne rien envoyer et reprendre le topo de l'équipe`)) {
+                        delete meta.topo;       // à la prochaine synchronisation, cet appareil prendra le topo de l'équipe
+                        cloudAgain = true;
+                    } else {
+                        setCloudState("🔄 envoi du topo…");
+                        await cloudCall({ action: 'enregistrerTopo', topo: topo });
+                        meta.topo = print;
+                    }
                 }
             }
 
