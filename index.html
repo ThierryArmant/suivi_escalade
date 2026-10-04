@@ -842,8 +842,9 @@
                 <input type="file" id="excelInput" accept=".xlsx, .xlsm, .xls, .csv" onchange="handleExcelUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
                 <div class="help-text">
                     📋 Pour être sûr d'avoir le bon modèle, partez de notre base :<br>
-                    <a href="base_escalade.xlsm" download="base_escalade.xlsm" style="display: inline-block; background: #2563eb; color: white; padding: 6px 12px; margin: 6px 0; border-radius: 4px; text-decoration: none; font-weight: bold; white-space: nowrap;">📥 Télécharger la base Excel</a><br>
-                    Remplissez l'onglet « LISTE A SAISIR » (relais, type, couleurs et difficultés), enregistrez, puis importez le fichier ici.
+                    <button class="template-btn" onclick="downloadExcelTemplate()" style="margin: 6px 0; white-space: nowrap;">📥 Télécharger le modèle Excel type</button><br>
+                    Colonnes simples : <b>Secteur</b>, <b>Voie</b>, <b>Cotation</b>, <b>Couleur</b>. Une ligne par voie, puis importez le fichier ici.<br>
+                    <span style="font-size: 0.75rem;">(La fiche de suivi escalade, onglet « LISTE A SAISIR », est aussi acceptée.)</span>
                 </div>
             </div>
             <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
@@ -1722,6 +1723,24 @@
             hasUnsavedChanges = true; 
             closeSelectionPanel(); 
             renderMarkers();
+        }
+
+        function downloadExcelTemplate() {
+            if (typeof XLSX === 'undefined') { 
+                alert("❌ Module Excel introuvable (vérifiez la connexion Internet)."); 
+                return; 
+            }
+            const templateData = [
+                { Secteur: 1, Voie: 1, Cotation: "4B", Couleur: "jaune" },
+                { Secteur: 1, Voie: 2, Cotation: "6A", Couleur: "bleue" },
+                { Secteur: 1, Voie: 3, Cotation: "6B", Couleur: "noire" },
+                { Secteur: 2, Voie: 4, Cotation: "5B", Couleur: "verte" },
+                { Secteur: 2, Voie: 5, Cotation: "5C", Couleur: "rouge" }
+            ];
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Voies EPS");
+            XLSX.writeFile(workbook, "modele_topo_escalade_eps.xlsx");
         }
 
         function handleImagesUpload(input) {
