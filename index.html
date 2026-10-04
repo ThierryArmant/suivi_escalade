@@ -429,19 +429,13 @@
         /* Côté enseignant, la largeur du cadre est calculée pour remplir la place disponible (fitWall) */
         body:not(.eleve) #wall-container { max-width: 100% !important; }
         body:not(.eleve) #wall-image { max-height: none; }
-        body:not(.eleve) .center-col { min-width: 0; }
-        @media (min-width: 1101px) { 
-            body:not(.eleve) .workspace { flex-wrap: nowrap; } 
-            /* La photo se cale à gauche, contre les outils (utile pour les voies, en hauteur, et sur les petits écrans) */
-            body:not(.eleve) .center-col { justify-content: flex-start; }
-        }
 
         /* Vue élève (téléphone, tablette) : la photo du mur d'abord, le texte ensuite */
         body.eleve { padding: 4px !important; }
         body.eleve h1 { font-size: 0.95rem; margin: 2px 0; }
         body.eleve .subtitle { display: none; }
         body.eleve #active-route-banner { padding: 4px 8px; margin: 2px auto 4px auto; font-size: 0.95rem; line-height: 1.2; border-width: 2px; }
-        body.eleve .workspace, body.eleve .center-col { padding: 0; margin: 0; gap: 0; width: 100%; max-width: 100%; }
+        body.eleve .main-layout, body.eleve .center-col { padding: 0; margin: 0; gap: 0; width: 100%; max-width: 100%; }
         body.eleve .center-col { overflow-x: auto; -webkit-overflow-scrolling: touch; display: block; }
         body.eleve #wall-container { width: 100%; border-width: 2px; border-radius: 6px; }
         body.eleve #wall-container.zoomed { width: 230%; max-width: none !important; }
@@ -728,9 +722,7 @@
         /* Media Query pour écrans plus petits */
         @media (max-width: 1100px) {
             .workspace { flex-direction: column; align-items: center; }
-            .palette-bar, .right-sidebar { width: 100%; max-width: 800px; max-height: none; box-sizing: border-box; }
-            body:not(.eleve) .center-col { justify-content: center; }
-            body:not(.eleve) #wall-container { margin: 0 auto; }
+            .palette-bar, .right-sidebar { width: 100%; max-width: 800px; max-height: none; }
             .center-col { width: 100%; order: -1; flex: 0 0 auto; align-items: flex-start; }
         }
     </style>
@@ -1675,17 +1667,10 @@
         function fitWall() {
             if (studentMode) return;
             const wall = document.getElementById('wall-container');
-            const layout = document.querySelector('.workspace');
-            const palette = document.querySelector('.palette-bar');
-            if (!wall || !layout || !img.naturalWidth || !img.naturalHeight) return;
-            // Place réellement libre à côté du menu de gauche (calculée, pour ne pas dépendre de la taille actuelle de la photo)
-            const stacked = window.innerWidth <= 1100 || !palette || getComputedStyle(palette).display === 'none';
-            // Écran étroit (menu sous la photo) : la photo prend simplement toute la largeur
-            // Écran étroit : le menu passe sous la photo, qui dispose alors de toute la largeur
             const col = document.querySelector('.center-col');
-            const available = stacked ? Math.floor(Math.min(col ? col.clientWidth : layout.clientWidth, document.documentElement.clientWidth - 16))
-                                      : Math.floor(layout.clientWidth - palette.offsetWidth - 16) - 2;
-            if (available < 200) return;
+            if (!wall || !col || !img.naturalWidth || !img.naturalHeight) return;
+            const available = col.clientWidth;
+            if (!available) return;
             const maxHeight = Math.max(320, window.innerHeight * 0.86);
             const width = Math.round(Math.min(available, maxHeight * img.naturalWidth / img.naturalHeight));
             if (Math.abs((parseFloat(wall.style.width) || 0) - width) > 1) wall.style.width = width + 'px';
