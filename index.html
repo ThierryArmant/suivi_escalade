@@ -1846,7 +1846,9 @@
 
         // Numéro de voie écrit dans le nom d'un exercice (« … voie 5 », « … voies 8-9 »), sinon rien
         function voieNumber(name) {
-            const found = /voies?\s*(\d+)/i.exec(String(name || ""));
+            const text = String(name || "");
+            // « … voie 5 », « … voies 8-9 », ou un numéro d'ordre en tête du nom (« 3 · J'installe le Grigri »)
+            const found = /voies?\s*(\d+)/i.exec(text) || /^\s*(\d+)\s*[·.)\-–]/.exec(text);
             return found ? parseInt(found[1], 10) : null;
         }
 
@@ -3776,6 +3778,7 @@
                             // Le fichier apporte une version plus récente du tracé : on remplace aussi les balises
                             if ((nr.version || 1) > (existing.version || 1) && Array.isArray(imported.markers[nr.id])) {
                                 writeRouteMarkers(nr.id, imported.markers[nr.id]);
+                                ['name', 'grade', 'height', 'theme', 'color'].forEach(key => { if (nr[key]) existing[key] = nr[key]; });
                                 existing.version = nr.version;
                                 touched = true;
                             }
