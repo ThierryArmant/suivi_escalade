@@ -367,6 +367,9 @@
 
         .qr-custom-btn { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
         .copy-custom-btn { background: #eef2ff; border-color: #c7d2fe; color: #3730a3; }
+        .dup-wall { display: flex; flex-direction: column; gap: 4px; padding: 6px; background: #f8fafc; border: 3px solid #c7d2fe; border-radius: 10px; color: #1e293b; font-size: 0.82rem; font-weight: bold; cursor: pointer; }
+        .dup-wall:hover { border-color: #4f46e5; background: #eef2ff; }
+        .dup-wall img { width: 100%; height: 95px; object-fit: cover; border-radius: 6px; }
         .delete-custom-btn { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 
         .add-custom-btn { 
@@ -1327,6 +1330,17 @@
         </div>
     </div>
 
+    <div id="dup-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 640px;">
+            <h2 id="dup-title"></h2>
+            <p class="help-text" style="margin-top: 0;">Cliquez sur le mur où poser la copie. Toutes les balises et la fiche (consigne, attendus, compétences, source) y seront posées ; il restera à les ajuster à vos prises. L'exercice d'origine n'est pas modifié.</p>
+            <div id="dup-walls" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; max-height: 55vh; overflow-y: auto;"></div>
+            <div style="text-align: right; margin-top: 12px;">
+                <button onclick="document.getElementById('dup-modal').style.display='none'" style="background-color: #64748b; padding: 10px 15px;">Annuler</button>
+            </div>
+        </div>
+    </div>
+
     <div id="consigne-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 600px; max-height: 92vh; overflow-y: auto;">
             <h2>✏️ Fiche du bloc</h2>
@@ -1932,8 +1946,8 @@
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'qr-custom-btn copy-custom-btn';
                     copyBtn.textContent = '📋';
-                    copyBtn.title = "Copie toutes les balises et la fiche de cet exercice, pour le dupliquer sur un autre mur ou une autre voie (bouton « 📥 Coller »).";
-                    copyBtn.onclick = (e) => { e.stopPropagation(); copyRoute(r); };
+                    copyBtn.title = "Dupliquer cet exercice sur un autre mur ou une autre voie : vous choisissez le mur, toutes les balises et la fiche y sont posées.";
+                    copyBtn.onclick = (e) => { e.stopPropagation(); openDuplicate(r); };
                     actionsDiv.appendChild(copyBtn);
                 }
                 actionsDiv.appendChild(qrBtn); 
@@ -5203,14 +5217,49 @@
             btn.title = count ? `Coller les ${count} balises de « ${clip.name || "tracé"} » sur le mur affiché` : "Rien à coller : affichez un tracé et cliquez d'abord sur « Copier tout »";
         }
 
+        // Dupliquer un exercice : on choisit le mur de destination, les balises y sont posées d'un coup
+        function openDuplicate(route) {
+            const list = readRouteMarkers(route.id) || [];
+            if (list.length === 0) { alert("Cet exercice n'a aucune balise à dupliquer."); return; }
+            document.getElementById('dup-title').textContent = `📋 Dupliquer « ${route.name} »`;
+            const grid = document.getElementById('dup-walls');
+            grid.innerHTML = "";
+            const select = document.getElementById('blocWallSelect');
+            Array.from(select.options).filter(o => o.value !== "").forEach(option => {
+                const index = parseInt(option.value, 10);
+                const same = schoolConfig.images[index] === route.imageSrc;
+                const card = document.createElement('button');
+                card.className = 'dup-wall';
+                card.innerHTML = `<img src="${schoolConfig.images[index]}" alt=""><span>${escapeHtml(option.textContent.trim())}${same ? "<br><i>(le mur de cet exercice)</i>" : ""}</span>`;
+                card.onclick = () => duplicateOnWall(route, option.value);
+                grid.appendChild(card);
+            });
+            if (!grid.children.length) grid.innerHTML = '<p style="color: #991b1b; font-weight: bold;">Aucun mur de blocs en mémoire : ajoutez d\'abord vos photos de murs dans ⚙️ Configuration.</p>';
+            document.getElementById('dup-modal').style.display = 'flex';
+        }
+
+        function duplicateOnWall(route, wallValue) {
+            document.getElementById('dup-modal').style.display = 'none';
+            if (!copyRoute(route, true)) return;
+            const select = document.getElementById('blocWallSelect');
+            select.value = wallValue;
+            changeBlocWall();                         // demande d'abord s'il faut garder un travail en cours
+            if (select.value !== wallValue || currentRouteId) return;
+            pasteAllMarkers();
+            activeBanner.style.background = "#eef2ff";
+            activeBanner.style.color = "#312e81";
+            activeBanner.innerHTML = `📋 <b>Copie de « ${escapeHtml(route.name)} »</b><br><span style="font-size:0.85rem; font-weight:normal;">1. Déplacez l'ensemble avec la barre du haut. &nbsp; 2. Ajustez chaque balise sur vos prises. &nbsp; 3. Cliquez sur « + Créer le bloc ».</span>`;
+        }
+
         // Copie un exercice directement depuis la liste, sans avoir à l'afficher
-        function copyRoute(route) {
+        function copyRoute(route, silent) {
             const list = readRouteMarkers(route.id) || [];
             if (list.length === 0) { alert("Cet exercice n'a aucune balise à copier."); return; }
             const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
             ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source'].forEach(key => { if (route[key]) clip[key] = route[key]; });
             try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
+            if (silent) return true;
             alert(`📋 « ${route.name} » est copié (${list.length} balises et sa fiche).\n\n1. Choisissez le mur de destination dans le menu « Choix du mur de blocs », en haut.\n2. Cliquez sur « 📥 Coller », dans les outils à gauche.\n3. Ajustez, puis « + Créer un Bloc ».`);
         }
 
