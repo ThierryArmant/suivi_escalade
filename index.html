@@ -614,6 +614,8 @@
 
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
+            <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9;">🌍 Les équipes</button>
+            <button class="config-btn" onclick="openWelcomeModal()" title="Présentation de l'outil" style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
             <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo par défaut">🎁 Démo</button>
         </div>
@@ -892,6 +894,53 @@
             </div>
             <div style="text-align: right; margin-top: 20px;">
                 <button onclick="closeConfigModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 620px;">
+            <h2>🧗 Bienvenue sur Bloc'Note EPS</h2>
+            <p style="margin-top: 0; color: #334155;"><b>Un outil gratuit, conçu par un professeur d'EPS pour les professeurs d'EPS</b>, pour préparer et animer l'escalade sur le mur de son établissement.</p>
+
+            <div class="institutional-zone" style="margin-bottom: 12px;">
+                <h3>Ce que propose l'outil</h3>
+                <ul style="margin: 6px 0; padding-left: 20px; font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    <li><b>Tracer des voies et des blocs</b> directement sur les photos de votre mur : prises, départ, TOP, zones, consignes de pieds et de mains.</li>
+                    <li><b>Classer vos exercices</b> par thème, par niveau et par gabarit.</li>
+                    <li><b>Montrer le tracé aux élèves</b> : un QR code affiche le bloc sur leur téléphone ou une tablette.</li>
+                    <li><b>Travailler en équipe</b> : photos, topo des voies et blocs sont partagés entre les collègues d'un même établissement, sur tous leurs appareils.</li>
+                    <li><b>S'inspirer des autres</b> : consulter, sur demande, les blocs créés par d'autres équipes.</li>
+                </ul>
+            </div>
+
+            <div class="technical-zone" style="margin-bottom: 12px;">
+                <h3>Comment l'utiliser</h3>
+                <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    <li><b>Demandez un code d'invitation</b> avec votre adresse académique (@ac-….fr). L'outil est réservé aux personnels de l'Éducation nationale.</li>
+                    <li><b>Créez l'équipe EPS de votre établissement</b> avec ce code, et choisissez son mot de passe.</li>
+                    <li><b>Importez les photos de votre mur et créez vos propres blocs.</b> Vos données restent dans l'espace de votre équipe.</li>
+                    <li><b>Invitez vos collègues</b> : donnez-leur le nom de l'équipe et son mot de passe.</li>
+                </ol>
+            </div>
+
+            <button onclick="welcomeGo('request')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e; font-weight: bold;">✉️ Je découvre l'outil : demander un code d'invitation</button>
+            <button onclick="welcomeGo('create')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #2563eb;">➕ J'ai reçu mon code : créer l'équipe de mon établissement</button>
+            <button onclick="welcomeGo('login')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #475569;">👥 Mon équipe existe déjà : me connecter</button>
+            <button onclick="closeWelcomeModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #94a3b8; margin-bottom: 0;">👀 Simplement regarder la démonstration</button>
+        </div>
+    </div>
+
+    <div id="teams-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 720px;">
+            <h2>🌍 Les équipes</h2>
+            <p class="help-text" style="margin-top: 0;">Vous voyez ici les autres équipes et les titres de leurs blocs. Pour afficher un bloc, demandez l'accès à l'équipe : elle accepte ou refuse. Un bloc consulté peut être recopié dans votre équipe, jamais modifié chez elle.</p>
+            <div id="teams-msg" style="font-weight: bold; font-size: 0.9rem; min-height: 1.2em; margin-bottom: 6px;"></div>
+            <div id="teams-requests"></div>
+            <div id="teams-list" style="max-height: 55vh; overflow-y: auto;"></div>
+            <div style="text-align: right; margin-top: 15px;">
+                <button onclick="refreshTeams()" style="background-color: #2563eb; color: white; border: none; padding: 10px 15px; margin-right: 10px;">🔄 Actualiser</button>
+                <button onclick="closeTeamsModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
     </div>
@@ -3551,7 +3600,252 @@
             // Première visite sur cet appareil : on propose de rejoindre une équipe
             let asked = true;
             try { asked = !!localStorage.getItem('eps_team_asked'); localStorage.setItem('eps_team_asked', '1'); } catch (e) { /* rien */ }
-            if (!asked && !hasLocalSharedData()) openTeamModal();
+            if (!asked && !hasLocalSharedData()) openWelcomeModal();
+        }
+
+        // =========================================
+        // ACCUEIL ET « LES ÉQUIPES »
+        // =========================================
+        function openWelcomeModal() {
+            document.getElementById('welcome-modal').style.display = 'flex';
+        }
+
+        function closeWelcomeModal() {
+            document.getElementById('welcome-modal').style.display = 'none';
+        }
+
+        // Depuis l'accueil : ouvre la fenêtre d'équipe sur le bon écran
+        function welcomeGo(panel) {
+            closeWelcomeModal();
+            openTeamModal();
+            if (!cloudTeam) showTeamPanel(panel);
+        }
+
+        let teamsData = null;       // annuaire reçu du stockage en ligne
+        const sharedBlocs = {};     // blocs des équipes qui nous ont donné accès
+
+        function closeTeamsModal() {
+            document.getElementById('teams-modal').style.display = 'none';
+        }
+
+        function setTeamsMessage(text, isError) {
+            const box = document.getElementById('teams-msg');
+            box.textContent = text || "";
+            box.style.color = isError ? "#991b1b" : "#166534";
+        }
+
+        async function openTeamsModal() {
+            if (!cloudTeam) { openWelcomeModal(); return; }
+            document.getElementById('teams-modal').style.display = 'flex';
+            setTeamsMessage("");
+            await refreshTeams();
+        }
+
+        async function refreshTeams() {
+            const list = document.getElementById('teams-list');
+            if (!teamsData) list.innerHTML = '<p style="color: #64748b; text-align: center;">Chargement des équipes…</p>';
+            try {
+                const ping = await cloudAsk({ action: 'ping' });
+                if (!ping || !(ping.version >= 5)) {
+                    list.innerHTML = '<p style="color: #991b1b; font-weight: bold;">La zone « Les équipes » n\'est pas encore ouverte : le référent de l\'outil doit mettre à jour le stockage en ligne.</p>';
+                    document.getElementById('teams-requests').innerHTML = "";
+                    return;
+                }
+                teamsData = await cloudCall({ action: 'annuaire' });
+                renderTeams();
+            } catch (e) {
+                list.innerHTML = `<p style="color: #991b1b; font-weight: bold;">❌ ${escapeHtml(e && e.message ? e.message : "Erreur")}</p>`;
+            }
+        }
+
+        function teamButton(label, background, onClick) {
+            const btn = document.createElement('button');
+            btn.textContent = label;
+            btn.style.cssText = `background: ${background}; color: white; border: none; padding: 6px 10px; font-size: 0.8rem; margin: 4px 6px 0 0;`;
+            btn.onclick = onClick;
+            return btn;
+        }
+
+        function renderTeams() {
+            const requests = document.getElementById('teams-requests');
+            const list = document.getElementById('teams-list');
+            requests.innerHTML = "";
+            list.innerHTML = "";
+            if (!teamsData) return;
+
+            // 1. Demandes reçues et accès déjà donnés
+            (teamsData.demandesRecues || []).forEach(d => {
+                const box = document.createElement('div');
+                box.className = 'config-status';
+                box.style.cssText = "background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; margin-bottom: 8px;";
+                box.innerHTML = `📩 L'équipe <b>${escapeHtml(d.demandeur)}</b>${d.etablissement ? " (" + escapeHtml(d.etablissement) + ")" : ""} demande à consulter vos blocs.<br><span>Elle pourra les voir et les recopier chez elle, sans pouvoir modifier les vôtres.</span><br>`;
+                box.appendChild(teamButton("✅ Autoriser", "#16a34a", () => answerShare(d.demandeur, true)));
+                box.appendChild(teamButton("Refuser", "#64748b", () => answerShare(d.demandeur, false)));
+                requests.appendChild(box);
+            });
+            (teamsData.accesDonnes || []).forEach(d => {
+                const box = document.createElement('div');
+                box.className = 'config-status ok';
+                box.style.marginBottom = "8px";
+                box.innerHTML = `👁️ L'équipe <b>${escapeHtml(d.demandeur)}</b>${d.etablissement ? " (" + escapeHtml(d.etablissement) + ")" : ""} peut consulter vos blocs. `;
+                box.appendChild(teamButton("Retirer l'accès", "#b45309", () => answerShare(d.demandeur, false)));
+                requests.appendChild(box);
+            });
+
+            // 2. Les autres équipes et les titres de leurs blocs
+            const others = (teamsData.equipes || []).filter(t => t.acces !== 'moi');
+            if (others.length === 0) {
+                list.innerHTML = '<p style="color: #64748b; text-align: center;">Aucune autre équipe pour le moment.</p>';
+                return;
+            }
+            others.forEach(team => {
+                const card = document.createElement('div');
+                card.style.cssText = "border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #f8fafc;";
+                const granted = team.acces === 'accorde';
+
+                const title = document.createElement('div');
+                title.innerHTML = `🏫 <b>${escapeHtml(team.etablissement || team.equipe)}</b> <span style="color: #64748b; font-size: 0.8rem;">· équipe « ${escapeHtml(team.equipe)} » · ${team.blocs.length} bloc(s)</span>`;
+                card.appendChild(title);
+
+                // Titres des blocs, rangés par thème
+                if (team.blocs.length > 0) {
+                    const byTheme = {};
+                    team.blocs.forEach((b, index) => { (byTheme[b.theme || "Libre / Autre"] = byTheme[b.theme || "Libre / Autre"] || []).push({ b: b, index: index }); });
+                    const titles = document.createElement('div');
+                    titles.style.cssText = "margin: 6px 0; font-size: 0.82rem; max-height: 180px; overflow-y: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px;";
+                    Object.keys(byTheme).forEach(theme => {
+                        const line = document.createElement('div');
+                        line.style.cssText = "display: flex; flex-wrap: wrap; gap: 2px 4px; margin-bottom: 6px;";
+                        const label = document.createElement('b');
+                        label.style.flexBasis = "100%";
+                        label.textContent = theme + " :";
+                        line.appendChild(label);
+                        byTheme[theme].forEach(item => {
+                            const text = item.b.name + (item.b.grade ? ` (${item.b.grade.split(' ')[0]})` : "");
+                            let el;
+                            if (granted) {
+                                el = document.createElement('a');
+                                el.href = "#";
+                                el.style.cssText = "color: #2563eb; font-weight: bold; margin-right: 10px; white-space: nowrap;";
+                                el.title = "Afficher ce bloc";
+                                el.onclick = (e) => { e.preventDefault(); previewTeamBloc(team.equipe, item.index); };
+                            } else {
+                                el = document.createElement('span');
+                                el.style.cssText = "color: #334155; margin-right: 10px; white-space: nowrap;";
+                            }
+                            el.textContent = text;
+                            line.appendChild(el);
+                        });
+                        titles.appendChild(line);
+                    });
+                    card.appendChild(titles);
+                }
+
+                // État de l'accès
+                const state = document.createElement('div');
+                state.style.cssText = "font-size: 0.8rem; font-weight: bold;";
+                if (granted) {
+                    state.style.color = "#166534";
+                    state.textContent = "👁️ Accès accordé : cliquez sur un titre pour afficher le bloc.";
+                } else if (team.acces === 'demande') {
+                    state.style.color = "#92400e";
+                    state.textContent = "⏳ Demande envoyée : en attente de la réponse de cette équipe.";
+                } else if (team.blocs.length > 0) {
+                    if (team.acces === 'refuse') {
+                        state.style.color = "#991b1b";
+                        state.textContent = "Cette équipe n'a pas donné suite à votre demande.";
+                    }
+                    card.appendChild(state);
+                    card.appendChild(teamButton("✉️ Demander à consulter leurs blocs", "#0f766e", () => requestShare(team.equipe)));
+                }
+                if (granted || team.acces === 'demande') card.appendChild(state);
+                if (team.contact) card.appendChild(teamButton("💬 Écrire à cette équipe", "#2563eb", () => contactTeam(team.equipe)));
+                list.appendChild(card);
+            });
+        }
+
+        async function requestShare(target) {
+            setTeamsMessage("Envoi de la demande…");
+            try {
+                const answer = await cloudCall({ action: 'demanderPartage', cible: target });
+                setTeamsMessage(answer.prevenu === false
+                    ? `Demande enregistrée. L'équipe « ${target} » la verra en ouvrant « Les équipes » (elle n'a pas d'e-mail pour être prévenue).`
+                    : `✅ Demande envoyée à l'équipe « ${target} ». Vous serez prévenu par e-mail de sa réponse.`);
+                await refreshTeams();
+            } catch (e) {
+                setTeamsMessage("❌ " + e.message, true);
+            }
+        }
+
+        async function answerShare(requester, accept) {
+            if (!accept && !confirm(`Ne pas (ou ne plus) autoriser l'équipe « ${requester} » à consulter vos blocs ?`)) return;
+            setTeamsMessage("Enregistrement…");
+            try {
+                await cloudCall({ action: 'repondrePartage', demandeur: requester, accepter: accept });
+                setTeamsMessage(accept ? `✅ L'équipe « ${requester} » peut maintenant consulter vos blocs.` : `L'équipe « ${requester} » n'a pas accès à vos blocs.`);
+                await refreshTeams();
+            } catch (e) {
+                setTeamsMessage("❌ " + e.message, true);
+            }
+        }
+
+        async function contactTeam(target) {
+            const message = prompt(`Votre message pour l'équipe « ${target} » :\n(Il part par e-mail à son responsable, qui pourra vous répondre directement.)`);
+            if (message === null) return;
+            setTeamsMessage("Envoi du message…");
+            try {
+                await cloudCall({ action: 'contacterEquipe', cible: target, message: message });
+                setTeamsMessage(`✅ Message envoyé à l'équipe « ${target} ».`);
+            } catch (e) {
+                setTeamsMessage("❌ " + e.message, true);
+            }
+        }
+
+        // Affiche sur le mur le bloc d'une autre équipe (qui nous a donné accès)
+        async function previewTeamBloc(teamName, index) {
+            if (hasUnsavedChanges && !confirm("⚠️ Vous avez des modifications non enregistrées. Continuer et les perdre ?")) return;
+            setTeamsMessage("Chargement du bloc…");
+            try {
+                if (!sharedBlocs[teamName]) {
+                    sharedBlocs[teamName] = (await cloudCall({ action: 'lireBlocsEquipe', cible: teamName })).blocs || [];
+                }
+                const bloc = sharedBlocs[teamName][index];
+                if (!bloc || !bloc.route) throw new Error("Bloc introuvable.");
+                const route = bloc.route;
+                let photo = route.imageSrc || "";
+                if (!photo && route.imageName) {
+                    photo = (await cloudCall({ action: 'photo', equipe: teamName, nom: route.imageName }, false)).dataUrl;
+                }
+                if (!photo) throw new Error("La photo de ce bloc est introuvable.");
+
+                // Mode « mur libre » : le bloc s'affiche, et « + Créer un Bloc » le recopie dans notre équipe
+                currentRouteId = null;
+                routeSelect.value = "";
+                document.getElementById('blocWallSelect').value = "";
+                isFilterActive = false;
+                document.getElementById('magic-filter-btn').classList.remove('active-magic');
+                closeSelectionPanel();
+                document.querySelectorAll('.custom-item').forEach(el => el.classList.remove('active-custom'));
+                img.src = photo;
+                document.getElementById('wall-container').style.maxWidth = '1300px';
+                currentRouteColor = route.color || "#FFD700";
+                activeMarkers = (bloc.markers || []).map(m => ({
+                    x: m.x, y: m.y, type: m.type || 'dot', color: route.color || m.color || currentRouteColor, rotation: m.rotation || 0, scale: m.scale || 1
+                }));
+                hasUnsavedChanges = false;
+                renderMarkers();
+
+                activeBanner.style.background = "#ede9fe";
+                activeBanner.style.color = "#5b21b6";
+                activeBanner.innerHTML = `👁️ <b>Bloc « ${escapeHtml(route.name)} » de l'équipe ${escapeHtml(teamName)}</b>`
+                    + `<br><span style="font-size:0.85rem; font-weight:normal;">Niveau: ${escapeHtml((route.grade || '?').split(' ')[0])} | Gabarit: ${escapeHtml(route.height || '?')} | Thème: ${escapeHtml(route.theme || '?')}</span>`
+                    + `<br><span style="font-size:0.8rem; font-weight:normal;">Aperçu seulement. Pour le recopier dans votre équipe, cliquez sur « + Créer un Bloc ».</span>`;
+                setTeamsMessage("");
+                closeTeamsModal();
+            } catch (e) {
+                delete sharedBlocs[teamName];
+                setTeamsMessage("❌ " + (e && e.message ? e.message : "Erreur"), true);
+            }
         }
 
         // =========================================

@@ -23,9 +23,10 @@ var ONGLETS = {
   Topo:    ['equipe', 'modifie_le', 'donnees'],
   Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le'],
   Reglages: ['cle', 'valeur'],
-  Demandes: ['date', 'nom', 'etablissement', 'email']
+  Demandes: ['date', 'nom', 'etablissement', 'email'],
+  Partages: ['proprietaire', 'demandeur', 'etat', 'date']
 };
-var VERSION = 4;
+var VERSION = 5;
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -106,6 +107,8 @@ function traiter_(d) {
 
     if (action === 'connexion') return { ok: true, equipe: equipe.equipe, etablissement: equipe.etablissement };
     if (action === 'lire') return lireTout_(equipe.equipe);
+    if (action === 'annuaire') return annuaire_(equipe.equipe);
+    if (action === 'lireBlocsEquipe') return lireBlocsEquipe_(equipe.equipe, cle_(d.cible));
 
     // Actions qui modifient : une seule à la fois, pour ne pas mélanger deux enregistrements
     var verrou = LockService.getScriptLock();
@@ -116,6 +119,9 @@ function traiter_(d) {
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
       if (action === 'supprimerPhoto') return supprimerPhoto_(equipe.equipe, String(d.nom || ''));
+      if (action === 'demanderPartage') return demanderPartage_(equipe.equipe, cle_(d.cible));
+      if (action === 'repondrePartage') return repondrePartage_(equipe.equipe, cle_(d.demandeur), d.accepter === true);
+      if (action === 'contacterEquipe') return contacterEquipe_(equipe.equipe, cle_(d.cible), String(d.message || ''));
     } finally {
       verrou.releaseLock();
     }
@@ -324,6 +330,139 @@ function lireTout_(equipe) {
   });
 
   return { ok: true, equipe: equipe, blocs: blocs, topo: topo, photos: photos };
+}
+
+/* =========================================================
+   4 bis. LES ÉQUIPES : annuaire, titres des blocs, partage sur demande
+   =========================================================
+   Chaque équipe connectée voit la liste des équipes et les TITRES de leurs blocs.
+   Pour consulter les blocs eux-mêmes, elle envoie une demande que l'autre équipe accepte ou refuse.
+   Les adresses e-mail ne sont jamais communiquées à l'appli. */
+function infosEquipes_() {
+  var infos = {};
+  lignes_('Equipes').forEach(function (l) {
+    var nom = cle_(l[0]);
+    if (nom) infos[nom] = { etablissement: String(l[2] || ''), email: String(l[4] || '').trim() };
+  });
+  return infos;
+}
+
+function blocsDe_(equipe, complet) {
+  var blocs = [];
+  lignes_('Blocs').forEach(function (l) {
+    if (cle_(l[0]) !== equipe) return;
+    try {
+      var bloc = JSON.parse(recoller_(l, 3));
+      if (complet) blocs.push({ id: String(l[1]), route: bloc.route, markers: bloc.markers || [] });
+      else blocs.push({ name: String(bloc.route.name || ''), grade: String(bloc.route.grade || ''), theme: String(bloc.route.theme || '') });
+    } catch (err) { /* ligne abîmée : on l'ignore */ }
+  });
+  return blocs;
+}
+
+function partage_(proprietaire, demandeur) {
+  var position = chercher_('Partages', function (l) { return cle_(l[0]) === proprietaire && cle_(l[1]) === demandeur; });
+  if (position < 0) return { position: -1, etat: 'aucun', date: '' };
+  var ligne = feuille_('Partages').getRange(position, 1, 1, 4).getValues()[0];
+  return { position: position, etat: String(ligne[2]), date: String(ligne[3]) };
+}
+
+function annuaire_(moi) {
+  var infos = infosEquipes_();
+  var partages = lignes_('Partages');
+  var equipes = Object.keys(infos).sort().map(function (nom) {
+    var acces = nom === moi ? 'moi' : 'aucun';
+    partages.forEach(function (l) { if (cle_(l[0]) === nom && cle_(l[1]) === moi) acces = String(l[2]); });
+    return { equipe: nom, etablissement: infos[nom].etablissement, blocs: blocsDe_(nom, false), acces: acces, contact: emailValide_(infos[nom].email) };
+  });
+  var recues = [], donnes = [];
+  partages.forEach(function (l) {
+    if (cle_(l[0]) !== moi) return;
+    var demandeur = cle_(l[1]);
+    var fiche = { demandeur: demandeur, etablissement: (infos[demandeur] || {}).etablissement || '', date: String(l[3]) };
+    if (String(l[2]) === 'demande') recues.push(fiche);
+    if (String(l[2]) === 'accorde') donnes.push(fiche);
+  });
+  return { ok: true, moi: moi, equipes: equipes, demandesRecues: recues, accesDonnes: donnes };
+}
+
+function envoyer_(destinataire, sujet, texte, repondreA) {
+  if (!emailValide_(destinataire)) return false;
+  try {
+    var options = { name: "Bloc'Note EPS" };
+    if (emailValide_(repondreA)) options.replyTo = repondreA;
+    MailApp.sendEmail(destinataire, sujet, texte, options);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function demanderPartage_(moi, cible) {
+  var infos = infosEquipes_();
+  if (!infos[cible] || cible === moi) return { ok: false, erreur: 'Équipe introuvable.' };
+  var actuel = partage_(cible, moi);
+  if (actuel.etat === 'accorde') return { ok: true, acces: 'accorde' };
+  var date = Date.parse(actuel.date);
+  if (actuel.etat === 'demande' && !isNaN(date) && Date.now() - date < 24 * 3600000) {
+    return { ok: false, erreur: 'Votre demande a déjà été envoyée à cette équipe. Elle doit maintenant y répondre.' };
+  }
+  ecrireLigne_(feuille_('Partages'), actuel.position, [cible, moi, 'demande', maintenant_()]);
+  var prevenu = envoyer_(infos[cible].email, "Bloc'Note EPS : l'équipe « " + moi + " » souhaite consulter vos blocs",
+    'Bonjour,\n\n' +
+    "L'équipe « " + moi + " »" + (infos[moi].etablissement ? ' (' + infos[moi].etablissement + ')' : '') + " souhaite consulter les blocs de votre équipe « " + cible + " » dans l'appli Bloc'Note EPS.\n\n" +
+    "POUR ACCEPTER OU REFUSER : ouvrez l'appli, connectez-vous à votre équipe, cliquez sur « Les équipes », puis regardez la rubrique « Demandes reçues ».\n\n" +
+    "Accepter permet à cette équipe de voir vos blocs et de les recopier chez elle. Elle ne peut ni les modifier ni les supprimer chez vous.\n\n" +
+    'Pour écrire à ce collègue, répondez simplement à ce message.',
+    infos[moi].email);
+  return { ok: true, acces: 'demande', prevenu: prevenu };
+}
+
+function repondrePartage_(moi, demandeur, accepter) {
+  var actuel = partage_(moi, demandeur);
+  if (actuel.position < 0) return { ok: false, erreur: 'Demande introuvable.' };
+  var infos = infosEquipes_();
+  ecrireLigne_(feuille_('Partages'), actuel.position, [moi, demandeur, accepter ? 'accorde' : 'refuse', maintenant_()]);
+  if (infos[demandeur] && actuel.etat === 'demande') {
+    envoyer_(infos[demandeur].email, "Bloc'Note EPS : réponse de l'équipe « " + moi + " »",
+      'Bonjour,\n\n' +
+      "L'équipe « " + moi + " » a " + (accepter ? 'accepté' : 'refusé') + " votre demande de consultation de ses blocs.\n\n" +
+      (accepter ? "Ouvrez l'appli, cliquez sur « Les équipes », puis sur le titre d'un bloc de cette équipe pour l'afficher.\n\n" : '') +
+      'Pour écrire à ce collègue, répondez simplement à ce message.',
+      (infos[moi] || {}).email);
+  }
+  return { ok: true, acces: accepter ? 'accorde' : 'refuse' };
+}
+
+function lireBlocsEquipe_(moi, cible) {
+  if (cible !== moi && partage_(cible, moi).etat !== 'accorde') {
+    return { ok: false, erreur: "Cette équipe ne vous a pas (encore) autorisé à consulter ses blocs." };
+  }
+  return { ok: true, equipe: cible, blocs: blocsDe_(cible, true) };
+}
+
+// Message libre d'une équipe à une autre : il part à l'adresse du responsable, qui n'est jamais montrée
+function contacterEquipe_(moi, cible, message) {
+  var infos = infosEquipes_();
+  if (!infos[cible] || cible === moi) return { ok: false, erreur: 'Équipe introuvable.' };
+  var texte = message.trim();
+  if (texte.length < 5 || texte.length > 1500) return { ok: false, erreur: 'Écrivez un message de 5 à 1500 caractères.' };
+  if (!emailValide_(infos[moi].email)) {
+    return { ok: false, erreur: "Votre équipe n'a pas d'adresse e-mail enregistrée : le collègue ne pourrait pas vous répondre. Demandez au référent de l'outil de l'ajouter." };
+  }
+  if (!emailValide_(infos[cible].email)) return { ok: false, erreur: "Cette équipe n'a pas d'adresse e-mail enregistrée." };
+  var cache = CacheService.getScriptCache();
+  var cleCache = 'contact|' + moi + '|' + cible;
+  if (cache.get(cleCache)) return { ok: false, erreur: 'Vous venez déjà d\'écrire à cette équipe. Réessayez dans 10 minutes.' };
+  var envoye = envoyer_(infos[cible].email, "Bloc'Note EPS : message de l'équipe « " + moi + " »",
+    'Bonjour,\n\n' +
+    "L'équipe « " + moi + " »" + (infos[moi].etablissement ? ' (' + infos[moi].etablissement + ')' : '') + " vous écrit depuis l'appli Bloc'Note EPS :\n\n" +
+    '----------\n' + texte + '\n----------\n\n' +
+    'Pour lui répondre, répondez simplement à ce message.',
+    infos[moi].email);
+  if (!envoye) return { ok: false, erreur: "Le message n'a pas pu être envoyé." };
+  cache.put(cleCache, '1', 600);
+  return { ok: true };
 }
 
 /* =========================================================
