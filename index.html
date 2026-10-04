@@ -838,6 +838,7 @@
                 <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
                 <div id="photos-status" class="config-status empty"></div>
                 <div class="help-text">
+                    ➕ Les photos importées <b>s'ajoutent</b> à celles déjà en mémoire, sans rien effacer (même nom = photo remplacée). Vos blocs sont conservés.<br>
                     ✏️ <b>Renommez vos photos avant de les importer</b> : « voie 1 2 3 », « voie 4 5 6 »… pour les voies, et « bloc 1 », « bloc 2 »… pour les blocs.<br>
                     C'est le nom du fichier qui sert à classer : les numéros associent chaque voie à sa photo, et le mot « bloc » réserve la photo aux blocs.
                 </div>
@@ -1303,8 +1304,14 @@
             const imported = images.some(src => typeof src === 'string' && src.startsWith('data:'));
 
             if (imported) {
-                const list = names.map(n => escapeHtml(n.replace(/\.[^/.]+$/, ""))).join(', ');
-                setStatus('photos-status', true, `✅ ${images.length} photo(s) en mémoire<br><span>${list}</span>`);
+                const chip = (n, i) => `<span style="display: inline-flex; align-items: center; gap: 4px; background: #ffffff; border: 1px solid #86efac; border-radius: 12px; padding: 1px 4px 1px 8px; margin: 2px 4px 2px 0;">${escapeHtml(n.replace(/\.[^/.]+$/, ""))}`
+                    + `<button onclick="removePhoto(${i})" title="Retirer cette photo" style="border: none; background: none; color: #b91c1c; padding: 0 4px; font-size: 0.75rem; cursor: pointer;">✖</button></span>`;
+                const isBloc = n => /bloc/i.test(n);
+                const voies = names.map((n, i) => isBloc(n) ? "" : chip(n, i)).join('');
+                const blocsPhotos = names.map((n, i) => isBloc(n) ? chip(n, i) : "").join('');
+                setStatus('photos-status', true, `✅ ${images.length} photo(s) en mémoire`
+                    + `<br><span><b>Voies :</b> ${voies || "aucune"}</span>`
+                    + `<br><span><b>Blocs :</b> ${blocsPhotos || "aucune"}</span>`);
             } else {
                 setStatus('photos-status', false, "Aucune photo importée (photo de démonstration affichée).");
             }
@@ -1835,21 +1842,71 @@
             renderMarkers();
         }
 
+        // Photos réellement importées (on écarte la photo de démonstration)
+        function getImportedPhotos() {
+            const photos = {};
+            (schoolConfig.images || []).forEach((src, i) => {
+                const name = (schoolConfig.imageNames || [])[i];
+                if (typeof src === 'string' && src.startsWith('data:') && name) photos[name] = src;
+            });
+            return photos;
+        }
+
+        // Range les photos par nom et rattache chaque voie du topo à sa photo
+        function applyPhotos(photos) {
+            const names = Object.keys(photos).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            schoolConfig.images = names.map(n => photos[n]);
+            schoolConfig.imageNames = names;
+            (schoolConfig.routes || []).forEach(r => {
+                if (String(r.id).startsWith('demo_')) return;
+                const photo = findPhotoIndexForVoie(r.voie, parseInt(r.secteur) || 1);
+                r.imageSrc = photo.src;
+                r.imageName = photo.name;
+            });
+            schoolConfig.routes = (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_'));
+        }
+
+        // Les nouvelles photos S'AJOUTENT à celles déjà en mémoire (même nom = photo remplacée)
         function handleImagesUpload(input) {
-            if (input.files.length > 20) { 
-                alert("❌ Limite de 20 photos max !"); 
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            const photos = getImportedPhotos();
+            const before = Object.keys(photos);
+            const total = new Set(before.concat(files.map(f => f.name))).size;
+            if (total > 20) { 
+                alert(`❌ Limite de 20 photos : vous en auriez ${total}. Retirez d'abord des photos dans la liste (bouton ✖).`); 
                 input.value = ""; 
                 return; 
             }
             
-            let loadedImages = [], loadedNames = [], filesProcessed = 0;
-            const files = Array.from(input.files).sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-            
-            files.forEach((file, index) => {
+            let filesProcessed = 0, added = 0, replaced = 0, failed = 0;
+            const finish = async () => {
+                if (filesProcessed !== files.length) return;
+                input.value = "";
+                if (added + replaced === 0) { 
+                    alert("❌ Aucune photo n'a pu être lue."); 
+                    return; 
+                }
+                applyPhotos(photos);
+                schoolConfig.localUpdate = Date.now(); 
+                await saveConfig();
+                let message = `✅ ${added} photo(s) ajoutée(s)`;
+                if (replaced > 0) message += `, ${replaced} remplacée(s)`;
+                message += `.\nTotal en mémoire : ${schoolConfig.images.length} photo(s). Vos blocs sont conservés.`;
+                if (failed > 0) message += `\n⚠️ ${failed} fichier(s) illisible(s).`;
+                alert(message); 
+                await initApp();
+                updateConfigStatus();
+            };
+
+            files.forEach(file => {
                 const reader = new FileReader();
+                reader.onerror = () => { failed++; filesProcessed++; finish(); };
                 reader.onload = function(e) {
                     const imgObj = new Image();
-                    imgObj.onload = async function() {
+                    imgObj.onerror = () => { failed++; filesProcessed++; finish(); };
+                    imgObj.onload = function() {
                         const canvas = document.createElement('canvas');
                         let width = imgObj.width, height = imgObj.height, maxWidth = 1200; 
                         
@@ -1862,24 +1919,32 @@
                         canvas.height = height;
                         canvas.getContext('2d').drawImage(imgObj, 0, 0, width, height);
                         
-                        loadedImages[index] = canvas.toDataURL('image/jpeg', 0.80);
-                        loadedNames[index] = file.name; 
+                        if (photos[file.name]) replaced++; else added++;
+                        photos[file.name] = canvas.toDataURL('image/jpeg', 0.80);
                         filesProcessed++;
-                        
-                        if (filesProcessed === files.length) {
-                            schoolConfig.images = loadedImages; 
-                            schoolConfig.imageNames = loadedNames;
-                            schoolConfig.localUpdate = Date.now(); 
-                            await saveConfig();
-                            alert(`✅ ${loadedImages.length} photo(s) enregistrée(s) !`); 
-                            await initApp();
-                            updateConfigStatus();
-                        }
+                        finish();
                     };
                     imgObj.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             });
+        }
+
+        async function removePhoto(index) {
+            const name = (schoolConfig.imageNames || [])[index];
+            if (!name) return;
+            const photos = getImportedPhotos();
+            if (Object.keys(photos).length <= 1) { 
+                alert("ℹ️ Gardez au moins une photo en mémoire. Importez-en une autre avant de retirer celle-ci."); 
+                return; 
+            }
+            if (!confirm(`Retirer la photo « ${name} » ?\nLes blocs déjà dessinés dessus sont conservés.`)) return;
+            delete photos[name];
+            applyPhotos(photos);
+            schoolConfig.localUpdate = Date.now(); 
+            await saveConfig();
+            await initApp();
+            updateConfigStatus();
         }
 
         // Associe une voie à une photo grâce aux numéros présents dans le nom du fichier
