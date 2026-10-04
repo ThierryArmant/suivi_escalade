@@ -3523,6 +3523,12 @@
                             ['consigne', 'attendus', 'competences', 'fiche'].forEach(key => {
                                 if (nr[key] && nr[key] !== existing[key]) { existing[key] = nr[key]; touched = true; }
                             });
+                            // Le fichier apporte une version plus récente du tracé : on remplace aussi les balises
+                            if ((nr.version || 1) > (existing.version || 1) && Array.isArray(imported.markers[nr.id])) {
+                                writeRouteMarkers(nr.id, imported.markers[nr.id]);
+                                existing.version = nr.version;
+                                touched = true;
+                            }
                             if (touched) updated++;
                             return;
                         }
@@ -3542,7 +3548,7 @@
                         cloudSchedule();
                         renderCustomLists();
                         if (currentRouteId && !hasUnsavedChanges && String(currentRouteId).startsWith('custom_')) selectCustomRoute(currentRouteId);
-                        alert(`✅ Fiche mise à jour pour ${updated} bloc(s) déjà présents (consigne, attendus, compétences).\nLeurs tracés n'ont pas été modifiés.`);
+                        alert(`✅ ${updated} bloc(s) déjà présents ont été mis à jour (fiche, et tracé quand le fichier en apporte une version plus récente).`);
                     } else if (newCount > 0) {
                         if (updated > 0) cloudSchedule();
                         schoolConfig.localUpdate = Date.now(); 
