@@ -500,6 +500,17 @@
         .legend-category { font-size: 0.78rem; font-weight: bold; color: #166534; background: #dcfce7; padding: 4px 8px; border-radius: 4px; margin: 8px 0 5px 0; text-transform: uppercase;}
         .legend-banner { background: #fff; border: 1px solid #bbf7d0; border-radius: 6px; margin-bottom: 5px; overflow: hidden; }
         .legend-header { padding: 6px 8px; font-size: 0.8rem; font-weight: bold; color: #14532d; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f0fdf4;}
+        /* Zone technique : chaque partie a son cadre et sa couleur */
+        .legend-group { border: 3px solid var(--lg); border-radius: 10px; padding: 0 6px 3px 6px; margin: 10px 0; background: var(--lg-bg); overflow: hidden; }
+        .legend-group .legend-category { background: var(--lg); color: #ffffff; margin: 0 -6px 6px -6px; border-radius: 0; padding: 6px 10px; font-size: 0.8rem; letter-spacing: 0.02em; }
+        .legend-group .legend-banner { border-color: var(--lg-line); border-left: 5px solid var(--lg); }
+        .legend-group .legend-header { background: #ffffff; color: var(--lg-text); }
+        .legend-group .legend-body { border-top-color: var(--lg-line); }
+        .lg-prises     { --lg: #ea580c; --lg-bg: #fff7ed; --lg-line: #fdba74; --lg-text: #7c2d12; }
+        .lg-membres    { --lg: #0d9488; --lg-bg: #f0fdfa; --lg-line: #5eead4; --lg-text: #134e4a; }
+        .lg-validation { --lg: #7c3aed; --lg-bg: #f5f3ff; --lg-line: #c4b5fd; --lg-text: #4c1d95; }
+        .lg-gestes     { --lg: #2563eb; --lg-bg: #eff6ff; --lg-line: #93c5fd; --lg-text: #1e3a8a; }
+        .lg-prof       { --lg: #475569; --lg-bg: #f1f5f9; --lg-line: #cbd5e1; --lg-text: #1e293b; }
         .legend-header .ring-icon, .legend-header .limb-icon { transform: scale(0.75); vertical-align: middle; margin: 0 2px 0 0; display: inline-block; }
         .legend-body { padding: 8px; font-size: 0.74rem; color: #374151; display: none; text-align: center; border-top: 1px solid #bbf7d0;}
         .legend-banner.active .legend-body { display: block; }
@@ -903,6 +914,7 @@
                 
                 <p style="font-size: 0.72rem; color: #166534; margin: 4px 0 2px 0; text-align: center;">Cliquez sur une ligne pour lire son explication.</p>
 
+                <div class="legend-group lg-prises">
                 <div class="legend-category">⭕ Les prises du bloc</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>⭕ Cercle et ⚪ P'tit Cercle</span></div>
@@ -928,7 +940,8 @@
                     <div class="legend-header"><span>🎁 Prise facilitante (Joker)</span></div>
                     <div class="legend-body"><strong>Joker :</strong> prise bonus ou intermédiaire. Un élève expert devra l'ignorer pour complexifier le bloc.</div>
                 </div>
-
+                </div>
+                <div class="legend-group lg-membres">
                 <div class="legend-category">✋ Mains et pieds imposés</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span><span class="limb-icon hand"></span>MG &nbsp; <span class="limb-icon hand right"></span>MD — les mains</span></div>
@@ -938,7 +951,8 @@
                     <div class="legend-header"><span><span class="limb-icon foot"></span>PG &nbsp; <span class="limb-icon foot right"></span>PD — les pieds</span></div>
                     <div class="legend-body"><strong>Rectangle vide = pied.</strong> Vert : pied gauche (PG). Rouge : pied droit (PD). Force le travail des appuis.</div>
                 </div>
-
+                </div>
+                <div class="legend-group lg-validation">
                 <div class="legend-category">🏆 Validation</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🏁 Départ (SD)</span></div>
@@ -952,7 +966,8 @@
                     <div class="legend-header"><span>🎯 Les ZONES (niveaux)</span></div>
                     <div class="legend-body"><strong>La Zone :</strong> prise intermédiaire qui valide un niveau atteint. Elle peut être numérotée, avec les couleurs des pistes de ski :<br><span style="display:inline-block; background:#16a34a; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 1</span> verte &nbsp;<span style="display:inline-block; background:#1d4ed8; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 2</span> bleue<br><span style="display:inline-block; background:#dc2626; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 3</span> rouge &nbsp;<span style="display:inline-block; background:#111827; color:#fff; border-radius:3px; padding:0 4px; font-size:0.68rem;">ZONE 4</span> noire<br>Pour changer de couleur : double-cliquez sur la zone et choisissez un autre numéro.</div>
                 </div>
-
+                </div>
+                <div class="legend-group lg-gestes">
                 <div class="legend-category">🤸 Gestes & Postures</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>📌 PME (Repos) — 3 niveaux</span></div>
@@ -970,7 +985,8 @@
                     <div class="legend-header"><span>🚀 Le Jeté</span></div>
                     <div class="legend-body"><strong>Jeté :</strong> Mouvement dynamique avec élan et suspension aérienne vers une prise lointaine.</div>
                 </div>
-
+                </div>
+                <div class="legend-group lg-prof">
                 <div class="legend-category">🧰 Pour l'enseignant</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🖱️ Souris</span></div>
@@ -983,6 +999,7 @@
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🧼 Gomme et 🧹 Tout nettoyer</span></div>
                     <div class="legend-body"><strong>Gomme magique :</strong> cliquez sur les balises à effacer. <strong>Tout nettoyer</strong> retire toutes les balises d'un coup.</div>
+                </div>
                 </div>
             </div>
         </div>
