@@ -26,7 +26,7 @@ var ONGLETS = {
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date']
 };
-var VERSION = 5;
+var VERSION = 6;
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -100,6 +100,7 @@ function traiter_(d) {
     if (action === 'motDePasseOublie') return motDePasseOublie_(d);
     if (action === 'demanderAcces') return demanderAcces_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
+    if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
 
     // Toutes les autres actions demandent le mot de passe de l'équipe
     var equipe = verifier_(d.equipe, d.mdp);
@@ -546,6 +547,28 @@ function supprimerPhoto_(equipe, nom) {
     feuille.deleteRow(position);
   }
   return { ok: true, supprime: position > 0 };
+}
+
+// Fiche d'un bloc pour l'élève : sans mot de passe, comme la photo du mur.
+// Ne renvoie que les textes destinés aux élèves (jamais les notes de l'enseignant).
+function ficheBloc_(equipe, id) {
+  if (!equipe || !/^custom_[0-9A-Za-z_-]{1,40}$/.test(id)) return { ok: false, erreur: 'Bloc introuvable.' };
+  var lignes = lignes_('Blocs');
+  for (var i = 0; i < lignes.length; i++) {
+    if (cle_(lignes[i][0]) === equipe && String(lignes[i][1]) === id) {
+      try {
+        var route = JSON.parse(recoller_(lignes[i], 3)).route || {};
+        return {
+          ok: true,
+          nom: String(route.name || ''),
+          consigne: String(route.consigne || ''),
+          attendus: String(route.attendus || ''),
+          competences: String(route.competences || '')
+        };
+      } catch (err) { break; }
+    }
+  }
+  return { ok: false, erreur: 'Bloc introuvable.' };
 }
 
 // Lecture d'une photo : sans mot de passe, pour que le téléphone d'un élève puisse afficher le mur

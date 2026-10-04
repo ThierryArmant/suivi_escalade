@@ -1264,15 +1264,24 @@
     </div>
 
     <div id="consigne-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 560px;">
-            <h2>✏️ Consigne du bloc</h2>
+        <div class="modal-content" style="max-width: 600px; max-height: 92vh; overflow-y: auto;">
+            <h2>✏️ Fiche du bloc</h2>
+            <p class="help-text" style="margin-top: 0;">Les trois premières cases sont <b>pour les élèves</b> : elles s'affichent sur leur téléphone après le scan du QR code.</p>
             <div class="form-group">
-                <label>Consigne pour l'élève <span style="font-weight: normal;">(affichée aussi sur son téléphone)</span> :</label>
+                <label>📋 Consigne <span style="font-weight: normal;">(ce que l'élève doit faire)</span> :</label>
                 <textarea id="edit-consigne" rows="3" maxlength="300" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
             </div>
             <div class="form-group">
-                <label>Notes pour l'enseignant <span style="font-weight: normal;">(objectif, plus facile, plus difficile)</span> :</label>
-                <textarea id="edit-fiche" rows="7" maxlength="1200" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+                <label>✅ Attendus <span style="font-weight: normal;">(ce que l'élève doit réussir)</span> :</label>
+                <textarea id="edit-attendus" rows="3" maxlength="500" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>🎯 Compétences visées <span style="font-weight: normal;">(ce que l'élève apprend)</span> :</label>
+                <textarea id="edit-competences" rows="3" maxlength="500" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>👩‍🏫 Notes pour l'enseignant <span style="font-weight: normal;">(jamais montrées aux élèves : variantes, organisation, sécurité)</span> :</label>
+                <textarea id="edit-fiche" rows="5" maxlength="1200" style="width: 100%; box-sizing: border-box; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
             </div>
             <div style="text-align: right; margin-top: 12px;">
                 <button onclick="document.getElementById('consigne-modal').style.display='none'" style="background-color: #64748b; margin-right: 10px; padding: 10px 15px;">Annuler</button>
@@ -3458,9 +3467,19 @@
 
                 try {
                     if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
-                    let newCount = 0;
+                    let newCount = 0, updated = 0;
                     imported.customRoutes.forEach(nr => {
                         if (!nr || !nr.id) return;
+                        // Bloc déjà présent : on complète sa fiche (textes), sans toucher à son tracé ni à sa photo
+                        const existing = schoolConfig.customRoutes.find(cr => cr.id === nr.id);
+                        if (existing) {
+                            let touched = false;
+                            ['consigne', 'attendus', 'competences', 'fiche'].forEach(key => {
+                                if (nr[key] && nr[key] !== existing[key]) { existing[key] = nr[key]; touched = true; }
+                            });
+                            if (touched) updated++;
+                            return;
+                        }
                         if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
                             // Si la photo du même nom est déjà sur cet appareil, on l'utilise (pas de doublon)
                             const localPhotos = getImportedPhotos();
@@ -3471,7 +3490,15 @@
                         }
                     });
                     
-                    if (newCount > 0) {
+                    if (newCount === 0 && updated > 0) {
+                        schoolConfig.localUpdate = Date.now();
+                        await saveConfig();
+                        cloudSchedule();
+                        renderCustomLists();
+                        if (currentRouteId && !hasUnsavedChanges && String(currentRouteId).startsWith('custom_')) selectCustomRoute(currentRouteId);
+                        alert(`✅ Fiche mise à jour pour ${updated} bloc(s) déjà présents (consigne, attendus, compétences).\nLeurs tracés n'ont pas été modifiés.`);
+                    } else if (newCount > 0) {
+                        if (updated > 0) cloudSchedule();
                         schoolConfig.localUpdate = Date.now(); 
                         const saved = await saveConfig(); 
                         renderCustomLists();
@@ -3649,8 +3676,10 @@
                 + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
 
             // La consigne voyage dans le QR code si elle tient (sinon le code serait trop dense à scanner)
+            // Le téléphone ira chercher la fiche complète (consigne, attendus, compétences) dans l'espace de l'équipe
+            const withId = shareUrl + ((teamForQR && found && isSharedBloc(found)) ? "&b=" + enc(String(found.id).replace(/^custom_/, '')) : "");
             const consigneQR = found && found.consigne ? found.consigne.replace(/\s+/g, ' ').slice(0, 220) : "";
-            if (!(consigneQR && drawQRCode(shareUrl + "&k=" + enc(consigneQR))) && !drawQRCode(shareUrl)) {
+            if (!(consigneQR && drawQRCode(withId + "&k=" + enc(consigneQR))) && !drawQRCode(withId) && !drawQRCode(shareUrl)) {
                 alert(`❌ Ce tracé est trop long pour un QR code (${targetMarkers.length} balises). Retirez quelques balises.`);
                 return;
             }
@@ -3731,7 +3760,14 @@
                     // Nouveau format compact
                     activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
                     banner.innerHTML = `📱 <b>Bloc : ${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'))
-                        + (params.get('k') ? `<div style="margin-top: 6px; padding: 6px 10px; background: #ffffff; border: 2px solid #f59e0b; border-radius: 8px; color: #1e293b; font-size: 0.9rem; font-weight: normal; text-align: left;"><b>📋 Consigne :</b> ${escapeHtml(params.get('k'))}</div>` : "");
+                        + `<div id="student-fiche">${studentFicheHtml({ consigne: params.get('k') || "" })}</div>`;
+                    // Fiche complète du bloc, lue dans l'espace de l'équipe (si le stockage en ligne le permet)
+                    if (params.get('b') && params.get('eq')) {
+                        cloudCall({ action: 'ficheBloc', equipe: params.get('eq'), id: 'custom_' + params.get('b') }, false).then(fiche => {
+                            const zone = document.getElementById('student-fiche');
+                            if (zone && fiche && (fiche.consigne || fiche.attendus || fiche.competences)) zone.innerHTML = studentFicheHtml(fiche);
+                        }).catch(() => { /* ancien stockage ou hors ligne : la consigne du QR code reste affichée */ });
+                    }
                 } else if (params.get('route')) {
                     // Ancien format (QR codes déjà imprimés)
                     const raw = params.get('route');
@@ -4857,13 +4893,25 @@
             });
         }
 
-        // --- Consigne d'un bloc : texte pour l'élève + notes pour l'enseignant ---
-        function consigneHtml(route) {
-            const box = (title, text, bg, border) => `<div style="margin-top: 6px; padding: 6px 10px; background: ${bg}; border: 2px solid ${border}; border-radius: 8px; color: #1e293b; font-size: 0.85rem; font-weight: normal; text-align: left; white-space: pre-wrap;"><b>${title}</b> ${escapeHtml(text)}</div>`;
+        // --- Fiche d'un bloc : textes pour l'élève (consigne, attendus, compétences) + notes pour l'enseignant ---
+        function ficheBox(title, text, border) {
+            return `<div style="margin-top: 6px; padding: 6px 10px; background: #ffffff; border: 2px solid ${border}; border-left-width: 6px; border-radius: 8px; color: #1e293b; font-size: 0.88rem; font-weight: normal; text-align: left; white-space: pre-wrap;"><b>${title}</b>${title ? "\n" : ""}${escapeHtml(text)}</div>`;
+        }
+
+        // Les trois textes destinés à l'élève, tels qu'il les verra
+        function studentFicheHtml(o) {
             let html = "";
-            if (route.consigne) html += box("📋 Consigne :", route.consigne, "#ffffff", "#f59e0b");
-            if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (objectif, variantes)</summary>${box("", route.fiche, "#f8fafc", "#cbd5e1")}</details>`;
-            html += `<br><button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 4px;">✏️ ${route.consigne || route.fiche ? "Modifier la consigne" : "Ajouter une consigne"}</button>`;
+            if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b");
+            if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir", o.attendus, "#16a34a");
+            if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb");
+            return html;
+        }
+
+        function consigneHtml(route) {
+            let html = `<div class="fiche-zone">` + studentFicheHtml(route);
+            if (route.fiche) html += `<details style="margin-top: 6px; text-align: left;"><summary style="cursor: pointer; font-size: 0.82rem;">👩‍🏫 Notes pour l'enseignant (non montrées aux élèves)</summary>${ficheBox("", route.fiche, "#94a3b8")}</details>`;
+            const filled = route.consigne || route.attendus || route.competences || route.fiche;
+            html += `<button onclick="openConsigneModal()" style="background: #b45309; color: white; border: none; padding: 4px 10px; font-size: 0.78rem; margin-top: 6px;">✏️ ${filled ? "Modifier la fiche du bloc" : "Ajouter une fiche (consigne, attendus, compétences)"}</button></div>`;
             return html;
         }
 
@@ -4871,6 +4919,8 @@
             const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
             if (!route) return;
             document.getElementById('edit-consigne').value = route.consigne || "";
+            document.getElementById('edit-attendus').value = route.attendus || "";
+            document.getElementById('edit-competences').value = route.competences || "";
             document.getElementById('edit-fiche').value = route.fiche || "";
             document.getElementById('consigne-modal').style.display = 'flex';
         }
@@ -4878,21 +4928,16 @@
         async function saveConsigne() {
             const route = (schoolConfig.customRoutes || []).find(r => r.id === currentRouteId);
             if (!route) return;
-            const consigne = document.getElementById('edit-consigne').value.trim();
-            const fiche = document.getElementById('edit-fiche').value.trim();
-            if (consigne) route.consigne = consigne; else delete route.consigne;
-            if (fiche) route.fiche = fiche; else delete route.fiche;
+            ['consigne', 'attendus', 'competences', 'fiche'].forEach(key => {
+                const value = document.getElementById('edit-' + key).value.trim();
+                if (value) route[key] = value; else delete route[key];
+            });
             document.getElementById('consigne-modal').style.display = 'none';
             schoolConfig.localUpdate = Date.now();
             await saveConfig();
             cloudSchedule();
-            if (hasUnsavedChanges) {
-                // On ne recharge pas le tracé en cours de modification : seul le bandeau est mis à jour
-                const old = activeBanner.innerHTML;
-                activeBanner.innerHTML = old.split('<div style="margin-top: 6px;')[0].split('<details')[0].split('<br><button onclick="openConsigneModal()"')[0] + consigneHtml(route);
-            } else {
-                selectCustomRoute(route.id);
-            }
+            const zone = activeBanner.querySelector('.fiche-zone');
+            if (zone) zone.outerHTML = consigneHtml(route); else if (!hasUnsavedChanges) selectCustomRoute(route.id);
         }
 
         // --- Les blocs d'une équipe, rangés par thème ---
