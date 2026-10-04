@@ -845,14 +845,25 @@
         <div class="modal-content">
             <h2>⚙️ Configuration</h2>
             <div class="form-group">
-                <label>1. Importer les photos des murs (Max 20) :</label>
-                <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                <label>1. Importer les photos des murs (20 au maximum) :</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #eff6ff; border: 2px solid #93c5fd; border-radius: 8px; padding: 8px;">
+                        <div style="font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">🧗 Photos des VOIES</div>
+                        <input type="file" id="wallImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this, 'voie')" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                        <div class="help-text">Pour le menu « Choisir une Voie ». Le nom doit contenir les numéros des secteurs visibles : « voie 1 2 3 », « voie 4 5 6 »…</div>
+                    </div>
+                    <div style="background: #f0fdf4; border: 2px solid #bbf7d0; border-radius: 8px; padding: 8px;">
+                        <div style="font-weight: bold; color: #15803d; margin-bottom: 4px;">🧱 Photos des BLOCS</div>
+                        <input type="file" id="blocImagesInput" accept="image/*" multiple onchange="handleImagesUpload(this, 'bloc')" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
+                        <div class="help-text">Pour le menu « Choix du mur de blocs ». Le nom est libre : l'appli ajoute « bloc » devant s'il n'y est pas.</div>
+                    </div>
+                </div>
                 <div id="photos-status" class="config-status empty"></div>
                 <div class="help-text">
-                    ➕ Les photos importées <b>s'ajoutent</b> à celles déjà en mémoire, sans rien effacer (même nom = photo remplacée). Vos blocs sont conservés.<br>
-                    ✏️ <b>Renommez vos photos avant de les importer</b> : « voie 1 2 3 », « voie 4 5 6 »… pour les voies, et « bloc 1 », « bloc 2 »… pour les blocs.<br>
-                    C'est le nom du fichier qui sert à classer : les numéros associent chaque voie à sa photo, et le mot « bloc » réserve la photo aux blocs.
+                    ➕ Les photos importées <b>s'ajoutent</b> à celles déjà en mémoire, sans rien effacer (même nom = photo remplacée). Vos blocs dessinés sont conservés.<br>
+                    C'est le bouton utilisé qui classe la photo : une photo de voies ne va jamais dans le menu des blocs, et inversement.
                 </div>
+            </div>
             </div>
             <div class="form-group">
                 <label>2. Importer le fichier Excel avec les difficultés des voies :</label>
@@ -978,7 +989,7 @@
 
             <div id="team-choice" style="display: none;">
                 <p id="team-choice-text" style="font-weight: bold; color: #334155;"></p>
-                <button id="team-choice-merge" onclick="finishTeamLogin('merge')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; background-color: #0f766e; color: white; border: none;">➕ Les ajouter à l'espace de l'équipe</button>
+                <button id="team-choice-merge" onclick="finishTeamLogin('merge')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; background-color: #0f766e; color: white; border: none;">➕ Les garder et les ajouter à l'espace de l'équipe</button>
                 <button onclick="finishTeamLogin('replace')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; background-color: #b45309; color: white; border: none;">🧹 Les retirer de cet appareil et prendre celles de l'équipe</button>
                 <button onclick="finishTeamLogin('cancel')" style="display: block; width: 100%; padding: 10px; background-color: #64748b; color: white; border: none;">Annuler</button>
                 <p class="help-text">Les tracés « Élève » ne sont jamais envoyés en ligne et restent sur cet appareil.</p>
@@ -1294,16 +1305,24 @@
         function populateBlocWallDropdown() {
             const blocSelect = document.getElementById('blocWallSelect');
             blocSelect.innerHTML = '<option value="">-- Choix du mur de blocs --</option>';
-            // Ce menu ne propose que les photos de blocs (nom contenant « bloc »).
-            // S'il n'y en a aucune, il propose toutes les photos.
-            const hasBlocPhotos = schoolConfig.imageNames.some(n => /bloc/i.test(n));
+            // Ce menu ne propose que les photos de blocs. Les photos de voies n'y apparaissent jamais.
+            let count = 0;
             schoolConfig.imageNames.forEach((name, index) => {
-                if (hasBlocPhotos && !/bloc/i.test(name)) return;
+                if (!isBlocPhoto(name)) return;
                 const opt = document.createElement('option');
                 opt.value = index;
                 opt.textContent = `📸 ${name.replace(/\.[^/.]+$/, "")}`;
                 blocSelect.appendChild(opt);
+                count++;
             });
+            if (count === 0) {
+                blocSelect.options[0].textContent = "-- Aucune photo de bloc (voir ⚙️ Configuration) --";
+            }
+        }
+
+        // Une photo est une photo de bloc quand son nom contient « bloc » (l'import par le bouton « Blocs » le garantit)
+        function isBlocPhoto(name) {
+            return /bloc/i.test(String(name || ""));
         }
 
         function renderCustomLists() {
@@ -1477,12 +1496,14 @@
             if (imported) {
                 const chip = (n, i) => `<span style="display: inline-flex; align-items: center; gap: 4px; background: #ffffff; border: 1px solid #86efac; border-radius: 12px; padding: 1px 4px 1px 8px; margin: 2px 4px 2px 0;">${escapeHtml(n.replace(/\.[^/.]+$/, ""))}`
                     + `<button onclick="removePhoto(${i})" title="Retirer cette photo" style="border: none; background: none; color: #b91c1c; padding: 0 4px; font-size: 0.75rem; cursor: pointer;">✖</button></span>`;
-                const isBloc = n => /bloc/i.test(n);
+                const isBloc = isBlocPhoto;
                 const voies = names.map((n, i) => isBloc(n) ? "" : chip(n, i)).join('');
                 const blocsPhotos = names.map((n, i) => isBloc(n) ? chip(n, i) : "").join('');
+                const sansNumero = names.filter(n => !isBloc(n) && !/\d/.test(n.replace(/\.[^/.]+$/, "")));
                 setStatus('photos-status', true, `✅ ${images.length} photo(s) en mémoire`
-                    + `<br><span><b>Voies :</b> ${voies || "aucune"}</span>`
-                    + `<br><span><b>Blocs :</b> ${blocsPhotos || "aucune"}</span>`);
+                    + `<br><span><b>🧗 Voies :</b> ${voies || "aucune"}</span>`
+                    + `<br><span><b>🧱 Blocs :</b> ${blocsPhotos || "aucune"}</span>`
+                    + (sansNumero.length ? `<br><span style="color: #b45309;">⚠️ Sans numéro de secteur dans le nom, donc reliée à aucune voie : ${sansNumero.map(n => escapeHtml(n)).join(', ')}</span>` : ""));
             } else {
                 setStatus('photos-status', false, "Aucune photo importée (photo de démonstration affichée).");
             }
@@ -2043,13 +2064,24 @@
         }
 
         // Les nouvelles photos S'AJOUTENT à celles déjà en mémoire (même nom = photo remplacée)
-        function handleImagesUpload(input) {
-            const files = Array.from(input.files);
+        function handleImagesUpload(input, kind) {
+            let files = Array.from(input.files);
             if (files.length === 0) return;
+
+            // Le bouton utilisé décide de la catégorie. Nom enregistré : « bloc … » pour les blocs.
+            const storedName = file => (kind === 'bloc' && !isBlocPhoto(file.name)) ? "bloc " + file.name : file.name;
+            if (kind !== 'bloc') {
+                const misplaced = files.filter(f => isBlocPhoto(f.name));
+                if (misplaced.length > 0) {
+                    alert(`⚠️ ${misplaced.length} photo(s) portent le mot « bloc » dans leur nom :\n${misplaced.map(f => "• " + f.name).join("\n")}\n\nElles ne sont pas importées ici. Utilisez le bouton « Photos des BLOCS », ou renommez-les s'il s'agit bien de voies.`);
+                    files = files.filter(f => !isBlocPhoto(f.name));
+                    if (files.length === 0) { input.value = ""; return; }
+                }
+            }
 
             const photos = getImportedPhotos();
             const before = Object.keys(photos);
-            const total = new Set(before.concat(files.map(f => f.name))).size;
+            const total = new Set(before.concat(files.map(storedName))).size;
             if (total > 20) { 
                 alert(`❌ Limite de 20 photos : vous en auriez ${total}. Retirez d'abord des photos dans la liste (bouton ✖).`); 
                 input.value = ""; 
@@ -2067,7 +2099,7 @@
                 applyPhotos(photos);
                 schoolConfig.localUpdate = Date.now(); 
                 await saveConfig();
-                let message = `✅ ${added} photo(s) ajoutée(s)`;
+                let message = `✅ ${added} photo(s) de ${kind === 'bloc' ? "blocs" : "voies"} ajoutée(s)`;
                 if (replaced > 0) message += `, ${replaced} remplacée(s)`;
                 message += `.\nTotal en mémoire : ${schoolConfig.images.length} photo(s). Vos blocs sont conservés.`;
                 if (failed > 0) message += `\n⚠️ ${failed} fichier(s) illisible(s).`;
@@ -2095,8 +2127,9 @@
                         canvas.height = height;
                         canvas.getContext('2d').drawImage(imgObj, 0, 0, width, height);
                         
-                        if (photos[file.name]) replaced++; else added++;
-                        photos[file.name] = canvas.toDataURL('image/jpeg', 0.80);
+                        const name = storedName(file);
+                        if (photos[name]) replaced++; else added++;
+                        photos[name] = canvas.toDataURL('image/jpeg', 0.80);
                         filesProcessed++;
                         finish();
                     };
@@ -2130,7 +2163,7 @@
             const namesOk = names.length === schoolConfig.images.length;
             const allIdx = schoolConfig.images.map((_, i) => i);
             // Les photos dont le nom contient "bloc" sont réservées aux blocs
-            const voieIdx = namesOk ? allIdx.filter(i => !/bloc/i.test(names[i])) : [];
+            const voieIdx = namesOk ? allIdx.filter(i => !isBlocPhoto(names[i])) : [];
             // S'il n'y a que des photos de blocs, la voie reste sans photo (jamais sur une photo de bloc)
             if (namesOk && voieIdx.length === 0 && allIdx.length > 0) return { src: "", name: "" };
             const pool = voieIdx.length > 0 ? voieIdx : allIdx;
@@ -3453,9 +3486,9 @@
             const previous = schoolConfig.cloud && schoolConfig.cloud.equipe;
             if (hasLocalSharedData() && previous !== pendingTeam.equipe) {
                 document.getElementById('team-choice-text').textContent = previous
-                    ? `Cet appareil contient les données de l'équipe « ${previous} ». Pour passer à « ${pendingTeam.equipe} », elles seront retirées de cet appareil (elles restent en ligne pour « ${previous} »).`
+                    ? `Cet appareil contient les photos, voies et blocs de l'équipe « ${previous} ». Que voulez-vous en faire en passant à « ${pendingTeam.equipe} » ?`
                     : `Cet appareil contient déjà des photos, des voies ou des blocs. Que voulez-vous en faire ?`;
-                document.getElementById('team-choice-merge').style.display = previous ? 'none' : 'block';
+                document.getElementById('team-choice-merge').style.display = 'block';
                 showTeamPanel('choice');
                 return;
             }
@@ -3470,6 +3503,8 @@
                 return;
             }
             if (mode === 'replace') {
+                if (!confirm("Les photos, les voies et les blocs de cet appareil vont en être retirés.\nUne sauvegarde de vos blocs va d'abord être téléchargée.\n\nContinuer ?")) return;
+                if ((schoolConfig.customRoutes || []).length > 0) exportData();
                 // On repart des seules données de l'équipe (les tracés « Élève » de cet appareil sont gardés)
                 (schoolConfig.customRoutes || []).filter(isSharedBloc).forEach(r => removeRouteMarkers(r.id));
                 schoolConfig = {
