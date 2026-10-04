@@ -3513,7 +3513,27 @@
 
                 try {
                     if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
-                    let newCount = 0, updated = 0;
+                    let newCount = 0, updated = 0, removed = 0, missing = 0;
+                    const localPhotos = getImportedPhotos();
+                    const plain = name => String(name || "").toLowerCase().replace(/\.[^/.]+$/, "").replace(/\s+/g, " ").trim();
+                    // Photo d'un bloc importé : celle de cet appareil si elle porte le même nom, sinon celle fournie par le fichier
+                    const photoFor = (nr) => {
+                        if (!nr.imageName) return nr.imageSrc || "";
+                        if (localPhotos[nr.imageName]) return localPhotos[nr.imageName];
+                        const twin = Object.keys(localPhotos).find(k => plain(k) === plain(nr.imageName));
+                        if (twin) return localPhotos[twin];
+                        return nr.imageSrc || (imported.photos && imported.photos[nr.imageName]) || "";
+                    };
+                    // Le fichier peut demander le retrait d'anciens blocs qu'il remplace
+                    (Array.isArray(imported.supprimer) ? imported.supprimer : []).forEach(id => {
+                        const index = schoolConfig.customRoutes.findIndex(cr => cr.id === id);
+                        if (index === -1) return;
+                        schoolConfig.customRoutes.splice(index, 1);
+                        removeRouteMarkers(id);
+                        cloudForgetBloc(id);
+                        if (currentRouteId === id) { currentRouteId = null; clearMarkersDOM(); activeMarkers = []; hasUnsavedChanges = false; }
+                        removed++;
+                    });
                     imported.customRoutes.forEach(nr => {
                         if (!nr || !nr.id) return;
                         // Bloc déjà présent : on complète sa fiche (textes), sans toucher à son tracé ni à sa photo
@@ -3533,15 +3553,16 @@
                             return;
                         }
                         if (!schoolConfig.customRoutes.find(cr => cr.id === nr.id)) {
-                            // Si la photo du même nom est déjà sur cet appareil, on l'utilise (pas de doublon)
-                            const localPhotos = getImportedPhotos();
-                            if (nr.imageName && localPhotos[nr.imageName]) nr.imageSrc = localPhotos[nr.imageName];
+                            nr.imageSrc = photoFor(nr);
+                            if (!nr.imageSrc) { missing++; return; }
                             schoolConfig.customRoutes.push(nr); 
                             writeRouteMarkers(nr.id, imported.markers[nr.id]);
                             newCount++;
                         }
                     });
                     
+                    if (missing > 0) alert(`⚠️ ${missing} bloc(s) n'ont pas pu être importés : la photo de leur mur est introuvable.`);
+                    if (removed > 0) { schoolConfig.localUpdate = Date.now(); cloudSchedule(); }
                     if (newCount === 0 && updated > 0) {
                         schoolConfig.localUpdate = Date.now();
                         await saveConfig();
@@ -3556,7 +3577,7 @@
                         renderCustomLists();
                         updateConfigStatus();
                         if (saved) {
-                            alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !`);
+                            alert(`✅ ${newCount} nouveau(x) bloc(s) importé(s) !` + (removed ? `\n${removed} ancien(s) bloc(s) remplacé(s) par cette nouvelle série.` : ""));
                         } else {
                             alert(`⚠️ ${newCount} bloc(s) affiché(s), mais l'enregistrement a échoué : la mémoire du navigateur est pleine ou bloquée (navigation privée ?). Ils disparaîtront à la fermeture de la page.`);
                         }
