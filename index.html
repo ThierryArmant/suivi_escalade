@@ -613,6 +613,7 @@
         </div>
 
         <div class="controls-group">
+            <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
             <button class="demo-btn" onclick="loadDemoMode()" title="Charge la photo par défaut">🎁 Démo</button>
         </div>
@@ -885,6 +886,49 @@
         </div>
     </div>
 
+    <div id="team-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>👥 Espace d'équipe</h2>
+
+            <div id="team-login">
+                <p class="help-text" style="margin-top: 0;">Connectez-vous à l'espace de votre équipe pour retrouver ses photos, ses voies et ses blocs sur n'importe quel appareil, et partager les vôtres. Le nom d'équipe et le mot de passe sont donnés par le collègue référent.</p>
+                <div class="form-group">
+                    <label>Nom de l'équipe :</label>
+                    <input type="text" id="team-input-name" placeholder="Ex : giono" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe de l'équipe :</label>
+                    <input type="password" id="team-input-pass" autocomplete="current-password" onkeydown="if (event.key === 'Enter') teamLogin()" style="padding: 8px 12px; font-size: 0.95rem; border-radius: 5px; border: 1px solid #ccc; font-weight: bold;">
+                </div>
+                <div id="team-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="closeTeamModal()" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Continuer sans équipe</button>
+                    <button id="team-login-btn" onclick="teamLogin()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">Se connecter</button>
+                </div>
+            </div>
+
+            <div id="team-choice" style="display: none;">
+                <p id="team-choice-text" style="font-weight: bold; color: #334155;"></p>
+                <button id="team-choice-merge" onclick="finishTeamLogin('merge')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; background-color: #0f766e; color: white; border: none;">➕ Les ajouter à l'espace de l'équipe</button>
+                <button onclick="finishTeamLogin('replace')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; background-color: #b45309; color: white; border: none;">🧹 Les retirer de cet appareil et prendre celles de l'équipe</button>
+                <button onclick="finishTeamLogin('cancel')" style="display: block; width: 100%; padding: 10px; background-color: #64748b; color: white; border: none;">Annuler</button>
+                <p class="help-text">Les tracés « Élève » ne sont jamais envoyés en ligne et restent sur cet appareil.</p>
+            </div>
+
+            <div id="team-connected" style="display: none;">
+                <div class="config-status ok">✅ Connecté à l'équipe <span id="team-name" style="font-weight: bold; font-size: 0.9rem;"></span></div>
+                <p style="margin: 12px 0 4px 0; color: #334155;">État : <b id="team-state"></b></p>
+                <p id="team-last" class="help-text" style="margin-top: 0;"></p>
+                <p class="help-text">Les photos, le topo et les blocs sont enregistrés en ligne automatiquement après chaque modification, et partagés avec l'équipe. Sans réseau, tout reste sur cet appareil et part en ligne à la prochaine connexion. Les tracés « Élève » ne sont jamais envoyés.</p>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="teamLogout()" style="background-color: #fee2e2; color: #991b1b; border: 2px solid #fca5a5; margin-right: 10px; padding: 10px 15px;">Se déconnecter</button>
+                    <button onclick="cloudSync()" style="background-color: #2563eb; color: white; border: none; margin-right: 10px; padding: 10px 15px;">🔄 Synchroniser maintenant</button>
+                    <button onclick="closeTeamModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="suivi-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 1000px;">
             <h2 id="suivi-modal-title">📊 Fiche de suivi</h2>
@@ -1040,6 +1084,7 @@
         async function saveConfig() {
             try { 
                 await saveToDB("school_config_master", schoolConfig); 
+                cloudSchedule();
                 return true;
             } catch (err) { 
                 console.error(err); 
@@ -1073,6 +1118,7 @@
                 schoolConfig.markerStore[id] = list; 
                 saveConfig();
             }
+            cloudSchedule();
         }
 
         function removeRouteMarkers(id) {
@@ -1081,9 +1127,16 @@
                 delete schoolConfig.markerStore[id]; 
                 saveConfig(); 
             }
+            cloudSchedule();
         }
 
+        let configLoaded = false;
+
         async function loadDemoMode() {
+            if (typeof cloudBusy !== 'undefined' && cloudBusy) { 
+                alert("Synchronisation avec l'équipe en cours : réessayez dans un instant."); 
+                return; 
+            }
             const demoPhotoUrl = "voies 1 2 3.jpg";
             schoolConfig = {
                 images: [demoPhotoUrl], 
@@ -1119,16 +1172,22 @@
                 return; 
             }
 
-            let savedConfig = null;
-            try { 
-                savedConfig = await getFromDB("school_config_master"); 
-            } catch(e) { 
-                console.error(e); 
-            }
-
-            if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
-                schoolConfig = savedConfig;
-            } else { 
+            // La mémoire du navigateur n'est relue qu'au premier démarrage : ensuite, la version en cours fait foi
+            if (!configLoaded) {
+                configLoaded = true;
+                let savedConfig = null;
+                try { 
+                    savedConfig = await getFromDB("school_config_master"); 
+                } catch(e) { 
+                    console.error(e); 
+                }
+                if (savedConfig && savedConfig.images && savedConfig.images.length > 0) {
+                    schoolConfig = savedConfig;
+                } else { 
+                    await loadDemoMode(); 
+                    return; 
+                }
+            } else if (!schoolConfig.images || schoolConfig.images.length === 0) {
                 await loadDemoMode(); 
                 return; 
             }
@@ -1243,6 +1302,7 @@
                     e.stopPropagation();
                     if (confirm(`Voulez-vous supprimer "${r.name}" ?`)) {
                         schoolConfig.customRoutes = schoolConfig.customRoutes.filter(route => route.id !== r.id);
+                        cloudForgetBloc(r.id);
                         removeRouteMarkers(r.id);
                         schoolConfig.localUpdate = Date.now(); 
                         await saveConfig();
@@ -1987,6 +2047,7 @@
             }
             if (!confirm(`Retirer la photo « ${name} » ?\nLes blocs déjà dessinés dessus sont conservés.`)) return;
             delete photos[name];
+            cloudForgetPhoto(name);
             applyPhotos(photos);
             schoolConfig.localUpdate = Date.now(); 
             await saveConfig();
@@ -2589,12 +2650,24 @@
                 if (found.color) targetMarkers = targetMarkers.map(m => Object.assign({}, m, { color: found.color }));
             }
 
-            const imageName = getImageNameFor(targetImage, found);
+            let imageName = getImageNameFor(targetImage, found);
+            // Connecté à une équipe : le téléphone de l'élève ira chercher la photo dans l'espace de l'équipe
+            let teamForQR = "", photoOnline = true;
+            if (cloudTeam && found) {
+                const p = blocPhotoName(found, getImportedPhotos());
+                const online = !!(p.name && !p.keepSrc && cloudMeta().photos[p.name]);
+                if (p.name && !p.keepSrc && (online || isSharedBloc(found))) {
+                    imageName = p.name; 
+                    teamForQR = cloudTeam.equipe; 
+                    photoOnline = online;
+                }
+            }
             const packed = encodeMarkers(targetMarkers);
             const enc = encodeURIComponent;
 
             const shareUrl = window.location.origin + window.location.pathname 
                 + "?mode=eleve&bg=" + (imageName ? enc(imageName) : "default") 
+                + (teamForQR ? "&eq=" + enc(teamForQR) : "")
                 + "&v=2&c=" + packed.c + "&r=" + packed.r 
                 + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
 
@@ -2607,7 +2680,12 @@
             const warning = document.getElementById('qr-warning');
             warning.style.display = 'none';
             warning.textContent = "";
-            if (!imageName) {
+            if (teamForQR) {
+                if (!photoOnline) {
+                    warning.textContent = "⏳ La photo de ce mur n'est pas encore enregistrée en ligne. Attendez que le bouton d'équipe affiche « ☁️ à jour » avant de faire scanner ce code.";
+                    warning.style.display = 'block';
+                }
+            } else if (!imageName) {
                 warning.textContent = "⚠️ Photo du mur inconnue pour ce tracé : l'élève verra la photo par défaut. Recréez le bloc après avoir importé vos photos.";
                 warning.style.display = 'block';
             } else {
@@ -2646,7 +2724,16 @@
                 banner.style.color = "#991b1b";
                 banner.innerHTML = "⚠️ <b>Photo du mur introuvable.</b><br><span style=\"font-size:0.85rem; font-weight:normal;\">Préviens ton professeur.</span>";
             };
-            img.src = wallSrc;
+            const eq = params.get('eq');
+            if (eq && bg && bg !== "default" && !/^https?:\/\//i.test(bg)) {
+                // Photo rangée dans l'espace de l'équipe ; à défaut, on essaie le fichier du site
+                fetch(CLOUD_URL + "?action=photo&equipe=" + encodeURIComponent(eq) + "&nom=" + encodeURIComponent(bg))
+                    .then(response => response.json())
+                    .then(d => { img.src = (d && d.ok && /^data:image\//.test(d.dataUrl)) ? d.dataUrl : wallSrc; })
+                    .catch(() => { img.src = wallSrc; });
+            } else {
+                img.src = wallSrc;
+            }
             
             document.body.classList.add('eleve');
             const wall = document.getElementById('wall-container');
@@ -2694,6 +2781,521 @@
             }
         }
 
+
+        // =========================================
+        // ESPACE D'ÉQUIPE : stockage en ligne partagé (Google Sheet + Drive)
+        // =========================================
+        // La mémoire du navigateur reste la copie de travail. Quand on est connecté à une équipe,
+        // les photos, le topo et les blocs sont en plus enregistrés en ligne et partagés avec l'équipe.
+        // Les tracés « Élève » (qui portent un nom) ne quittent jamais l'appareil.
+        const CLOUD_URL = "https://script.google.com/macros/s/AKfycbzdNNMfMgAJmYWYOxEhzS-UC36s99HYLLuQWieFRIcKHcFF0hAC9YMhMsBUAISIBNzfqw/exec";
+        const TEAM_KEY = "eps_team";
+        let cloudTeam = null;      // { equipe, mdp, etablissement }
+        let cloudBusy = false, cloudAgain = false, cloudTimer = null;
+        let cloudStateText = "";
+
+        function loadTeam() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(TEAM_KEY) || "null");
+                if (saved && saved.equipe && saved.mdp) cloudTeam = saved;
+            } catch (e) { cloudTeam = null; }
+        }
+
+        function cloudMeta() {
+            if (!schoolConfig.cloud) schoolConfig.cloud = {};
+            const m = schoolConfig.cloud;
+            m.blocs = m.blocs || {};
+            m.photos = m.photos || {};
+            m.pendingDeletes = m.pendingDeletes || [];
+            m.pendingPhotoDeletes = m.pendingPhotoDeletes || [];
+            return m;
+        }
+
+        // Empreinte courte d'un contenu : sert à savoir si quelque chose a changé depuis le dernier enregistrement
+        function fingerprint(text) {
+            let h1 = 0x811c9dc5, h2 = 5381;
+            for (let i = 0; i < text.length; i++) {
+                const c = text.charCodeAt(i);
+                h1 = Math.imul(h1 ^ c, 16777619);
+                h2 = (Math.imul(h2, 33) + c) | 0;
+            }
+            return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + text.length.toString(36);
+        }
+
+        function stableStringify(v) {
+            if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+            if (v && typeof v === 'object') {
+                return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined)
+                    .map(k => JSON.stringify(k) + ':' + stableStringify(v[k])).join(',') + '}';
+            }
+            return JSON.stringify(v === undefined ? null : v);
+        }
+
+        async function cloudCall(payload, withAuth) {
+            const body = withAuth === false ? payload : Object.assign({}, payload, { equipe: cloudTeam.equipe, mdp: cloudTeam.mdp });
+            let response;
+            try {
+                response = await fetch(CLOUD_URL, { method: 'POST', body: JSON.stringify(body) });
+            } catch (e) {
+                const err = new Error("Pas de connexion au stockage en ligne.");
+                err.offline = true;
+                throw err;
+            }
+            let data;
+            try {
+                data = await response.json();
+            } catch (e) {
+                throw new Error("Réponse inattendue du stockage en ligne.");
+            }
+            if (!data || !data.ok) {
+                const err = new Error(data && data.erreur ? data.erreur : "Erreur du stockage en ligne.");
+                err.refused = true;
+                throw err;
+            }
+            return data;
+        }
+
+        // --- Ce qui est envoyé pour un bloc : sa fiche (sans la photo, remplacée par son nom) et ses balises ---
+        function blocPhotoName(route, photos) {
+            const src = route.imageSrc || "";
+            if (!src.startsWith('data:')) return { name: route.imageName || "", keepSrc: true };
+            for (const n in photos) if (photos[n] === src) return { name: n };
+            // Photo propre à ce bloc (absente de la liste des murs) : elle est envoyée sous un nom technique
+            return { name: 'mur-' + fingerprint(src) + '.jpg', extra: src };
+        }
+
+        function blocPayload(route, photos, extras) {
+            const p = blocPhotoName(route, photos);
+            if (p.extra) extras[p.name] = p.extra;
+            const copy = Object.assign({}, route);
+            if (!p.keepSrc) delete copy.imageSrc;
+            if (p.name) copy.imageName = p.name;
+            return { id: route.id, route: copy, markers: readRouteMarkers(route.id) || [] };
+        }
+
+        function blocPrint(payload) {
+            return fingerprint(stableStringify({ route: payload.route, markers: payload.markers }));
+        }
+
+        function topoPayload() {
+            const routes = (schoolConfig.routes || []).filter(r => !String(r.id).startsWith('demo_')).map(r => {
+                const copy = Object.assign({}, r);
+                delete copy.imageSrc;
+                delete copy.imageName;
+                return copy;
+            });
+            if (routes.length === 0) return null;
+            return { excelName: schoolConfig.excelName || "", excelDate: schoolConfig.excelDate || "", routes: routes };
+        }
+
+        function isSharedBloc(route) {
+            return route && route.type !== 'individualise';
+        }
+
+        // --- RÉCUPÉRER ce que l'équipe a en ligne ---
+        async function cloudPull() {
+            const data = await cloudCall({ action: 'lire' });
+            const meta = cloudMeta();
+            const photos = getImportedPhotos();
+            const hadPhotos = Object.keys(photos).length;
+            let changed = false, photosChanged = false;
+
+            const cache = {};
+            const fetchPhoto = async (nom) => {
+                if (!cache[nom]) {
+                    setCloudState(`🔄 photo « ${nom} »…`);
+                    cache[nom] = (await cloudCall({ action: 'photo', equipe: cloudTeam.equipe, nom: nom }, false)).dataUrl;
+                }
+                return cache[nom];
+            };
+
+            // 1. Photos des murs
+            const remotePhotos = {};
+            (data.photos || []).forEach(p => { remotePhotos[p.nom] = p.modifie_le; });
+            for (const nom of Object.keys(remotePhotos)) {
+                const m = meta.photos[nom];
+                if (nom.startsWith('mur-')) {
+                    if (m) m.stamp = remotePhotos[nom];
+                    continue;
+                }
+                if (meta.pendingPhotoDeletes.includes(nom)) continue;
+                if (photos[nom] && m) {
+                    if (!m.stamp) { m.stamp = remotePhotos[nom]; continue; }
+                    if (m.stamp === remotePhotos[nom]) continue;            // inchangée en ligne
+                    if (fingerprint(photos[nom]) !== m.fp) continue;        // modifiée ici : c'est celle-ci qui sera envoyée
+                }
+                const dataUrl = await fetchPhoto(nom);
+                photos[nom] = dataUrl;
+                meta.photos[nom] = { fp: fingerprint(dataUrl), stamp: remotePhotos[nom] };
+                photosChanged = true;
+            }
+            // Photos retirées par un collègue
+            Object.keys(photos).forEach(nom => {
+                const m = meta.photos[nom];
+                if (m && m.stamp && !(nom in remotePhotos) && fingerprint(photos[nom]) === m.fp && Object.keys(photos).length > 1) {
+                    delete photos[nom];
+                    delete meta.photos[nom];
+                    photosChanged = true;
+                }
+            });
+            if (photosChanged && Object.keys(photos).length > 0) {
+                applyPhotos(photos);
+                changed = true;
+            }
+
+            // 2. Topo des voies
+            if (data.topo && Array.isArray(data.topo.routes)) {
+                const remotePrint = fingerprint(stableStringify(data.topo));
+                const local = topoPayload();
+                const localPrint = local ? fingerprint(stableStringify(local)) : "";
+                if (remotePrint === localPrint) {
+                    meta.topo = remotePrint;
+                } else if (!local || meta.topo === undefined || meta.topo === localPrint) {
+                    // topo local absent, jamais partagé, ou inchangé depuis le dernier enregistrement : on prend celui de l'équipe
+                    schoolConfig.routes = data.topo.routes.map(r => Object.assign({}, r));
+                    schoolConfig.excelName = data.topo.excelName || "";
+                    schoolConfig.excelDate = data.topo.excelDate || "";
+                    if (Object.keys(photos).length > 0) relinkRoutesToPhotos();
+                    meta.topo = remotePrint;
+                    changed = true;
+                }
+            }
+
+            // 3. Blocs
+            if (!schoolConfig.customRoutes) schoolConfig.customRoutes = [];
+            const remoteIds = {};
+            for (const rb of (data.blocs || [])) {
+                if (!rb || !rb.id || !rb.route) continue;
+                remoteIds[rb.id] = true;
+                if (meta.pendingDeletes.includes(rb.id)) continue;
+                const remotePrint = fingerprint(stableStringify({ route: rb.route, markers: rb.markers || [] }));
+                const index = schoolConfig.customRoutes.findIndex(r => r.id === rb.id);
+                if (index !== -1) {
+                    const localPrint = blocPrint(blocPayload(schoolConfig.customRoutes[index], photos, {}));
+                    if (localPrint === remotePrint) { meta.blocs[rb.id] = remotePrint; continue; }
+                    if (meta.blocs[rb.id] !== undefined && meta.blocs[rb.id] !== localPrint) continue; // modifié ici : sera envoyé
+                }
+                const route = Object.assign({}, rb.route);
+                if (!route.imageSrc && route.imageName) {
+                    if (photos[route.imageName]) {
+                        route.imageSrc = photos[route.imageName];
+                    } else {
+                        // Photo propre à ce bloc : on la récupère, et on note qu'elle est déjà en ligne
+                        route.imageSrc = await fetchPhoto(route.imageName);
+                        meta.photos[route.imageName] = { fp: fingerprint(route.imageSrc), stamp: remotePhotos[route.imageName] || "" };
+                    }
+                }
+                if (index !== -1) schoolConfig.customRoutes[index] = route; else schoolConfig.customRoutes.push(route);
+                writeRouteMarkers(rb.id, rb.markers || []);
+                meta.blocs[rb.id] = remotePrint;
+                changed = true;
+            }
+            // Blocs supprimés par un collègue
+            schoolConfig.customRoutes = schoolConfig.customRoutes.filter(r => {
+                if (!isSharedBloc(r)) return true;
+                const known = meta.blocs[r.id];
+                if (known === undefined || remoteIds[r.id]) return true;
+                if (blocPrint(blocPayload(r, photos, {})) !== known) {
+                    delete meta.blocs[r.id]; // modifié ici entre-temps : il sera renvoyé
+                    return true;
+                }
+                removeRouteMarkers(r.id);
+                delete meta.blocs[r.id];
+                if (currentRouteId === r.id) {
+                    currentRouteId = null;
+                    clearMarkersDOM();
+                    activeMarkers = [];
+                    hasUnsavedChanges = false;
+                }
+                changed = true;
+                return false;
+            });
+
+            return changed || (hadPhotos !== Object.keys(getImportedPhotos()).length);
+        }
+
+        // --- ENREGISTRER en ligne ce qui a changé sur cet appareil ---
+        async function cloudPush() {
+            const meta = cloudMeta();
+            const photos = getImportedPhotos();
+            const extras = {};
+            const payloads = (schoolConfig.customRoutes || []).filter(isSharedBloc).map(r => {
+                const p = blocPayload(r, photos, extras);
+                if (p.route.imageName) r.imageName = p.route.imageName;
+                return p;
+            });
+
+            // Suppressions faites sur cet appareil
+            for (const id of meta.pendingDeletes.slice()) {
+                if (!(schoolConfig.customRoutes || []).some(r => r.id === id)) await cloudCall({ action: 'supprimerBloc', id: id });
+                meta.pendingDeletes = meta.pendingDeletes.filter(x => x !== id);
+                delete meta.blocs[id];
+            }
+            for (const nom of meta.pendingPhotoDeletes.slice()) {
+                if (!photos[nom]) {
+                    await cloudCall({ action: 'supprimerPhoto', nom: nom });
+                    delete meta.photos[nom];
+                }
+                meta.pendingPhotoDeletes = meta.pendingPhotoDeletes.filter(x => x !== nom);
+            }
+
+            // Photos nouvelles ou remplacées
+            const all = Object.assign({}, photos, extras);
+            const names = Object.keys(all).filter(nom => !(meta.photos[nom] && meta.photos[nom].fp === fingerprint(all[nom])));
+            for (let i = 0; i < names.length; i++) {
+                setCloudState(`🔄 envoi des photos (${i + 1}/${names.length})…`);
+                await cloudCall({ action: 'enregistrerPhoto', nom: names[i], dataUrl: all[names[i]] });
+                meta.photos[names[i]] = { fp: fingerprint(all[names[i]]) };
+            }
+
+            // Topo
+            const topo = topoPayload();
+            if (topo) {
+                const print = fingerprint(stableStringify(topo));
+                if (print !== meta.topo) {
+                    setCloudState("🔄 envoi du topo…");
+                    await cloudCall({ action: 'enregistrerTopo', topo: topo });
+                    meta.topo = print;
+                }
+            }
+
+            // Blocs nouveaux ou modifiés
+            const toSend = payloads.filter(p => blocPrint(p) !== meta.blocs[p.id]);
+            for (let i = 0; i < toSend.length; i += 10) {
+                const part = toSend.slice(i, i + 10);
+                setCloudState(`🔄 envoi des blocs (${Math.min(i + 10, toSend.length)}/${toSend.length})…`);
+                await cloudCall({ action: 'enregistrerBlocs', blocs: part });
+                part.forEach(p => { meta.blocs[p.id] = blocPrint(p); });
+            }
+
+            // Relevé des dates des photos envoyées (pour repérer plus tard un remplacement par un collègue)
+            if (names.length > 0) {
+                const data = await cloudCall({ action: 'lire' });
+                (data.photos || []).forEach(p => { if (meta.photos[p.nom]) meta.photos[p.nom].stamp = p.modifie_le; });
+            }
+        }
+
+        function cloudForgetBloc(id) {
+            if (!cloudTeam && !(schoolConfig.cloud && schoolConfig.cloud.equipe)) return;
+            const meta = cloudMeta();
+            if (meta.blocs[id] !== undefined && !meta.pendingDeletes.includes(id)) meta.pendingDeletes.push(id);
+        }
+
+        function cloudForgetPhoto(nom) {
+            if (!cloudTeam && !(schoolConfig.cloud && schoolConfig.cloud.equipe)) return;
+            const meta = cloudMeta();
+            if (meta.photos[nom] && !meta.pendingPhotoDeletes.includes(nom)) meta.pendingPhotoDeletes.push(nom);
+        }
+
+        // Appelé après chaque enregistrement local : programme un enregistrement en ligne
+        function cloudSchedule() {
+            if (!cloudTeam) return;
+            if (cloudBusy) { cloudAgain = true; return; }
+            clearTimeout(cloudTimer);
+            cloudTimer = setTimeout(() => cloudSync(), 1500);
+            setCloudState("⏳ à enregistrer en ligne");
+        }
+
+        async function cloudSync() {
+            if (!cloudTeam) return false;
+            if (cloudBusy) { cloudAgain = true; return false; }
+            clearTimeout(cloudTimer);
+            cloudBusy = true;
+            cloudAgain = false;
+            setCloudState("🔄 synchronisation…");
+            let ok = false;
+            try {
+                const changed = await cloudPull();
+                await cloudPush();
+                const meta = cloudMeta();
+                meta.equipe = cloudTeam.equipe;
+                meta.lastSync = new Date().toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+                await saveToDB("school_config_master", schoolConfig);
+                if (changed) refreshAfterCloud();
+                setCloudState("☁️ à jour");
+                ok = true;
+            } catch (e) {
+                console.error(e);
+                try { await saveToDB("school_config_master", schoolConfig); } catch (e2) { /* la mémoire locale n'a pas pu être écrite */ }
+                if (e && e.offline) setCloudState("⚠️ hors ligne (gardé sur cet appareil)");
+                else setCloudState("⚠️ " + (e && e.message ? e.message : "erreur"));
+            } finally {
+                cloudBusy = false;
+            }
+            if (ok && cloudAgain) { cloudAgain = false; cloudSchedule(); }
+            return ok;
+        }
+
+        // Après une récupération : remet à jour les menus et l'affichage, sans déranger un tracé en cours
+        function refreshAfterCloud() {
+            const wallSelect = document.getElementById('blocWallSelect');
+            const selectedWall = wallSelect.value !== "" ? (schoolConfig.imageNames || [])[currentImageIndex] : null;
+            populateRouteDropdown();
+            populateBlocWallDropdown();
+            renderCustomLists();
+            updateConfigStatus();
+
+            if (currentRouteId && schoolConfig.routes.some(r => r.id === currentRouteId)) routeSelect.value = currentRouteId;
+            if (selectedWall) {
+                const index = schoolConfig.imageNames.indexOf(selectedWall);
+                if (index !== -1) { wallSelect.value = String(index); currentImageIndex = index; }
+            }
+            if (currentRouteId && currentRouteId.startsWith('custom_') && !hasUnsavedChanges) {
+                const found = schoolConfig.customRoutes.find(r => r.id === currentRouteId);
+                if (found) {
+                    if (found.imageSrc) img.src = found.imageSrc;
+                    loadRouteMarkers(currentRouteId);
+                }
+            } else if (!currentRouteId && !selectedWall && activeMarkers.length === 0 && schoolConfig.images.length > 0) {
+                img.src = schoolConfig.images[0];
+                activeBanner.style.background = "#dcfce7";
+                activeBanner.style.color = "#166534";
+                activeBanner.innerHTML = "✨ Données de l'équipe chargées : sélectionnez une voie ou créez un bloc.";
+            }
+        }
+
+        // --- Écran d'équipe ---
+        function setCloudState(text) {
+            cloudStateText = text || "";
+            updateTeamUI();
+        }
+
+        function updateTeamUI() {
+            const btn = document.getElementById('team-btn');
+            if (btn) {
+                btn.textContent = cloudTeam ? `👥 ${cloudTeam.equipe}${cloudStateText ? " · " + cloudStateText : ""}` : "👥 Équipe";
+                btn.style.backgroundColor = cloudTeam ? (cloudStateText.startsWith("⚠️") ? "#b45309" : "#0f766e") : "#475569";
+            }
+            const connected = document.getElementById('team-connected');
+            const loginBox = document.getElementById('team-login');
+            if (!connected || !loginBox) return;
+            connected.style.display = cloudTeam ? 'block' : 'none';
+            loginBox.style.display = cloudTeam ? 'none' : 'block';
+            if (cloudTeam) {
+                const meta = schoolConfig.cloud || {};
+                document.getElementById('team-name').textContent = cloudTeam.equipe + (cloudTeam.etablissement ? ` (${cloudTeam.etablissement})` : "");
+                document.getElementById('team-state').textContent = cloudStateText || "—";
+                document.getElementById('team-last').textContent = meta.lastSync ? `Dernier enregistrement en ligne : ${meta.lastSync}` : "";
+            }
+        }
+
+        function openTeamModal() {
+            document.getElementById('team-error').textContent = "";
+            document.getElementById('team-choice').style.display = 'none';
+            updateTeamUI();
+            document.getElementById('team-modal').style.display = 'flex';
+        }
+
+        function closeTeamModal() {
+            document.getElementById('team-modal').style.display = 'none';
+        }
+
+        function hasLocalSharedData() {
+            return Object.keys(getImportedPhotos()).length > 0
+                || (schoolConfig.customRoutes || []).some(isSharedBloc)
+                || (schoolConfig.routes || []).some(r => !String(r.id).startsWith('demo_'));
+        }
+
+        let pendingTeam = null;
+
+        async function teamLogin() {
+            const errorBox = document.getElementById('team-error');
+            const equipe = document.getElementById('team-input-name').value.trim();
+            const mdp = document.getElementById('team-input-pass').value;
+            errorBox.textContent = "";
+            if (!equipe || !mdp) { errorBox.textContent = "Saisissez le nom de l'équipe et son mot de passe."; return; }
+
+            const loginBtn = document.getElementById('team-login-btn');
+            loginBtn.disabled = true;
+            loginBtn.textContent = "Connexion…";
+            let answer;
+            try {
+                const response = await fetch(CLOUD_URL, { method: 'POST', body: JSON.stringify({ action: 'connexion', equipe: equipe, mdp: mdp }) });
+                answer = await response.json();
+            } catch (e) {
+                errorBox.textContent = "❌ Impossible de joindre le stockage en ligne. Vérifiez la connexion Internet.";
+                answer = null;
+            }
+            loginBtn.disabled = false;
+            loginBtn.textContent = "Se connecter";
+            if (!answer) return;
+            if (!answer.ok) { errorBox.textContent = "❌ " + (answer.erreur || "Connexion refusée."); return; }
+
+            pendingTeam = { equipe: answer.equipe, mdp: mdp, etablissement: answer.etablissement || "" };
+            const previous = schoolConfig.cloud && schoolConfig.cloud.equipe;
+            const choice = document.getElementById('team-choice');
+            const mergeBtn = document.getElementById('team-choice-merge');
+            if (hasLocalSharedData() && previous !== pendingTeam.equipe) {
+                // Cet appareil contient déjà des données qui ne viennent pas de cette équipe
+                document.getElementById('team-choice-text').textContent = previous
+                    ? `Cet appareil contient les données de l'équipe « ${previous} ». Pour passer à « ${pendingTeam.equipe} », elles seront retirées de cet appareil (elles restent en ligne pour « ${previous} »).`
+                    : `Cet appareil contient déjà des photos, des voies ou des blocs. Que voulez-vous en faire ?`;
+                mergeBtn.style.display = previous ? 'none' : 'block';
+                document.getElementById('team-login').style.display = 'none';
+                choice.style.display = 'block';
+                return;
+            }
+            await finishTeamLogin('merge');
+        }
+
+        async function finishTeamLogin(mode) {
+            if (!pendingTeam) return;
+            if (mode === 'cancel') {
+                pendingTeam = null;
+                document.getElementById('team-choice').style.display = 'none';
+                updateTeamUI();
+                return;
+            }
+            if (mode === 'replace') {
+                // On repart des seules données de l'équipe (les tracés « Élève » de cet appareil sont gardés)
+                (schoolConfig.customRoutes || []).filter(isSharedBloc).forEach(r => removeRouteMarkers(r.id));
+                schoolConfig = {
+                    images: [DEFAULT_WALL],
+                    imageNames: [DEFAULT_WALL],
+                    routes: [{ id: "demo_r1", secteur: 1, voie: 1, cotation: "4B", couleur: "jaune", hexColor: "#eab308", imageSrc: DEFAULT_WALL }],
+                    customRoutes: (schoolConfig.customRoutes || []).filter(r => !isSharedBloc(r)),
+                    markerStore: schoolConfig.markerStore
+                };
+                currentRouteId = null;
+                clearMarkersDOM();
+                activeMarkers = [];
+                hasUnsavedChanges = false;
+            }
+            // Changement d'équipe ou première connexion : on repart d'un suivi vierge. Reconnexion à la même équipe : on garde le suivi.
+            if (!(schoolConfig.cloud && schoolConfig.cloud.equipe === pendingTeam.equipe)) schoolConfig.cloud = {};
+            cloudTeam = pendingTeam;
+            pendingTeam = null;
+            try { localStorage.setItem(TEAM_KEY, JSON.stringify(cloudTeam)); } catch (e) { /* on restera connecté jusqu'à la fermeture de la page */ }
+            document.getElementById('team-input-pass').value = "";
+            document.getElementById('team-choice').style.display = 'none';
+            updateTeamUI();
+            const ok = await cloudSync();
+            refreshAfterCloud();
+            if (ok) closeTeamModal();
+        }
+
+        function teamLogout() {
+            if (!confirm("Se déconnecter de l'équipe ?\nLes données restent sur cet appareil, mais ne seront plus enregistrées en ligne.")) return;
+            cloudTeam = null;
+            clearTimeout(cloudTimer);
+            try { localStorage.removeItem(TEAM_KEY); } catch (e) { /* rien */ }
+            setCloudState("");
+        }
+
+        async function initTeam() {
+            loadTeam();
+            updateTeamUI();
+            if (new URLSearchParams(window.location.search).get('mode') === 'eleve') return;
+            window.addEventListener('online', () => { if (cloudTeam) cloudSync(); });
+            if (cloudTeam) {
+                cloudSync();
+                return;
+            }
+            // Première visite sur cet appareil : on propose de rejoindre une équipe
+            let asked = true;
+            try { asked = !!localStorage.getItem('eps_team_asked'); localStorage.setItem('eps_team_asked', '1'); } catch (e) { /* rien */ }
+            if (!asked && !hasLocalSharedData()) openTeamModal();
+        }
 
         // =========================================
         // FICHE DE SUIVI : fichier Excel resté sur cet ordinateur
@@ -2880,7 +3482,11 @@
             box.innerHTML = body.length ? `<table>${th}${tr}</table>` : '<p style="color:#64748b; text-align:center;">Aucune saisie sur cette feuille.</p>';
         }
 
-        window.onload = () => { initApp(); initSuivi(); };
+        window.onload = async () => { 
+            try { await initApp(); } catch (e) { console.error(e); }
+            initSuivi(); 
+            initTeam(); 
+        };
     </script>
 </body>
 </html>
