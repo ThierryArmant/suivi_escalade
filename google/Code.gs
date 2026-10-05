@@ -26,10 +26,13 @@ var ONGLETS = {
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date'],
   Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat'],
-  Classes: ['equipe', 'classe', 'codes', 'modifie_le']
+  Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
+  Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 10;
-var VALIDATIONS_MAX_PAR_EQUIPE = 20000;   // garde-fou contre le remplissage abusif de la feuille
+var VERSION = 11;
+var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
+var SAISIES_MAX_PAR_ELEVE = 400;
+var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -640,22 +643,38 @@ function validerFiche_(equipe, id, classe, eleve, etat) {
   if (!suivie && !exercice) return { ok: false, erreur: "Cette fiche n'est pas suivie." };
   etat = exercice ? (String(etat || '') === 'reussi' ? 'reussi' : 'essaye') : '';
 
-  var lignes = lignes_('Validations');
-  var total = 0;
-  for (var j = 0; j < lignes.length; j++) {
-    if (cle_(lignes[j][0]) !== equipe) continue;
+  // Une ligne par élève : on ne relit que les trois premières colonnes pour le retrouver
+  var feuille = feuille_('Suivi');
+  var derniere = feuille.getLastRow();
+  var cles = derniere < 2 ? [] : feuille.getRange(2, 1, derniere - 1, 3).getValues();
+  var total = 0, ligne = -1;
+  for (var j = 0; j < cles.length; j++) {
+    if (cle_(cles[j][0]) !== equipe) continue;
     total++;
-    if (String(lignes[j][1]) === classe && String(lignes[j][2]) === eleve && String(lignes[j][3]) === id) {
-      // Déjà notée : on n'écrit pas deux fois. Un bloc « essayé » peut devenir « réussi », jamais l'inverse.
-      if (etat === 'reussi' && String(lignes[j][5] || '') !== 'reussi') {
-        feuille_('Validations').getRange(j + 2, 5, 1, 2).setValues([[maintenant_(), 'reussi']]);
-        return { ok: true, etat: 'reussi' };
-      }
-      return { ok: true, deja: true, etat: String(lignes[j][5] || '') };
-    }
+    if (String(cles[j][1]) === classe && String(cles[j][2]) === eleve) { ligne = j + 2; break; }
   }
-  if (total >= VALIDATIONS_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
-  feuille_('Validations').appendRow([equipe, classe, eleve, id, maintenant_(), etat]);
+  var quand = maintenant_();
+  if (ligne === -1) {
+    if (total >= ELEVES_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
+    var premier = {};
+    premier[id] = [etat, quand];
+    feuille.appendRow([equipe, classe, eleve, JSON.stringify(premier), quand, quand]);
+    return { ok: true, etat: etat };
+  }
+  var plage = feuille.getRange(ligne, 4, 1, 3);
+  var valeurs = plage.getValues()[0];
+  var d = donneesSuivi_(valeurs[0]);
+  var cree = String(valeurs[1]);
+  // Saisies de plus de 6 mois : un nouveau cycle commence, on repart de zéro
+  if (tropVieux_(cree)) { d = {}; cree = quand; }
+  if (d[id]) {
+    // Déjà notée : un bloc « essayé » peut devenir « réussi », jamais l'inverse
+    if (!(etat === 'reussi' && String(d[id][0]) !== 'reussi')) return { ok: true, deja: true, etat: String(d[id][0] || '') };
+  } else if (Object.keys(d).length >= SAISIES_MAX_PAR_ELEVE) {
+    return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
+  }
+  d[id] = [etat, quand];
+  plage.setValues([[JSON.stringify(d), cree, quand]]);
   return { ok: true, etat: etat };
 }
 
@@ -668,6 +687,9 @@ function parcoursSecurite_(equipe, classe, eleve) {
   var vues = {};
   lignes_('Validations').forEach(function (l) {
     if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) vues[String(l[3])] = true;
+  });
+  lignes_('Suivi').forEach(function (l) {
+    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) Object.keys(donneesSuivi_(l[3])).forEach(function (id) { vues[id] = true; });
   });
   var fiches = [];
   lignes_('Blocs').forEach(function (l) {
@@ -691,12 +713,69 @@ function parcoursSecurite_(equipe, classe, eleve) {
   return { ok: true, fiches: fiches };
 }
 
-function lireValidations_(equipe) {
-  var liste = [];
-  lignes_('Validations').forEach(function (l) {
-    if (cle_(l[0]) === equipe) liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]), etat: String(l[5] || '') });
+// Les saisies sont rangées par élève (une ligne par élève, onglet « Suivi ») : chaque validation ne relit que
+// les trois premières colonnes, ce qui reste rapide même avec beaucoup d'établissements.
+// L'ancien onglet « Validations » (une ligne par saisie) est encore lu, pour ne rien perdre.
+function donneesSuivi_(cellule) {
+  try { var d = JSON.parse(String(cellule) || '{}'); return (d && typeof d === 'object') ? d : {}; } catch (err) { return {}; }
+}
+
+function tropVieux_(date) {
+  var t = new Date(String(date)).getTime();
+  return !isNaN(t) && (Date.now() - t) > DUREE_SUIVI_JOURS * 86400000;
+}
+
+// Ménage : les saisies d'une classe sont effacées 6 mois après sa première saisie. Renvoie le nombre de lignes retirées.
+function menageSuivi_(equipe) {
+  var feuille = feuille_('Suivi');
+  var lignes = lignes_('Suivi');
+  var debut = {};
+  lignes.forEach(function (l) {
+    if (equipe && cle_(l[0]) !== equipe) return;
+    var cle = cle_(l[0]) + '|' + String(l[1]);
+    var t = String(l[4]);
+    if (!debut[cle] || t < debut[cle]) debut[cle] = t;
   });
-  return { ok: true, validations: liste };
+  var retire = 0;
+  for (var i = lignes.length - 1; i >= 0; i--) {
+    if (equipe && cle_(lignes[i][0]) !== equipe) continue;
+    if (tropVieux_(debut[cle_(lignes[i][0]) + '|' + String(lignes[i][1])])) { feuille.deleteRow(i + 2); retire++; }
+  }
+  var anciennes = lignes_('Validations');
+  var ancienne = feuille_('Validations');
+  for (var j = anciennes.length - 1; j >= 0; j--) {
+    if (equipe && cle_(anciennes[j][0]) !== equipe) continue;
+    if (tropVieux_(anciennes[j][4])) { ancienne.deleteRow(j + 2); retire++; }
+  }
+  return retire;
+}
+
+function lireValidations_(equipe) {
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(25000);
+  try { menageSuivi_(equipe); } finally { verrou.releaseLock(); }
+  var liste = [];
+  var debut = {};
+  lignes_('Validations').forEach(function (l) {
+    if (cle_(l[0]) !== equipe) return;
+    liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]), etat: String(l[5] || '') });
+    if (!debut[String(l[1])] || String(l[4]) < debut[String(l[1])]) debut[String(l[1])] = String(l[4]);
+  });
+  lignes_('Suivi').forEach(function (l) {
+    if (cle_(l[0]) !== equipe) return;
+    var d = donneesSuivi_(l[3]);
+    Object.keys(d).forEach(function (id) {
+      liste.push({ classe: String(l[1]), eleve: String(l[2]), id: id, date: String(d[id][1] || ''), etat: String(d[id][0] || '') });
+    });
+    if (!debut[String(l[1])] || String(l[4]) < debut[String(l[1])]) debut[String(l[1])] = String(l[4]);
+  });
+  // Date à laquelle les saisies de chaque classe seront effacées
+  var echeances = {};
+  Object.keys(debut).forEach(function (classe) {
+    var t = new Date(debut[classe]).getTime();
+    if (!isNaN(t)) echeances[classe] = new Date(t + DUREE_SUIVI_JOURS * 86400000).toISOString();
+  });
+  return { ok: true, validations: liste, echeances: echeances };
 }
 
 // Classes de l'équipe : seulement les codes des élèves (« TA 12 »), jamais les noms.
@@ -729,11 +808,11 @@ function enregistrerClasse_(equipe, classe, codes) {
 // Efface le suivi d'une classe (ou de toute l'équipe si aucune classe n'est donnée)
 function effacerValidations_(equipe, classe, genre) {
   classe = classePropre_(classe);
+  var efface = 0;
+  // genre « blocs » : seulement les exercices (essayé / réussi) ; « secu » : seulement les fiches de sécurité
   var feuille = feuille_('Validations');
   var lignes = lignes_('Validations');
-  var efface = 0;
   for (var i = lignes.length - 1; i >= 0; i--) {
-    // genre « blocs » : seulement les exercices (essayé / réussi) ; « secu » : seulement les fiches de sécurité
     var estBloc = String(lignes[i][5] || '') !== '';
     if (genre === 'blocs' && !estBloc) continue;
     if (genre === 'secu' && estBloc) continue;
@@ -742,7 +821,66 @@ function effacerValidations_(equipe, classe, genre) {
       efface++;
     }
   }
+  var suivi = feuille_('Suivi');
+  var eleves = lignes_('Suivi');
+  for (var j = eleves.length - 1; j >= 0; j--) {
+    if (cle_(eleves[j][0]) !== equipe || (classe && String(eleves[j][1]) !== classe)) continue;
+    var d = donneesSuivi_(eleves[j][3]);
+    var garde = {};
+    Object.keys(d).forEach(function (id) {
+      var bloc = String(d[id][0] || '') !== '';
+      if ((genre === 'blocs' && !bloc) || (genre === 'secu' && bloc)) garde[id] = d[id]; else efface++;
+    });
+    if (Object.keys(garde).length) suivi.getRange(j + 2, 4).setValue(JSON.stringify(garde)); else suivi.deleteRow(j + 2);
+  }
   return { ok: true, efface: efface };
+}
+
+/* =========================================================
+   TABLEAU DE BORD (pour le propriétaire du Sheet seulement)
+   Menu « Bloc'Note EPS » > « Tableau de bord » : un onglet « Bord » résume la place prise par chaque équipe.
+   ========================================================= */
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu("Bloc'Note EPS")
+    .addItem('Tableau de bord', 'tableauDeBord')
+    .addItem('Ménage des saisies de plus de 6 mois', 'menageComplet')
+    .addToUi();
+}
+
+function menageComplet() {
+  var n = menageSuivi_('');
+  SpreadsheetApp.getUi().alert(n + ' ligne(s) de saisies de plus de 6 mois effacée(s).');
+}
+
+function tableauDeBord() {
+  var bord = {};
+  var une = function (equipe) { return bord[equipe] = bord[equipe] || { blocs: 0, photos: 0, classes: 0, eleves: 0, saisies: 0, derniere: '' }; };
+  lignes_('Equipes').forEach(function (l) { if (cle_(l[0])) une(cle_(l[0])); });
+  lignes_('Blocs').forEach(function (l) { une(cle_(l[0])).blocs++; });
+  lignes_('Photos').forEach(function (l) { une(cle_(l[0])).photos++; });
+  lignes_('Classes').forEach(function (l) { une(cle_(l[0])).classes++; });
+  lignes_('Suivi').forEach(function (l) {
+    var e = une(cle_(l[0]));
+    e.eleves++;
+    e.saisies += Object.keys(donneesSuivi_(l[3])).length;
+    if (String(l[5]) > e.derniere) e.derniere = String(l[5]);
+  });
+  lignes_('Validations').forEach(function (l) { var e = une(cle_(l[0])); e.saisies++; if (String(l[4]) > e.derniere) e.derniere = String(l[4]); });
+  var classeur = SpreadsheetApp.getActiveSpreadsheet();
+  var feuille = classeur.getSheetByName('Bord') || classeur.insertSheet('Bord');
+  feuille.clear();
+  var lignes = [['equipe', 'blocs', 'photos', 'classes', 'eleves_suivis', 'saisies', 'derniere_saisie']];
+  Object.keys(bord).sort(function (a, b) { return bord[b].saisies - bord[a].saisies; }).forEach(function (k) {
+    var e = bord[k];
+    lignes.push([k, e.blocs, e.photos, e.classes, e.eleves, e.saisies, e.derniere.slice(0, 10)]);
+  });
+  feuille.getRange(1, 1, lignes.length, 7).setValues(lignes);
+  feuille.getRange(1, 1, 1, 7).setFontWeight('bold');
+  feuille.setFrozenRows(1);
+  var cases = 0;
+  classeur.getSheets().forEach(function (f) { cases += f.getMaxRows() * f.getMaxColumns(); });
+  feuille.getRange(lignes.length + 2, 1, 1, 2).setValues([['Cases utilisées dans le classeur (maximum 10 000 000)', cases]]);
+  classeur.setActiveSheet(feuille);
 }
 
 // Lecture d'une photo : sans mot de passe, pour que le téléphone d'un élève puisse afficher le mur

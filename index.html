@@ -4257,10 +4257,19 @@
             const eq = params.get('eq');
             if (eq && bg && bg !== "default" && !/^https?:\/\//i.test(bg)) {
                 // Photo rangée dans l'espace de l'équipe ; à défaut, on essaie le fichier du site
-                fetch(CLOUD_URL + "?action=photo&equipe=" + encodeURIComponent(eq) + "&nom=" + encodeURIComponent(bg))
+                // La photo est gardée 12 heures sur le téléphone : les scans suivants du même mur ne la redemandent pas
+                const photoKey = 'eleve_photo_' + eq + '_' + bg;
+                const download = () => fetch(CLOUD_URL + "?action=photo&equipe=" + encodeURIComponent(eq) + "&nom=" + encodeURIComponent(bg))
                     .then(response => response.json())
-                    .then(d => { img.src = (d && d.ok && /^data:image\//.test(d.dataUrl)) ? d.dataUrl : wallSrc; })
+                    .then(d => {
+                        const good = d && d.ok && /^data:image\//.test(d.dataUrl);
+                        img.src = good ? d.dataUrl : wallSrc;
+                        if (good) saveToDB(photoKey, { quand: Date.now(), dataUrl: d.dataUrl }).catch(() => { /* mémoire pleine : tant pis */ });
+                    })
                     .catch(() => { img.src = wallSrc; });
+                getFromDB(photoKey).then(kept => {
+                    if (kept && kept.dataUrl && (Date.now() - kept.quand) < 12 * 3600000) img.src = kept.dataUrl; else download();
+                }).catch(download);
             } else {
                 img.src = wallSrc;
             }
@@ -5600,6 +5609,7 @@
                 + `<label style="flex: 1 1 90px; font-size: 0.8rem; font-weight: bold;">Ta classe<input id="suivi-classe" type="text" maxlength="10" placeholder="4B" value="${escapeHtml(saved.classe || "")}" style="width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #c4b5fd; border-radius: 8px; font-size: 1rem; text-transform: uppercase;"></label>`
                 + `<label style="flex: 1 1 110px; font-size: 0.8rem; font-weight: bold;">Ton code<input id="suivi-code" type="text" maxlength="8" placeholder="TA 12" value="${escapeHtml(saved.code || "")}" style="width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #c4b5fd; border-radius: 8px; font-size: 1rem; text-transform: uppercase;"></label>`
                 + `</div>`
+                + `<div id="suivi-groupe" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px;"></div>`
                 + `<div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Ton code = l'initiale de ton prénom, l'initiale de ton nom, puis ton numéro dans la liste de la classe. Exemple : Thomas Arnaud, n° 12 → <b>TA 12</b>. N'écris pas ton nom.</div>`
                 + (exercice ? `<div style="display: flex; gap: 8px; margin-top: 8px;">`
                     + `<button id="suivi-essaye" onclick="sendStudentSuivi('essaye')" style="flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; background: #f59e0b; color: #ffffff; border: none;">👍 J'ai essayé</button>`
@@ -5615,7 +5625,47 @@
                 box.querySelector('#parcours-btn').style.display = 'none';
             }
             zone.parentNode.insertBefore(box, zone.nextSibling);
+            renderGroupe();
             updateSuiviButton();
+        }
+
+        // Plusieurs élèves sur le même téléphone : leurs codes restent proposés, un appui suffit pour choisir le sien.
+        // Les groupes changent : la croix retire un code, et tout nouveau code tapé s'ajoute tout seul.
+        function readEleve() {
+            let saved = {};
+            try { saved = JSON.parse(localStorage.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+            if (!Array.isArray(saved.codes)) saved.codes = saved.code ? [saved.code] : [];
+            return saved;
+        }
+        function renderGroupe() {
+            const box = document.getElementById('suivi-groupe');
+            if (!box) return;
+            const saved = readEleve();
+            const current = cleanCodeEleve(document.getElementById('suivi-code').value);
+            box.innerHTML = saved.codes.length < 2 ? "" : `<span style="font-size: 0.75rem; font-weight: bold; color: #475569;">Qui grimpe ?</span>`
+                + saved.codes.map(c => `<span style="display: inline-flex; align-items: center; border: 2px solid #7c3aed; border-radius: 16px; overflow: hidden; background: ${c === current ? '#7c3aed' : '#ffffff'};">`
+                    + `<button onclick="pickCode('${c}')" style="border: none; background: none; padding: 6px 4px 6px 10px; font-weight: bold; font-size: 0.9rem; color: ${c === current ? '#ffffff' : '#5b21b6'};">${c}</button>`
+                    + `<button onclick="forgetCode('${c}')" title="Retirer ce code de ce téléphone" style="border: none; background: none; padding: 6px 8px 6px 2px; font-size: 0.8rem; color: ${c === current ? '#ddd6fe' : '#94a3b8'};">✕</button></span>`).join("");
+        }
+        function pickCode(code) {
+            document.getElementById('suivi-code').value = code;
+            document.getElementById('suivi-msg').textContent = "";
+            renderGroupe();
+        }
+        function forgetCode(code) {
+            const saved = readEleve();
+            saved.codes = saved.codes.filter(c => c !== code);
+            if (saved.code === code) saved.code = saved.codes[0] || "";
+            try { localStorage.setItem(ELEVE_KEY, JSON.stringify(saved)); } catch (e) { /* rien */ }
+            if (cleanCodeEleve(document.getElementById('suivi-code').value) === code) document.getElementById('suivi-code').value = saved.code;
+            renderGroupe();
+        }
+        function rememberEleve(classe, code) {
+            const saved = readEleve();
+            const codes = saved.classe === classe ? saved.codes.filter(c => c !== code) : [];
+            codes.push(code);
+            try { localStorage.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code, codes: codes.slice(-6) })); } catch (e) { /* rien */ }
+            renderGroupe();
         }
 
         function updateSuiviButton() {
@@ -5640,7 +5690,7 @@
             if (!code) { msg.textContent = "Ton code n'est pas bon : deux lettres puis ton numéro, par exemple TA 12."; return; }
             document.getElementById('suivi-classe').value = classe;
             document.getElementById('suivi-code').value = code;
-            try { localStorage.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code })); } catch (e) { /* rien */ }
+            rememberEleve(classe, code);
             btn.disabled = true;
             msg.style.color = "#475569";
             msg.textContent = "Envoi…";
@@ -5824,6 +5874,17 @@
         }
 
         let suiviMode = 'secu';
+        let suiviEcheances = {};
+        // Bandeau bien visible : les saisies d'une classe sont effacées 6 mois après la première
+        function echeanceBanner() {
+            const iso = suiviEcheances[suiviClasse];
+            if (!iso) return `<div style="background: #e0f2fe; border: 2px solid #7dd3fc; color: #075985; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-weight: bold; text-align: left;">🗓️ Les saisies d'une classe sont gardées 6 mois à partir de la première, puis effacées automatiquement.</div>`;
+            const end = new Date(iso), days = Math.ceil((end.getTime() - Date.now()) / 86400000);
+            const soon = days <= 31;
+            return `<div style="background: ${soon ? '#fee2e2' : '#fef9c3'}; border: 2px solid ${soon ? '#f87171' : '#fde047'}; color: ${soon ? '#991b1b' : '#713f12'}; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-weight: bold; text-align: left;">`
+                + `${soon ? '⚠️' : '🗓️'} Les saisies de la classe ${escapeHtml(suiviClasse)} seront effacées automatiquement le ${end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`
+                + ` (dans ${days} jour${days > 1 ? 's' : ''}) : 6 mois après la première saisie.${soon ? " Notez ou imprimez ce tableau avant cette date si vous en avez besoin." : ""}</div>`;
+        }
         async function openSuiviSecu(mode) {
             suiviMode = mode === 'blocs' ? 'blocs' : 'secu';
             const blocsMode = suiviMode === 'blocs';
@@ -5848,7 +5909,9 @@
                     box.innerHTML = `<p style="color: #991b1b; font-weight: bold;">Le suivi demande la version ${needed} du script Google : installez-la, puis redéployez (« Nouvelle version »).</p>`;
                     return;
                 }
-                suiviData = (await cloudCall({ action: 'lireValidations' })).validations || [];
+                const read = await cloudCall({ action: 'lireValidations' });
+                suiviData = read.validations || [];
+                suiviEcheances = read.echeances || {};
                 if (ping.version >= 10) { try { await syncClasses(); } catch (e) { /* les classes de cet appareil restent affichées */ } }
                 renderSuiviSecu();
             } catch (e) {
@@ -5878,7 +5941,7 @@
             const grades = [["Jaune", "#eab308"], ["Vert", "#22c55e"], ["Bleu", "#3b82f6"], ["Rouge", "#ef4444"], ["Noir", "#0f172a"]]
                 .filter(g => blocs.some(r => String(r.grade || "").split(' ')[0] === g[0]));
             const list = (rs) => rs.map(r => r.name).join(" ; ");
-            let html = `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
+            let html = echeanceBanner() + `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
                 + groups.map(g => `<th>${escapeHtml(g.theme)}<br><span style="font-weight: normal;">${g.items.length} blocs</span></th>`).join("")
                 + grades.map(g => `<th data-tip="Blocs réussis de niveau ${g[0].toLowerCase()}"><span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${g[1]};"></span></th>`).join("")
                 + `<th>Réussis</th><th>Essayés</th></tr></thead><tbody>`;
@@ -5922,7 +5985,7 @@
             const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
             const short = (r, i) => { const num = voieNumber(r.name); return num !== null ? String(num) : String(i + 1); };
             const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ""; } };
-            let html = `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
+            let html = echeanceBanner() + `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
                 + fiches.map((r, i) => `<th data-tip="${escapeHtml(r.name)}">${short(r, i)}</th>`).join("") + `<th>Total</th></tr></thead><tbody>`;
             names.forEach(name => {
                 const seen = fiches.filter(r => students[name][r.id]).length;
