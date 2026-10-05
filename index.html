@@ -221,6 +221,10 @@
             border: 2px solid #bbf7d0; 
         }
 
+        .securite-section { background: #fff7ed; border: 2px solid #fdba74; }
+        .securite-section h3 { color: #c2410c; border-bottom-color: #fb923c; }
+        .securite-empty { font-size: 0.75rem; color: #9a3412; text-align: center; margin: 0; }
+
         .bloc-section h3, .indiv-section h3, .technical-zone h3 { 
             color: #15803d; 
             border-bottom-color: #4ade80; 
@@ -891,6 +895,13 @@
                 <div id="tool-info"></div>
             </div>
 
+            <!-- Orange Pastel : la sécurité a son propre espace, au-dessus des exercices -->
+            <div class="sidebar-section securite-section">
+                <h3>🛡️ Sécurité</h3>
+                <div id="securite-list" class="custom-list"></div>
+                <button class="add-custom-btn btn-full" onclick="openCreateModal('bloc', 'Sécurité en moulinette')">+ Créer une fiche sécurité</button>
+            </div>
+
             <!-- Vert Pastel -->
             <div class="sidebar-section bloc-section">
                 <h3>Exercices bloc</h3>
@@ -900,9 +911,9 @@
 
             <!-- Vert Pastel -->
             <div class="sidebar-section indiv-section">
-                <h3>Indiv. / Élèves</h3>
+                <h3>Blocs personnalisés</h3>
                 <div id="indiv-list" class="custom-list"></div>
-                <button class="add-custom-btn btn-full" onclick="openCreateModal('individualise')">+ Créer un Élève</button>
+                <button class="add-custom-btn btn-full" onclick="openCreateModal('individualise')">+ Créer un bloc personnalisé</button>
             </div>
         </div>
 
@@ -1264,7 +1275,7 @@
                     <li><b>Pour le modifier</b> : affichez-le, déplacez ou ajoutez des balises, puis cliquez sur « 💾 Enregistrer » en haut.</li>
                     <li><b>Pour le montrer aux élèves</b> : le bouton 📱 affiche un QR code. L'élève le scanne et voit le tracé sur son téléphone.</li>
                 </ol>
-                <p class="help-text" style="font-size: 0.82rem;">Le bouton ❌ supprime le bloc pour toute l'équipe. « + Créer un Élève » fait un tracé personnel pour un élève : il reste sur cet appareil et n'est jamais partagé.</p>
+                <p class="help-text" style="font-size: 0.82rem;">Le bouton ❌ supprime le bloc pour toute l'équipe. « + Créer un bloc personnalisé » fait un tracé personnel pour un élève : il reste sur cet appareil et n'est jamais partagé.</p>
             </div>
 
             <div id="howto-voie" style="display: none;">
@@ -1977,7 +1988,10 @@
             updateConfigStatus();
             const blocListContainer = document.getElementById('bloc-list');
             const indivListContainer = document.getElementById('indiv-list');
+            const securiteListContainer = document.getElementById('securite-list');
+            const isSecurite = theme => /^s[ée]curit[ée]/i.test(theme || "");
             
+            securiteListContainer.innerHTML = '';
             blocListContainer.innerHTML = ''; 
             indivListContainer.innerHTML = '';
 
@@ -2146,8 +2160,13 @@
                     }
                 };
 
-                blocListContainer.appendChild(themeHeader);
-                blocListContainer.appendChild(themeContent);
+                // Les thèmes de sécurité ont leur propre espace, au-dessus des exercices
+                const target = isSecurite(theme) ? securiteListContainer : blocListContainer;
+                target.appendChild(themeHeader);
+                target.appendChild(themeContent);
+            }
+            if (!securiteListContainer.children.length) {
+                securiteListContainer.innerHTML = '<p class="securite-empty">Aucune fiche de sécurité pour l\'instant.</p>';
             }
         }
 
@@ -2215,8 +2234,8 @@
                     }
                 });
                 let detail = Object.keys(byTheme).map(t => `<b>${escapeHtml(t)}</b> : ${byTheme[t].join(' ; ')}`).join('<br>');
-                if (elevesList.length > 0) detail += (detail ? '<br>' : '') + `<b>Élèves</b> : ${elevesList.join(' ; ')}`;
-                setStatus('blocs-status', true, `✅ En mémoire : ${blocs} bloc(s) et ${eleves} tracé(s) élève.`
+                if (elevesList.length > 0) detail += (detail ? '<br>' : '') + `<b>Blocs personnalisés</b> : ${elevesList.join(' ; ')}`;
+                setStatus('blocs-status', true, `✅ En mémoire : ${blocs} bloc(s) et ${eleves} bloc(s) personnalisé(s).`
                     + `<details style="margin-top: 4px;"><summary style="cursor: pointer; font-size: 0.8rem;">Voir les blocs enregistrés</summary><span>${detail}</span></details>`);
             } else {
                 setStatus('blocs-status', false, "Aucun bloc en mémoire.");
@@ -2345,6 +2364,7 @@
             '[onclick="clearStickers()"]': "Retire toutes les balises de l'écran. Rien n'est effacé pour de bon tant que vous n'enregistrez pas.",
             '#magic-filter-btn': "Analyse la photo, puis grise tout le mur sauf la couleur que vous choisissez.",
             '[onclick="openCreateModal(\'bloc\')"]': "Enregistre les balises posées comme un nouveau bloc : nom, niveau, thème et consigne.",
+            '[onclick="openCreateModal(\'bloc\', \'Sécurité en moulinette\')"]': "Enregistre les balises posées comme une fiche de sécurité. Elle se range ici, à part des exercices.",
             '[onclick="openCreateModal(\'individualise\')"]': "Tracé personnel pour un élève. Il reste sur cet appareil et n'est jamais partagé.",
             '#suivi-choose-btn': "Désigner le fichier Excel de suivi sur cet ordinateur. L'appli retient son emplacement ; rien n'est envoyé sur Internet.",
             '#suivi-open-btn': "Relit le fichier de suivi mémorisé et l'affiche.",
@@ -2719,7 +2739,7 @@
             activeBanner.innerHTML = `📸 <b>Mur Libre : ${cleanName}</b><br><span style="font-size:0.85rem; font-weight:normal;">Cliquez sur "+ Créer un Bloc" pour dessiner sur cette zone.</span>`;
         }
 
-        function openCreateModal(type) {
+        function openCreateModal(type, presetTheme) {
             document.getElementById('create-type').value = type;
             document.getElementById('create-name').value = "";
             document.getElementById('create-consigne').value = "";
@@ -2734,7 +2754,8 @@
                 pick('create-height', pasteInfo.height);
                 pick('create-theme', pasteInfo.theme);
             }
-            document.getElementById('create-modal-title').textContent = type === 'individualise' ? "Créer un Élève" : "Créer un Bloc";
+            if (presetTheme) document.getElementById('create-theme').value = presetTheme;
+            document.getElementById('create-modal-title').textContent = type === 'individualise' ? "Créer un bloc personnalisé" : "Créer un Bloc";
             document.getElementById('bloc-options').style.display = type === 'bloc' ? 'block' : 'none';
             document.getElementById('create-modal').style.display = 'flex';
         }
