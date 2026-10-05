@@ -328,6 +328,21 @@
             background: #fef08a;
         }
 
+        .theme-qr-btn {
+            font-size: 0.68rem; padding: 2px 6px; margin: 0 6px; border-radius: 4px; cursor: pointer;
+            background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; white-space: nowrap;
+        }
+
+        /* Tous les QR codes d'un thème : codes très espacés pour n'en viser qu'un */
+        .modal-content.qr-all-content { max-width: 1500px; width: 96%; box-sizing: border-box; }
+        .qr-all-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .qr-all-head h2 { margin: 0; border: none; padding: 0; }
+        #qr-all-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 64px 110px; padding: 24px 50px; justify-items: center; }
+        .qr-all-card { cursor: pointer; text-align: center; width: 230px; }
+        .qr-all-name { font-weight: bold; font-size: 1.05rem; color: #0f172a; border-bottom: 6px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 12px; overflow-wrap: anywhere; }
+        .qr-all-box { display: flex; justify-content: center; padding: 10px; background: #ffffff; }
+        @media (max-width: 700px) { #qr-all-grid { gap: 70px 40px; padding: 30px 10px; } }
+
         /* Conteneur des blocs à l'intérieur d'un thème */
         .theme-content {
             display: none; /* Rétracté par défaut */
@@ -1603,6 +1618,18 @@
         </div>
     </div>
 
+    <div id="qr-all-modal" class="modal-overlay">
+        <div class="modal-content qr-all-content">
+            <div class="qr-all-head">
+                <h2 id="qr-all-title">📱 QR codes</h2>
+                <button onclick="document.getElementById('qr-all-modal').style.display='none'" style="background-color: #475569; color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Fermer</button>
+            </div>
+            <p style="font-size: 0.95rem; color: #475569; margin: 0 0 6px 0;">Approche ton téléphone du code de <b>ton</b> bloc jusqu'à ce qu'il soit seul dans l'image.</p>
+            <p id="qr-all-note" style="display: none; font-size: 0.85rem; font-weight: bold; color: #991b1b; background: #fee2e2; border: 2px solid #fca5a5; border-radius: 8px; padding: 8px; margin: 0 0 6px 0;"></p>
+            <div id="qr-all-grid"></div>
+        </div>
+    </div>
+
     <div id="qr-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center;">
             <h2 id="qr-modal-title" style="color: #1e3a8a; margin-bottom: 5px;">📱 Scanner le Bloc</h2>
@@ -2079,7 +2106,15 @@
                 let iconSpan = document.createElement('span');
                 iconSpan.textContent = '▶'; 
                 
+                let allQrBtn = document.createElement('button');
+                allQrBtn.className = 'theme-qr-btn';
+                allQrBtn.textContent = '📱 Tous';
+                allQrBtn.title = "Affiche sur un seul écran les QR codes de tous les blocs de ce thème : les élèves scannent chacun le leur, sans faire la queue.";
+                allQrBtn.onclick = (e) => { e.stopPropagation(); showThemeQR(theme); };
+                titleSpan.style.flex = '1';
+
                 themeHeader.appendChild(titleSpan);
+                themeHeader.appendChild(allQrBtn);
                 themeHeader.appendChild(iconSpan);
 
                 let themeContent = document.createElement('div');
@@ -2328,7 +2363,7 @@
         };
 
         function uiTipFor(el) {
-            if (el.closest && el.closest('#qrcode-container')) return null;   // le QR code garde son lien tel quel
+            if (el.closest && el.closest('#qrcode-container, .qr-all-box')) return null;   // le QR code garde son lien tel quel
             let node = el;
             for (let depth = 0; node && node !== document.body && depth < 5; depth++, node = node.parentElement) {
                 if (node.dataset && node.dataset.tip) return [node, node.dataset.tip];
@@ -3983,16 +4018,17 @@
             return list;
         }
 
-        function drawQRCode(text) {
-            const box = document.getElementById('qrcode-container');
+        function drawQRCode(text, box, size) {
+            box = box || document.getElementById('qrcode-container');
+            size = size || 280;
             // La bibliothèque échoue pour certaines longueurs précises : on rallonge un peu le lien et on réessaie
             for (let pad = 0; pad < 8; pad++) {
                 box.innerHTML = "";
                 try {
                     new QRCode(box, { 
                         text: text + (pad ? "&z=" + "0".repeat(pad * 3) : ""), 
-                        width: 280, 
-                        height: 280, 
+                        width: size, 
+                        height: size, 
                         colorDark : "#0f172a", 
                         colorLight : "#ffffff", 
                         correctLevel : QRCode.CorrectLevel.L 
@@ -4004,39 +4040,9 @@
             return false;
         }
 
-        function generateQRCode(routeId = null) {
-            if (typeof QRCode === 'undefined') { 
-                alert("❌ Module QR Code introuvable (vérifiez la connexion Internet)."); 
-                return; 
-            }
-
-            let targetMarkers = [], targetImage = "", targetName = "le Bloc";
-            let qTheme = "?", qGrade = "?", qHeight = "?";
-            let found = null;
-
-            if (routeId) {
-                found = schoolConfig.customRoutes.find(r => r.id === routeId);
-                if (!found) return;
-                
-                const savedData = readRouteMarkers(routeId);
-                if (!savedData || savedData.length === 0) { 
-                    alert("❌ Ce tracé est vide."); 
-                    return; 
-                }
-                
-                targetMarkers = savedData; 
-                targetImage = found.imageSrc || (schoolConfig.images[0] || "");
-            } else {
-                if (!currentRouteId || activeMarkers.length === 0) { 
-                    alert("❌ Veuillez sélectionner un bloc."); 
-                    return; 
-                }
-                
-                targetMarkers = activeMarkers; 
-                targetImage = getBaseImageSource();
-                found = schoolConfig.customRoutes.find(r => r.id === currentRouteId) || null;
-            }
-
+        // Prépare les liens d'un bloc pour son QR code, du plus complet au plus court
+        function blocQRInfo(found, targetMarkers, targetImage) {
+            let targetName = "le Bloc", qTheme = "?", qGrade = "?", qHeight = "?";
             if (found) { 
                 targetName = found.name; 
                 qTheme = found.theme || "?"; 
@@ -4069,9 +4075,96 @@
 
             // La consigne voyage dans le QR code si elle tient (sinon le code serait trop dense à scanner)
             // Le téléphone ira chercher la fiche complète (consigne, attendus, compétences) dans l'espace de l'équipe
-            const withId = shareUrl + ((teamForQR && found && isSharedBloc(found)) ? "&b=" + enc(String(found.id).replace(/^custom_/, '')) : "");
+            const hasFiche = !!(teamForQR && found && isSharedBloc(found));
+            const withId = shareUrl + (hasFiche ? "&b=" + enc(String(found.id).replace(/^custom_/, '')) : "");
             const consigneQR = found && found.consigne ? found.consigne.replace(/\s+/g, ' ').slice(0, 220) : "";
-            if (!(consigneQR && drawQRCode(withId + "&k=" + enc(consigneQR))) && !drawQRCode(withId) && !drawQRCode(shareUrl)) {
+            const links = [];
+            if (consigneQR) links.push(withId + "&k=" + enc(consigneQR));
+            links.push(withId, shareUrl);
+            return { name: targetName, links: links, hasFiche: hasFiche, shortLink: withId, imageName: imageName, teamForQR: teamForQR, photoOnline: photoOnline };
+        }
+
+        // Tous les QR codes d'un thème sur un seul écran : chaque élève scanne le sien sans attendre
+        function showThemeQR(theme) {
+            if (typeof QRCode === 'undefined') { 
+                alert("❌ Module QR Code introuvable (vérifiez la connexion Internet)."); 
+                return; 
+            }
+            const routes = sortByVoie(schoolConfig.customRoutes.filter(r => r.type === 'bloc' && (r.theme || "Libre / Autre") === theme));
+            const grid = document.getElementById('qr-all-grid');
+            grid.innerHTML = "";
+            const skipped = [];
+            let waiting = false;
+
+            routes.forEach(r => {
+                const markers = readRouteMarkers(r.id);
+                if (!markers || markers.length === 0) { skipped.push(r.name); return; }
+                const info = blocQRInfo(r, markers, r.imageSrc || (schoolConfig.images[0] || ""));
+                // Écran partagé : on préfère le lien court (code moins dense, plus facile à viser) quand le téléphone retrouve la fiche en ligne
+                const links = info.hasFiche ? [info.shortLink].concat(info.links) : info.links;
+
+                const card = document.createElement('div');
+                card.className = 'qr-all-card';
+                card.dataset.tip = "Cliquez pour afficher ce code seul, en grand.";
+                const title = document.createElement('div');
+                title.className = 'qr-all-name';
+                title.textContent = r.name;
+                title.style.borderColor = r.color || '#cbd5e1';
+                const box = document.createElement('div');
+                box.className = 'qr-all-box';
+                if (!links.some(link => drawQRCode(link, box, 190))) { skipped.push(r.name); return; }
+                card.appendChild(title);
+                card.appendChild(box);
+                card.onclick = () => generateQRCode(r.id);
+                grid.appendChild(card);
+                if (info.teamForQR && !info.photoOnline) waiting = true;
+            });
+
+            if (!grid.children.length) { alert("❌ Aucun bloc de ce thème n'a de tracé à afficher."); return; }
+            const note = document.getElementById('qr-all-note');
+            note.textContent = (skipped.length ? "⚠️ Sans QR code (tracé vide ou trop long) : " + skipped.join(', ') + ". " : "")
+                + (waiting ? "⏳ Certaines photos ne sont pas encore en ligne : attendez « ☁️ à jour » avant de faire scanner." : "");
+            note.style.display = note.textContent ? 'block' : 'none';
+            document.getElementById('qr-all-title').textContent = `📱 ${theme}`;
+            document.getElementById('qr-all-modal').style.display = 'flex';
+        }
+
+        function generateQRCode(routeId = null) {
+            if (typeof QRCode === 'undefined') { 
+                alert("❌ Module QR Code introuvable (vérifiez la connexion Internet)."); 
+                return; 
+            }
+
+            let targetMarkers = [], targetImage = "", targetName = "le Bloc";
+            let found = null;
+
+            if (routeId) {
+                found = schoolConfig.customRoutes.find(r => r.id === routeId);
+                if (!found) return;
+                
+                const savedData = readRouteMarkers(routeId);
+                if (!savedData || savedData.length === 0) { 
+                    alert("❌ Ce tracé est vide."); 
+                    return; 
+                }
+                
+                targetMarkers = savedData; 
+                targetImage = found.imageSrc || (schoolConfig.images[0] || "");
+            } else {
+                if (!currentRouteId || activeMarkers.length === 0) { 
+                    alert("❌ Veuillez sélectionner un bloc."); 
+                    return; 
+                }
+                
+                targetMarkers = activeMarkers; 
+                targetImage = getBaseImageSource();
+                found = schoolConfig.customRoutes.find(r => r.id === currentRouteId) || null;
+            }
+
+            const info = blocQRInfo(found, targetMarkers, targetImage);
+            targetName = info.name;
+            const imageName = info.imageName, teamForQR = info.teamForQR, photoOnline = info.photoOnline, enc = encodeURIComponent;
+            if (!info.links.some(link => drawQRCode(link))) {
                 alert(`❌ Ce tracé est trop long pour un QR code (${targetMarkers.length} balises). Retirez quelques balises.`);
                 return;
             }
