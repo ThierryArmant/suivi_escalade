@@ -1417,7 +1417,7 @@
                 <button onclick="printCodesClasse()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="Imprimer la liste des codes de la classe (un code par élève), à afficher ou à découper pour les distribuer.">🖨️ Codes des élèves</button>
             </div>
             <div id="liste-classe-zone" style="display: none; background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left;">
-                <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>Cette liste reste sur cet appareil : elle n'est jamais envoyée en ligne.</b></div>
+                <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>Les noms restent sur cet appareil. En ligne, seuls les codes sont enregistrés, pour retrouver la classe sur vos autres appareils.</b></div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Classe : <input id="liste-classe-nom" type="text" maxlength="10" placeholder="4B" onchange="loadListeClasse()" style="width: 90px; padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;"></label>
                 <textarea id="liste-classe-texte" rows="7" placeholder="Thomas Arnaud&#10;Léa Bernard&#10;…" style="width: 100%; box-sizing: border-box; margin-top: 6px; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
                 <div style="text-align: right; margin-top: 6px;">
@@ -5748,6 +5748,30 @@
             try { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); return true; } catch (e) { return false; }
         }
 
+        // Codes des élèves de chaque classe : ceux des listes de cet appareil, complétés par ceux enregistrés en ligne
+        // (en ligne, seuls les codes sont rangés, jamais les noms : on retrouve ainsi ses classes sur tous ses appareils)
+        let cloudClasses = {};
+        function localCodes(names) {
+            return (names || []).map((n, i) => codeFromName(n, i + 1)).filter(c => c);
+        }
+        function classCodes() {
+            const all = Object.assign({}, cloudClasses);
+            const listes = readListes();
+            Object.keys(listes).forEach(c => { all[c] = localCodes(listes[c]); });
+            return all;
+        }
+        async function syncClasses() {
+            cloudClasses = (await cloudCall({ action: 'lireClasses' })).classes || {};
+            const listes = readListes();
+            for (const c of Object.keys(listes)) {
+                const codes = localCodes(listes[c]);
+                if (codes.length && JSON.stringify(codes) !== JSON.stringify(cloudClasses[c] || [])) {
+                    await cloudCall({ action: 'enregistrerClasse', classe: c, codes: codes });
+                    cloudClasses[c] = codes;
+                }
+            }
+        }
+
         // Code d'un élève d'après la liste : initiale du prénom, initiale du nom, numéro
         function codeFromName(name, number) {
             const words = String(name || "").normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z \-]/g, " ").trim().split(/\s+/).filter(w => w);
@@ -5778,6 +5802,11 @@
             if (!(await writeListes(listes))) { alert("❌ Enregistrement impossible : la mémoire du navigateur est bloquée (navigation privée ?)."); return; }
             suiviClasse = classe;
             document.getElementById('liste-classe-zone').style.display = 'none';
+            // En ligne : seulement les codes, pour retrouver la classe sur les autres appareils
+            try {
+                await cloudCall({ action: 'enregistrerClasse', classe: classe, codes: localCodes(names) });
+                if (names.length) cloudClasses[classe] = localCodes(names); else delete cloudClasses[classe];
+            } catch (e) { /* script pas encore à jour ou hors ligne : la liste reste sur cet appareil */ }
             renderSuiviSecu();
         }
 
@@ -5820,6 +5849,7 @@
                     return;
                 }
                 suiviData = (await cloudCall({ action: 'lireValidations' })).validations || [];
+                if (ping.version >= 10) { try { await syncClasses(); } catch (e) { /* les classes de cet appareil restent affichées */ } }
                 renderSuiviSecu();
             } catch (e) {
                 box.innerHTML = `<p style="color: #991b1b; font-weight: bold;">❌ ${escapeHtml(e && e.message ? e.message : "Erreur")}</p>`;
@@ -5835,13 +5865,13 @@
             blocs.forEach(r => { ids[r.id] = r; });
             const data = (suiviData || []).filter(v => ids[v.id]);
             const listes = readListes();
-            const classes = Array.from(new Set(data.map(v => v.classe).concat(Object.keys(listes)))).sort();
+            const classes = Array.from(new Set(data.map(v => v.classe).concat(Object.keys(classCodes())))).sort();
             if (classes.indexOf(suiviClasse) === -1) suiviClasse = classes[0] || "";
             select.innerHTML = classes.map(c => `<option value="${escapeHtml(c)}"${c === suiviClasse ? " selected" : ""}>${escapeHtml(c)}</option>`).join("") || '<option value="">(aucune classe)</option>';
             if (blocs.length === 0) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun exercice de bloc pour l\'instant.</p>'; return; }
             if (!suiviClasse) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun élève n\'a encore noté de bloc.<br>Faites scanner le QR code d\'un bloc : l\'élève indique sa classe et son code, puis appuie sur « J\'ai essayé » ou « J\'ai réussi ».</p>'; return; }
             const students = {}, realNames = {};
-            (listes[suiviClasse] || []).forEach((name, i) => { const code = codeFromName(name, i + 1); if (code) { students[code] = {}; realNames[code] = name; } });
+            (classCodes()[suiviClasse] || []).forEach(code => { students[code] = {}; realNames[code] = true; });
             data.filter(v => v.classe === suiviClasse).forEach(v => { (students[v.eleve] = students[v.eleve] || {})[v.id] = v.etat === 'reussi' ? 'reussi' : 'essaye'; });
             const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
             const groups = groupByTheme(blocs);
@@ -5855,7 +5885,7 @@
             names.forEach(name => {
                 const mine = students[name];
                 const ok = blocs.filter(r => mine[r.id] === 'reussi'), tried = blocs.filter(r => mine[r.id] === 'essaye');
-                const label = `${escapeHtml(name)}${(listes[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
+                const label = `${escapeHtml(name)}${(classCodes()[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
                 html += `<tr><td style="text-align: left; font-weight: bold; white-space: nowrap;">${label}</td>`
                     + groups.map(g => {
                         const rs = g.items.map(o => o.b);
@@ -5878,7 +5908,7 @@
             const select = document.getElementById('suivi-secu-classe');
             const fiches = securityFiches();
             const listes = readListes();
-            const classes = Array.from(new Set((suiviData || []).map(v => v.classe).concat(Object.keys(listes)))).sort();
+            const classes = Array.from(new Set((suiviData || []).map(v => v.classe).concat(Object.keys(classCodes())))).sort();
             if (classes.indexOf(suiviClasse) === -1) suiviClasse = classes[0] || "";
             select.innerHTML = classes.map(c => `<option value="${escapeHtml(c)}"${c === suiviClasse ? " selected" : ""}>${escapeHtml(c)}</option>`).join("") || '<option value="">(aucune classe)</option>';
             if (fiches.length === 0) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucune fiche du thème « Sécurité » dans vos exercices.</p>'; return; }
@@ -5887,10 +5917,7 @@
             const students = {};
             const realNames = {};
             // La liste de classe (sur cet appareil) donne une ligne par élève, même s'il n'a encore rien validé
-            (listes[suiviClasse] || []).forEach((name, i) => {
-                const code = codeFromName(name, i + 1);
-                if (code) { students[code] = {}; realNames[code] = name; }
-            });
+            (classCodes()[suiviClasse] || []).forEach(code => { students[code] = {}; realNames[code] = true; });
             rows.forEach(v => { (students[v.eleve] = students[v.eleve] || {})[v.id] = v.date; });
             const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
             const short = (r, i) => { const num = voieNumber(r.name); return num !== null ? String(num) : String(i + 1); };
@@ -5900,7 +5927,7 @@
             names.forEach(name => {
                 const seen = fiches.filter(r => students[name][r.id]).length;
                 // Confidentialité : le tableau n'affiche que les codes ; les noms ne se voient que dans « Liste de la classe »
-                const label = `${escapeHtml(name)}${(listes[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
+                const label = `${escapeHtml(name)}${(classCodes()[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
                 html += `<tr><td style="text-align: left; font-weight: bold; white-space: nowrap;">${label}</td>`
                     + fiches.map(r => students[name][r.id] ? `<td class="vu" data-tip="${escapeHtml(r.name)} — vue le ${escapeHtml(when(students[name][r.id]))}">✅</td>` : `<td></td>`).join("")
                     + `<td style="font-weight: bold; color: ${seen === fiches.length ? '#166534' : '#92400e'};">${seen}/${fiches.length}</td></tr>`;

@@ -25,9 +25,10 @@ var ONGLETS = {
   Reglages: ['cle', 'valeur'],
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date'],
-  Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat']
+  Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat'],
+  Classes: ['equipe', 'classe', 'codes', 'modifie_le']
 };
-var VERSION = 9;
+var VERSION = 10;
 var VALIDATIONS_MAX_PAR_EQUIPE = 20000;   // garde-fou contre le remplissage abusif de la feuille
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
@@ -120,6 +121,7 @@ function traiter_(d) {
     if (action === 'annuaire') return annuaire_(equipe.equipe);
     if (action === 'lireBlocsEquipe') return lireBlocsEquipe_(equipe.equipe, cle_(d.cible));
     if (action === 'lireValidations') return lireValidations_(equipe.equipe);
+    if (action === 'lireClasses') return lireClasses_(equipe.equipe);
 
     // Actions qui modifient : une seule à la fois, pour ne pas mélanger deux enregistrements
     var verrou = LockService.getScriptLock();
@@ -127,6 +129,7 @@ function traiter_(d) {
     try {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
+      if (action === 'enregistrerClasse') return enregistrerClasse_(equipe.equipe, d.classe, d.codes);
       if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe, d.genre);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
@@ -694,6 +697,33 @@ function lireValidations_(equipe) {
     if (cle_(l[0]) === equipe) liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]), etat: String(l[5] || '') });
   });
   return { ok: true, validations: liste };
+}
+
+// Classes de l'équipe : seulement les codes des élèves (« TA 12 »), jamais les noms.
+// Sert à retrouver les mêmes classes sur tous les appareils du professeur.
+function lireClasses_(equipe) {
+  var classes = {};
+  lignes_('Classes').forEach(function (l) {
+    if (cle_(l[0]) !== equipe) return;
+    try { classes[String(l[1])] = JSON.parse(String(l[2]) || '[]'); } catch (err) { /* ligne abîmée : on l'ignore */ }
+  });
+  return { ok: true, classes: classes };
+}
+
+function enregistrerClasse_(equipe, classe, codes) {
+  classe = classePropre_(classe);
+  if (!classe) return { ok: false, erreur: 'Classe manquante.' };
+  var propres = [];
+  (Array.isArray(codes) ? codes : []).slice(0, 60).forEach(function (c) {
+    c = codeElevePropre_(c);
+    if (c && propres.indexOf(c) === -1) propres.push(c);
+  });
+  var ligne = chercher_('Classes', function (l) { return cle_(l[0]) === equipe && String(l[1]) === classe; });
+  var feuille = feuille_('Classes');
+  if (!propres.length) { if (ligne > 0) feuille.deleteRow(ligne); return { ok: true, efface: true }; }
+  var valeurs = [equipe, classe, JSON.stringify(propres), maintenant_()];
+  if (ligne > 0) feuille.getRange(ligne, 1, 1, 4).setValues([valeurs]); else feuille.appendRow(valeurs);
+  return { ok: true };
 }
 
 // Efface le suivi d'une classe (ou de toute l'équipe si aucune classe n'est donnée)
