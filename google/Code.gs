@@ -25,10 +25,10 @@ var ONGLETS = {
   Reglages: ['cle', 'valeur'],
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date'],
-  Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date']
+  Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat']
 };
-var VERSION = 8;
-var VALIDATIONS_MAX_PAR_EQUIPE = 6000;   // garde-fou contre le remplissage abusif de la feuille
+var VERSION = 9;
+var VALIDATIONS_MAX_PAR_EQUIPE = 20000;   // garde-fou contre le remplissage abusif de la feuille
 var DEMANDES_MAX_PAR_JOUR = 30;
 var DELAI_RAPPEL_MINUTES = 10;
 var TAILLE_MORCEAU = 45000;       // une case de Google Sheet accepte 50 000 caractères au maximum
@@ -107,7 +107,7 @@ function traiter_(d) {
     if (action === 'validerFiche') {
       var verrouEleve = LockService.getScriptLock();
       verrouEleve.waitLock(25000);
-      try { return validerFiche_(cle_(d.equipe), String(d.id || ''), d.classe, d.eleve); }
+      try { return validerFiche_(cle_(d.equipe), String(d.id || ''), d.classe, d.eleve, d.etat); }
       finally { verrouEleve.releaseLock(); }
     }
 
@@ -127,7 +127,7 @@ function traiter_(d) {
     try {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
-      if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe);
+      if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe, d.genre);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
       if (action === 'supprimerPhoto') return supprimerPhoto_(equipe.equipe, String(d.nom || ''));
@@ -583,7 +583,8 @@ function ficheBloc_(equipe, id) {
           competences: String(route.competences || ''),
           source: String(route.source || ''),
           video: String(route.video || ''),
-          suivi: ficheSuivie_(route)
+          suivi: ficheSuivie_(route),
+          suiviBloc: !ficheSuivie_(route) && route.type === 'bloc'
         };
       } catch (err) { break; }
     }
@@ -612,7 +613,7 @@ function codeElevePropre_(texte) {
 }
 
 // Validation envoyée par le téléphone de l'élève : sans mot de passe, donc très encadrée
-function validerFiche_(equipe, id, classe, eleve) {
+function validerFiche_(equipe, id, classe, eleve, etat) {
   classe = classePropre_(classe);
   eleve = codeElevePropre_(eleve);
   if (!equipe || !/^custom_[0-9A-Za-z_-]{1,40}$/.test(id)) return { ok: false, erreur: 'Fiche introuvable.' };
@@ -620,15 +621,21 @@ function validerFiche_(equipe, id, classe, eleve) {
   if (!eleve) return { ok: false, erreur: 'Indique ton code : initiale du prénom, initiale du nom, puis ton numéro dans la liste (par exemple TA 12).' };
 
   // La fiche doit exister dans cette équipe et faire partie du thème « Sécurité »
-  var suivie = false;
+  // Un exercice de bloc se déclare « essayé » ou « réussi » ; une fiche de sécurité se déclare seulement « vue »
+  var suivie = false, exercice = false;
   var blocs = lignes_('Blocs');
   for (var i = 0; i < blocs.length; i++) {
     if (cle_(blocs[i][0]) === equipe && String(blocs[i][1]) === id) {
-      try { suivie = ficheSuivie_(JSON.parse(recoller_(blocs[i], 3)).route); } catch (err) { suivie = false; }
+      try {
+        var route = JSON.parse(recoller_(blocs[i], 3)).route || {};
+        suivie = ficheSuivie_(route);
+        exercice = !suivie && route.type === 'bloc';
+      } catch (err) { suivie = false; exercice = false; }
       break;
     }
   }
-  if (!suivie) return { ok: false, erreur: "Cette fiche n'est pas suivie." };
+  if (!suivie && !exercice) return { ok: false, erreur: "Cette fiche n'est pas suivie." };
+  etat = exercice ? (String(etat || '') === 'reussi' ? 'reussi' : 'essaye') : '';
 
   var lignes = lignes_('Validations');
   var total = 0;
@@ -636,12 +643,17 @@ function validerFiche_(equipe, id, classe, eleve) {
     if (cle_(lignes[j][0]) !== equipe) continue;
     total++;
     if (String(lignes[j][1]) === classe && String(lignes[j][2]) === eleve && String(lignes[j][3]) === id) {
-      return { ok: true, deja: true };   // déjà validée : on n'écrit pas deux fois
+      // Déjà notée : on n'écrit pas deux fois. Un bloc « essayé » peut devenir « réussi », jamais l'inverse.
+      if (etat === 'reussi' && String(lignes[j][5] || '') !== 'reussi') {
+        feuille_('Validations').getRange(j + 2, 5, 1, 2).setValues([[maintenant_(), 'reussi']]);
+        return { ok: true, etat: 'reussi' };
+      }
+      return { ok: true, deja: true, etat: String(lignes[j][5] || '') };
     }
   }
   if (total >= VALIDATIONS_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
-  feuille_('Validations').appendRow([equipe, classe, eleve, id, maintenant_()]);
-  return { ok: true };
+  feuille_('Validations').appendRow([equipe, classe, eleve, id, maintenant_(), etat]);
+  return { ok: true, etat: etat };
 }
 
 // Parcours d'un élève : toutes les fiches de sécurité de l'équipe, avec ce qu'il a déjà vu.
@@ -679,18 +691,22 @@ function parcoursSecurite_(equipe, classe, eleve) {
 function lireValidations_(equipe) {
   var liste = [];
   lignes_('Validations').forEach(function (l) {
-    if (cle_(l[0]) === equipe) liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]) });
+    if (cle_(l[0]) === equipe) liste.push({ classe: String(l[1]), eleve: String(l[2]), id: String(l[3]), date: String(l[4]), etat: String(l[5] || '') });
   });
   return { ok: true, validations: liste };
 }
 
 // Efface le suivi d'une classe (ou de toute l'équipe si aucune classe n'est donnée)
-function effacerValidations_(equipe, classe) {
+function effacerValidations_(equipe, classe, genre) {
   classe = classePropre_(classe);
   var feuille = feuille_('Validations');
   var lignes = lignes_('Validations');
   var efface = 0;
   for (var i = lignes.length - 1; i >= 0; i--) {
+    // genre « blocs » : seulement les exercices (essayé / réussi) ; « secu » : seulement les fiches de sécurité
+    var estBloc = String(lignes[i][5] || '') !== '';
+    if (genre === 'blocs' && !estBloc) continue;
+    if (genre === 'secu' && estBloc) continue;
     if (cle_(lignes[i][0]) === equipe && (!classe || String(lignes[i][1]) === classe)) {
       feuille.deleteRow(i + 2);   // +2 : la ligne de titres, et les lignes comptées à partir de 1
       efface++;

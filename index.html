@@ -806,6 +806,7 @@
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
             <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9; position: relative;">🌍 Les équipes<span id="teams-badge" style="display: none; position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; line-height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; background: #dc2626; color: #ffffff; font-size: 0.78rem; font-weight: 900; text-align: center; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span></button>
+            <button class="config-btn" onclick="openSuiviSecu('blocs')" title="Tableau des blocs que chaque élève déclare avoir essayés ou réussis, thème par thème et couleur par couleur. L'élève scanne le bloc, tape sa classe et son code, puis appuie sur « J'ai essayé » ou « J'ai réussi ». C'est déclaratif." style="background-color: #0f766e;">🧗 Suivi des blocs</button>
             <button class="config-btn" onclick="openSuiviSecu()" title="Sert à vérifier que chaque élève a bien vu les fiches de sécurité avant de grimper. L'élève scanne une fiche, coche les lignes, tape sa classe et son code : une coche ✅ apparaît ici, classe par classe. C'est un témoin de visionnage, pas une note." style="background-color: #7c3aed;">🛡️ Suivi sécurité</button>
             <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
@@ -1403,15 +1404,15 @@
     </div>
 
     <div id="suivi-secu-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 820px;">
-            <h2 title="À quoi sert ce tableau ? À voir d'un coup d'œil quels élèves ont vu les fiches de sécurité (encordement, assurage, descente…) et lesquels doivent encore les voir avant de grimper. Une ligne par élève, une colonne par fiche. Les noms restent sur cet appareil : en ligne, seuls la classe et le code sont enregistrés.">🛡️ Suivi des fiches de sécurité <span style="font-size: 0.8rem; color: #64748b; cursor: help;">ⓘ</span></h2>
-            <p class="help-text" style="margin-top: 0;">Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».</p>
+        <div class="modal-content" style="max-width: 980px;">
+            <h2 title="À quoi sert ce tableau ? À voir d'un coup d'œil quels élèves ont vu les fiches de sécurité (encordement, assurage, descente…) et lesquels doivent encore les voir avant de grimper. Une ligne par élève, une colonne par fiche. Les noms restent sur cet appareil : en ligne, seuls la classe et le code sont enregistrés."><span id="suivi-secu-titre">🛡️ Suivi des fiches de sécurité</span> <span style="font-size: 0.8rem; color: #64748b; cursor: help;">ⓘ</span></h2>
+            <p class="help-text" id="suivi-secu-aide" style="margin-top: 0;">Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».</p>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
                 <label style="font-weight: bold;">Classe :</label>
                 <select id="suivi-secu-classe" onchange="suiviClasse = this.value; renderSuiviSecu();" style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"></select>
                 <button onclick="refreshSuiviSecu()" style="background-color: #2563eb; color: white; border: none; padding: 7px 12px;" title="Recharge les validations envoyées par les élèves.">🔄 Actualiser</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
-                <button onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
+                <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
                 <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : les noms s'affichent dans le tableau et restent sur cet appareil.">📋 Liste de la classe</button>
                 <button onclick="printCodesClasse()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="Imprimer la liste des codes de la classe (un code par élève), à afficher ou à découper pour les distribuer.">🖨️ Codes des élèves</button>
             </div>
@@ -4299,6 +4300,7 @@
                             const zone = document.getElementById('student-fiche');
                             if (zone && fiche && (fiche.consigne || fiche.attendus || fiche.competences || fiche.video)) zone.innerHTML = studentFicheHtml(fiche);
                             if (zone && fiche && fiche.suivi) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'));
+                            else if (zone && fiche && fiche.suiviBloc) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'), true);
                         }).catch(() => { /* ancien stockage ou hors ligne : la consigne du QR code reste affichée */ });
                     }
                 } else if (params.get('route')) {
@@ -5582,10 +5584,10 @@
         }
 
         // Côté élève : sous la fiche, la zone « Qui es-tu ? » et le bouton d'envoi
-        function initStudentSuivi(equipe, id) {
+        function initStudentSuivi(equipe, id, exercice) {
             const zone = document.getElementById('student-fiche');
             if (!zone || document.getElementById('suivi-box')) return;
-            suiviTarget = { equipe: equipe, id: id };
+            suiviTarget = { equipe: equipe, id: id, exercice: !!exercice };
             let saved = {};
             try { saved = JSON.parse(localStorage.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
             const box = document.createElement('div');
@@ -5599,12 +5601,19 @@
                 + `<label style="flex: 1 1 110px; font-size: 0.8rem; font-weight: bold;">Ton code<input id="suivi-code" type="text" maxlength="8" placeholder="TA 12" value="${escapeHtml(saved.code || "")}" style="width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #c4b5fd; border-radius: 8px; font-size: 1rem; text-transform: uppercase;"></label>`
                 + `</div>`
                 + `<div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Ton code = l'initiale de ton prénom, l'initiale de ton nom, puis ton numéro dans la liste de la classe. Exemple : Thomas Arnaud, n° 12 → <b>TA 12</b>. N'écris pas ton nom.</div>`
-                + (id ? `<button id="suivi-send" onclick="sendStudentSuivi()" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 0.95rem; font-weight: bold; background: #7c3aed; color: #ffffff; border: none;"></button>` : "")
+                + (exercice ? `<div style="display: flex; gap: 8px; margin-top: 8px;">`
+                    + `<button id="suivi-essaye" onclick="sendStudentSuivi('essaye')" style="flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; background: #f59e0b; color: #ffffff; border: none;">👍 J'ai essayé</button>`
+                    + `<button id="suivi-reussi" onclick="sendStudentSuivi('reussi')" style="flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; background: #16a34a; color: #ffffff; border: none;">✅ J'ai réussi</button></div>`
+                  : (id ? `<button id="suivi-send" onclick="sendStudentSuivi()" style="width: 100%; margin-top: 8px; padding: 10px; font-size: 0.95rem; font-weight: bold; background: #7c3aed; color: #ffffff; border: none;"></button>` : ""))
                 + `<div id="suivi-msg" style="margin-top: 6px; font-weight: bold; font-size: 0.85rem; text-align: center;"></div>`
                 + `<button id="parcours-btn" onclick="loadParcours(true)" style="width: 100%; margin-top: 8px; padding: 9px; font-size: 0.9rem; font-weight: bold; background: #ffffff; color: #5b21b6; border: 2px solid #7c3aed;">📚 Voir mon parcours sécurité</button>`
                 + `<div id="parcours-list"></div>`
                 + `</div>`;
             if (!id) box.querySelector('.fiche-head').textContent = "🙋 Qui es-tu ?";
+            if (exercice) {
+                box.querySelector('.fiche-head').textContent = "🧗 Note ton passage sur ce bloc";
+                box.querySelector('#parcours-btn').style.display = 'none';
+            }
             zone.parentNode.insertBefore(box, zone.nextSibling);
             updateSuiviButton();
         }
@@ -5621,9 +5630,9 @@
             btn.textContent = ready ? "✅ J'ai terminé cette fiche" : `Coche d'abord toutes les lignes (${done}/${checks.length})`;
         }
 
-        async function sendStudentSuivi() {
+        async function sendStudentSuivi(etat) {
             const msg = document.getElementById('suivi-msg');
-            const btn = document.getElementById('suivi-send');
+            const btn = document.getElementById(etat ? 'suivi-' + etat : 'suivi-send');
             const classe = cleanClasse(document.getElementById('suivi-classe').value);
             const code = cleanCodeEleve(document.getElementById('suivi-code').value);
             msg.style.color = "#991b1b";
@@ -5636,7 +5645,15 @@
             msg.style.color = "#475569";
             msg.textContent = "Envoi…";
             try {
-                await cloudCall({ action: 'validerFiche', equipe: suiviTarget.equipe, id: suiviTarget.id, classe: classe, eleve: code }, false);
+                const sent = await cloudCall({ action: 'validerFiche', equipe: suiviTarget.equipe, id: suiviTarget.id, classe: classe, eleve: code, etat: etat || "" }, false);
+                if (etat) {
+                    // Bloc d'exercice : essayer compte déjà ; on peut revenir appuyer sur « réussi » plus tard
+                    btn.disabled = false;
+                    msg.style.color = "#166534";
+                    msg.textContent = etat === 'reussi' ? `Bravo ${code} ! Bloc noté comme réussi.`
+                        : (sent && sent.etat === 'reussi' ? `${code}, ce bloc est déjà noté comme réussi.` : `Bien joué ${code} ! Essai noté. Reviens appuyer sur « J'ai réussi » quand tu y arrives.`);
+                    return;
+                }
                 btn.dataset.sent = '1';
                 btn.textContent = "✔ Envoyé à ton professeur";
                 btn.style.background = "#16a34a";
@@ -5777,7 +5794,15 @@
             setTimeout(() => { try { w.print(); } catch (e) {} }, 300);
         }
 
-        async function openSuiviSecu() {
+        let suiviMode = 'secu';
+        async function openSuiviSecu(mode) {
+            suiviMode = mode === 'blocs' ? 'blocs' : 'secu';
+            const blocsMode = suiviMode === 'blocs';
+            document.getElementById('suivi-secu-titre').textContent = blocsMode ? "🧗 Suivi des blocs" : "🛡️ Suivi des fiches de sécurité";
+            document.getElementById('suivi-secu-aide').textContent = blocsMode
+                ? "Ce que chaque élève déclare avoir essayé ou réussi. Le tableau n'affiche que les codes : les noms ne se voient que dans « Liste de la classe »."
+                : "Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».";
+            document.getElementById('suivi-parcours-btn').style.display = blocsMode ? 'none' : '';
             if (!cloudTeam) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
             await loadListes();
             document.getElementById('suivi-secu-modal').style.display = 'flex';
@@ -5789,8 +5814,9 @@
             box.innerHTML = '<p style="color: #64748b; text-align: center;">Chargement…</p>';
             try {
                 const ping = await cloudAsk({ action: 'ping' });
-                if (!ping || !(ping.version >= 8)) {
-                    box.innerHTML = '<p style="color: #991b1b; font-weight: bold;">Le suivi demande la version 8 du script Google : installez-la, puis redéployez (« Nouvelle version »).</p>';
+                const needed = suiviMode === 'blocs' ? 9 : 8;
+                if (!ping || !(ping.version >= needed)) {
+                    box.innerHTML = `<p style="color: #991b1b; font-weight: bold;">Le suivi demande la version ${needed} du script Google : installez-la, puis redéployez (« Nouvelle version »).</p>`;
                     return;
                 }
                 suiviData = (await cloudCall({ action: 'lireValidations' })).validations || [];
@@ -5800,7 +5826,54 @@
             }
         }
 
+        // Tableau des blocs d'exercice : par élève, réussis et essayés dans chaque thème, puis réussis par couleur
+        function renderSuiviBlocs() {
+            const box = document.getElementById('suivi-secu-table');
+            const select = document.getElementById('suivi-secu-classe');
+            const blocs = (schoolConfig.customRoutes || []).filter(r => r.type === 'bloc' && !/^s[ée]curit[ée]/i.test((r.theme || "").trim()));
+            const ids = {};
+            blocs.forEach(r => { ids[r.id] = r; });
+            const data = (suiviData || []).filter(v => ids[v.id]);
+            const listes = readListes();
+            const classes = Array.from(new Set(data.map(v => v.classe).concat(Object.keys(listes)))).sort();
+            if (classes.indexOf(suiviClasse) === -1) suiviClasse = classes[0] || "";
+            select.innerHTML = classes.map(c => `<option value="${escapeHtml(c)}"${c === suiviClasse ? " selected" : ""}>${escapeHtml(c)}</option>`).join("") || '<option value="">(aucune classe)</option>';
+            if (blocs.length === 0) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun exercice de bloc pour l\'instant.</p>'; return; }
+            if (!suiviClasse) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun élève n\'a encore noté de bloc.<br>Faites scanner le QR code d\'un bloc : l\'élève indique sa classe et son code, puis appuie sur « J\'ai essayé » ou « J\'ai réussi ».</p>'; return; }
+            const students = {}, realNames = {};
+            (listes[suiviClasse] || []).forEach((name, i) => { const code = codeFromName(name, i + 1); if (code) { students[code] = {}; realNames[code] = name; } });
+            data.filter(v => v.classe === suiviClasse).forEach(v => { (students[v.eleve] = students[v.eleve] || {})[v.id] = v.etat === 'reussi' ? 'reussi' : 'essaye'; });
+            const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
+            const groups = groupByTheme(blocs);
+            const grades = [["Jaune", "#eab308"], ["Vert", "#22c55e"], ["Bleu", "#3b82f6"], ["Rouge", "#ef4444"], ["Noir", "#0f172a"]]
+                .filter(g => blocs.some(r => String(r.grade || "").split(' ')[0] === g[0]));
+            const list = (rs) => rs.map(r => r.name).join(" ; ");
+            let html = `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
+                + groups.map(g => `<th>${escapeHtml(g.theme)}<br><span style="font-weight: normal;">${g.items.length} blocs</span></th>`).join("")
+                + grades.map(g => `<th data-tip="Blocs réussis de niveau ${g[0].toLowerCase()}"><span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${g[1]};"></span></th>`).join("")
+                + `<th>Réussis</th><th>Essayés</th></tr></thead><tbody>`;
+            names.forEach(name => {
+                const mine = students[name];
+                const ok = blocs.filter(r => mine[r.id] === 'reussi'), tried = blocs.filter(r => mine[r.id] === 'essaye');
+                const label = `${escapeHtml(name)}${(listes[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
+                html += `<tr><td style="text-align: left; font-weight: bold; white-space: nowrap;">${label}</td>`
+                    + groups.map(g => {
+                        const rs = g.items.map(o => o.b);
+                        const o = rs.filter(r => mine[r.id] === 'reussi'), t = rs.filter(r => mine[r.id] === 'essaye');
+                        if (!o.length && !t.length) return `<td></td>`;
+                        const tip = (o.length ? "Réussis : " + list(o) + ". " : "") + (t.length ? "Essayés : " + list(t) + "." : "");
+                        return `<td class="${o.length ? 'vu' : ''}" data-tip="${escapeHtml(tip)}" style="cursor: help;">${o.length ? `<b>✅ ${o.length}</b>` : ""}${o.length && t.length ? " · " : ""}${t.length ? `<span style="color: #b45309;">👍 ${t.length}</span>` : ""}</td>`;
+                    }).join("")
+                    + grades.map(g => { const n = ok.filter(r => String(r.grade || "").split(' ')[0] === g[0]).length; return `<td>${n || ""}</td>`; }).join("")
+                    + `<td style="font-weight: bold; color: #166534;">${ok.length}</td><td style="font-weight: bold; color: #b45309;">${tried.length}</td></tr>`;
+            });
+            html += `</tbody></table>`
+                + `<div style="margin-top: 8px; font-size: 0.78rem; color: #475569; text-align: left;">${names.length} élève(s) dans cette classe. ✅ = blocs réussis, 👍 = blocs essayés sans réussite. Passez la souris sur une case pour voir les noms des blocs. Les pastilles de couleur comptent les blocs réussis par niveau. C'est déclaratif : l'élève ou son observateur note le passage.</div>`;
+            box.innerHTML = html;
+        }
+
         function renderSuiviSecu() {
+            if (suiviMode === 'blocs') return renderSuiviBlocs();
             const box = document.getElementById('suivi-secu-table');
             const select = document.getElementById('suivi-secu-classe');
             const fiches = securityFiches();
@@ -5840,9 +5913,9 @@
 
         async function clearSuiviSecu() {
             if (!suiviClasse) return;
-            if (!confirm(`Effacer tout le suivi de la classe ${suiviClasse} ?\nÀ faire en fin de cycle. C'est définitif.`)) return;
+            if (!confirm(`Effacer le suivi ${suiviMode === 'blocs' ? "des blocs" : "des fiches de sécurité"} de la classe ${suiviClasse} ?\nÀ faire en fin de cycle. C'est définitif.`)) return;
             try {
-                await cloudCall({ action: 'effacerValidations', classe: suiviClasse });
+                await cloudCall({ action: 'effacerValidations', classe: suiviClasse, genre: suiviMode });
                 await refreshSuiviSecu();
             } catch (e) { alert("❌ " + (e && e.message ? e.message : "Erreur")); }
         }
