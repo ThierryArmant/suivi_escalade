@@ -29,7 +29,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 11;
+var VERSION = 12;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -658,7 +658,7 @@ function validerFiche_(equipe, id, classe, eleve, etat) {
     if (total >= ELEVES_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
     var premier = {};
     premier[id] = [etat, quand];
-    feuille.appendRow([equipe, classe, eleve, JSON.stringify(premier), quand, quand]);
+    ajouterTexte_(feuille, [equipe, classe, eleve, JSON.stringify(premier), quand, quand]);
     return { ok: true, etat: etat };
   }
   var plage = feuille.getRange(ligne, 4, 1, 3);
@@ -781,6 +781,13 @@ function lireValidations_(equipe) {
 // Classes de l'équipe : seulement les codes des élèves (« TA 12 »), jamais les noms.
 // Sert à retrouver les mêmes classes sur tous les appareils du professeur.
 function lireClasses_(equipe) {
+  // Réparation : une classe comme « 3E5 » a pu être rangée comme un nombre (300000) par Google Sheets.
+  // Ces lignes sont retirées ; l'appareil du professeur renvoie la bonne liste juste après.
+  var feuille = feuille_('Classes');
+  var brutes = lignes_('Classes');
+  for (var i = brutes.length - 1; i >= 0; i--) {
+    if (cle_(brutes[i][0]) === equipe && typeof brutes[i][1] === 'number') feuille.deleteRow(i + 2);
+  }
   var classes = {};
   lignes_('Classes').forEach(function (l) {
     if (cle_(l[0]) !== equipe) return;
@@ -801,7 +808,7 @@ function enregistrerClasse_(equipe, classe, codes) {
   var feuille = feuille_('Classes');
   if (!propres.length) { if (ligne > 0) feuille.deleteRow(ligne); return { ok: true, efface: true }; }
   var valeurs = [equipe, classe, JSON.stringify(propres), maintenant_()];
-  if (ligne > 0) feuille.getRange(ligne, 1, 1, 4).setValues([valeurs]); else feuille.appendRow(valeurs);
+  if (ligne > 0) feuille.getRange(ligne, 1, 1, 4).setNumberFormat('@').setValues([valeurs]); else ajouterTexte_(feuille, valeurs);
   return { ok: true };
 }
 
@@ -906,6 +913,11 @@ function lirePhoto_(equipe, nom) {
    ========================================================= */
 function maintenant_() {
   return new Date().toISOString();
+}
+
+// Ajoute une ligne en texte brut : sans cela, Google Sheets lit « 3E5 » comme le nombre 300000
+function ajouterTexte_(feuille, valeurs) {
+  feuille.getRange(feuille.getLastRow() + 1, 1, 1, valeurs.length).setNumberFormat('@').setValues([valeurs]);
 }
 
 function feuille_(nom) {
