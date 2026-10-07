@@ -223,6 +223,8 @@
 
         .securite-section { background: #fff7ed; border: 2px solid #fdba74; }
         .securite-section h3 { color: #c2410c; border-bottom-color: #fb923c; }
+        .voies-section { background: #eff6ff; border: 2px solid #bfdbfe; }
+        .voies-section h3 { color: #1d4ed8; border-bottom-color: #60a5fa; }
         .securite-empty { font-size: 0.75rem; color: #9a3412; text-align: center; margin: 0; }
 
         .bloc-section h3, .indiv-section h3, .technical-zone h3 { 
@@ -910,6 +912,13 @@
                 <button class="add-custom-btn btn-full" onclick="openCreateModal('bloc')">+ Créer un Bloc</button>
             </div>
 
+            <!-- Bleu Pastel : les exercices sur les voies (moulinette) ont leur propre espace -->
+            <div class="sidebar-section voies-section">
+                <h3>Exercices voies</h3>
+                <div id="voies-list" class="custom-list"></div>
+                <button class="add-custom-btn btn-full" onclick="openCreateModal('bloc', 'Voies · Grimper avec les pieds')">+ Créer un exercice de voie</button>
+            </div>
+
             <!-- Vert Pastel -->
             <div class="sidebar-section indiv-section">
                 <h3>Blocs personnalisés</h3>
@@ -1140,6 +1149,10 @@
                         <option value="Positionnement / Orientation">Position du corps / Orientation</option>
                         <option value="Préhension différentes">Préhension de prises différentes</option>
                         <option value="Sécurité en moulinette">Sécurité en moulinette</option>
+                        <option value="Voies · Grimper avec les pieds">Voies · Grimper avec les pieds</option>
+                        <option value="Voies · Oser en hauteur">Voies · Oser en hauteur</option>
+                        <option value="Voies · Lire et prévoir sa voie">Voies · Lire et prévoir sa voie</option>
+                        <option value="Voies · Assurer et communiquer">Voies · Assurer et communiquer</option>
                         <option value="Échauffement">Échauffement</option>
                         <option value="S'équilibrer et se déplacer">S'équilibrer et se déplacer</option>
                         <option value="S'informer pour décider">S'informer pour décider</option>
@@ -1991,6 +2004,9 @@
             const indivListContainer = document.getElementById('indiv-list');
             const securiteListContainer = document.getElementById('securite-list');
             const isSecurite = theme => /^s[ée]curit[ée]/i.test(theme || "");
+            const isVoies = theme => /^voies?\s*[·:\-–]/i.test(theme || "");
+            const voiesListContainer = document.getElementById('voies-list');
+            voiesListContainer.innerHTML = '';
             
             securiteListContainer.innerHTML = '';
             blocListContainer.innerHTML = ''; 
@@ -2116,7 +2132,8 @@
                 themeHeader.className = 'theme-header';
                 
                 let titleSpan = document.createElement('span');
-                titleSpan.textContent = `📁 ${theme}`;
+                // Dans l'espace « Exercices voies », le préfixe « Voies · » du thème est inutile
+                titleSpan.textContent = `📁 ${isVoies(theme) ? theme.replace(/^voies?\s*[·:\-–]\s*/i, "") : theme}`;
                 
                 let iconSpan = document.createElement('span');
                 iconSpan.textContent = '▶'; 
@@ -2162,9 +2179,12 @@
                 };
 
                 // Les thèmes de sécurité ont leur propre espace, au-dessus des exercices
-                const target = isSecurite(theme) ? securiteListContainer : blocListContainer;
+                const target = isSecurite(theme) ? securiteListContainer : (isVoies(theme) ? voiesListContainer : blocListContainer);
                 target.appendChild(themeHeader);
                 target.appendChild(themeContent);
+            }
+            if (!voiesListContainer.children.length) {
+                voiesListContainer.innerHTML = '<p class="securite-empty" style="color: #1e40af;">Aucun exercice de voie pour l\'instant.</p>';
             }
             if (!securiteListContainer.children.length) {
                 securiteListContainer.innerHTML = '<p class="securite-empty">Aucune fiche de sécurité pour l\'instant.</p>';
