@@ -808,7 +808,7 @@
         <div class="controls-group">
             <button id="team-btn" class="config-btn" onclick="openTeamModal()" title="Espace d'équipe : enregistrement en ligne partagé">👥 Équipe</button>
             <button id="teams-btn" class="config-btn" onclick="openTeamsModal()" title="Les autres équipes : titres de leurs blocs, demande de consultation, contact" style="background-color: #6d28d9; position: relative;">🌍 Les équipes<span id="teams-badge" style="display: none; position: absolute; top: -8px; right: -8px; min-width: 22px; height: 22px; line-height: 22px; padding: 0 5px; box-sizing: border-box; border-radius: 11px; background: #dc2626; color: #ffffff; font-size: 0.78rem; font-weight: 900; text-align: center; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></span></button>
-            <button class="config-btn" onclick="openSuiviSecu('blocs')" title="Tableau des blocs que chaque élève déclare avoir essayés ou réussis, thème par thème et couleur par couleur. L'élève scanne le bloc, tape sa classe et son code, puis appuie sur « J'ai essayé » ou « J'ai réussi ». C'est déclaratif." style="background-color: #0f766e;">🧗 Suivi des blocs</button>
+            <button class="config-btn" onclick="openSuiviSecu('blocs')" title="Tableau des exercices (blocs et voies) que chaque élève déclare avoir essayés ou réussis, thème par thème et couleur par couleur. L'élève scanne le bloc, tape sa classe et son code, puis appuie sur « J'ai essayé » ou « J'ai réussi ». C'est déclaratif." style="background-color: #0f766e;">🧗 Suivi des exercices</button>
             <button class="config-btn" onclick="openSuiviSecu()" title="Sert à vérifier que chaque élève a bien vu les fiches de sécurité avant de grimper. L'élève scanne une fiche, coche les lignes, tape sa classe et son code : une coche ✅ apparaît ici, classe par classe. C'est un témoin de visionnage, pas une note." style="background-color: #7c3aed;">🛡️ Suivi sécurité</button>
             <button class="config-btn" onclick="openHelp()" title="Aide : présentation de l'outil ou guide de démarrage"style="background-color: #94a3b8; padding: 8px 10px;">❔</button>
             <button class="config-btn" onclick="openConfigModal()">⚙️ Configuration</button>
@@ -1423,6 +1423,7 @@
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
                 <label style="font-weight: bold;">Classe :</label>
                 <select id="suivi-secu-classe" onchange="suiviClasse = this.value; renderSuiviSecu();" style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"></select>
+                <select id="suivi-genre" onchange="renderSuiviSecu()" title="Choisir ce que le tableau affiche : les blocs, les voies, ou les deux." style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"><option value="">Blocs et voies</option><option value="blocs">Blocs seulement</option><option value="voies">Voies seulement</option></select>
                 <button onclick="refreshSuiviSecu()" style="background-color: #2563eb; color: white; border: none; padding: 7px 12px;" title="Recharge les validations envoyées par les élèves.">🔄 Actualiser</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
                 <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
@@ -5908,11 +5909,12 @@
         async function openSuiviSecu(mode) {
             suiviMode = mode === 'blocs' ? 'blocs' : 'secu';
             const blocsMode = suiviMode === 'blocs';
-            document.getElementById('suivi-secu-titre').textContent = blocsMode ? "🧗 Suivi des blocs" : "🛡️ Suivi des fiches de sécurité";
+            document.getElementById('suivi-secu-titre').textContent = blocsMode ? "🧗 Suivi des exercices" : "🛡️ Suivi des fiches de sécurité";
             document.getElementById('suivi-secu-aide').textContent = blocsMode
                 ? "Ce que chaque élève déclare avoir essayé ou réussi. Le tableau n'affiche que les codes : les noms ne se voient que dans « Liste de la classe »."
                 : "Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».";
             document.getElementById('suivi-parcours-btn').style.display = blocsMode ? 'none' : '';
+            document.getElementById('suivi-genre').style.display = blocsMode ? '' : 'none';
             if (!cloudTeam) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
             await loadListes();
             document.getElementById('suivi-secu-modal').style.display = 'flex';
@@ -5943,7 +5945,10 @@
         function renderSuiviBlocs() {
             const box = document.getElementById('suivi-secu-table');
             const select = document.getElementById('suivi-secu-classe');
-            const blocs = (schoolConfig.customRoutes || []).filter(r => r.type === 'bloc' && !/^s[ée]curit[ée]/i.test((r.theme || "").trim()));
+            const genre = document.getElementById('suivi-genre').value;
+            const estVoie = r => /^voies?\s*[·:\-–]/i.test((r.theme || "").trim());
+            const blocs = (schoolConfig.customRoutes || []).filter(r => r.type === 'bloc' && !/^s[ée]curit[ée]/i.test((r.theme || "").trim())
+                && (!genre || (genre === 'voies') === estVoie(r)));
             const ids = {};
             blocs.forEach(r => { ids[r.id] = r; });
             const data = (suiviData || []).filter(v => ids[v.id]);
@@ -5962,7 +5967,7 @@
                 .filter(g => blocs.some(r => String(r.grade || "").split(' ')[0] === g[0]));
             const list = (rs) => rs.map(r => r.name).join(" ; ");
             let html = echeanceBanner() + `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
-                + groups.map(g => `<th>${escapeHtml(g.theme)}<br><span style="font-weight: normal;">${g.items.length} blocs</span></th>`).join("")
+                + groups.map(g => `<th>${escapeHtml(g.theme)}<br><span style="font-weight: normal;">${g.items.length} exercices</span></th>`).join("")
                 + grades.map(g => `<th data-tip="Blocs réussis de niveau ${g[0].toLowerCase()}"><span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${g[1]};"></span></th>`).join("")
                 + `<th>Réussis</th><th>Essayés</th></tr></thead><tbody>`;
             names.forEach(name => {
@@ -5981,7 +5986,7 @@
                     + `<td style="font-weight: bold; color: #166534;">${ok.length}</td><td style="font-weight: bold; color: #b45309;">${tried.length}</td></tr>`;
             });
             html += `</tbody></table>`
-                + `<div style="margin-top: 8px; font-size: 0.78rem; color: #475569; text-align: left;">${names.length} élève(s) dans cette classe. ✅ = blocs réussis, 👍 = blocs essayés sans réussite. Passez la souris sur une case pour voir les noms des blocs. Les pastilles de couleur comptent les blocs réussis par niveau. C'est déclaratif : l'élève ou son observateur note le passage.</div>`;
+                + `<div style="margin-top: 8px; font-size: 0.78rem; color: #475569; text-align: left;">${names.length} élève(s) dans cette classe. ✅ = exercices réussis, 👍 = exercices essayés sans réussite. Passez la souris sur une case pour voir leurs noms. Les pastilles de couleur comptent les exercices réussis par niveau. C'est déclaratif : l'élève ou son observateur note le passage.</div>`;
             box.innerHTML = html;
         }
 
