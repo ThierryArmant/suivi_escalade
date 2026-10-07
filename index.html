@@ -1205,9 +1205,9 @@
             </div>
             <hr style="border: 0; border-top: 2px dashed #e2e8f0; margin: 20px 0;">
             <div class="form-group">
-                <label>🔄 Partage en équipe (Import / Export) :</label>
-                <button class="template-btn" style="background-color: #2563eb; color: white; width: 100%; margin-bottom: 12px; padding: 10px; font-weight: bold;" onclick="exportData()">📤 Exporter mes blocs (.json)</button>
-                <label style="font-weight: normal; font-size: 0.85rem; color: #475569;">📥 Importer les blocs d'un collègue :</label>
+                <label>🔄 Sauvegarde et partage (Import / Export) :</label>
+                <button class="template-btn" style="background-color: #2563eb; color: white; width: 100%; margin-bottom: 12px; padding: 10px; font-weight: bold;" onclick="exportData()">📤 Exporter mes exercices (.json)</button>
+                <label style="font-weight: normal; font-size: 0.85rem; color: #475569;">📥 Importer un fichier d'exercices (blocs, voies, fiches de sécurité) :</label>
                 <input type="file" id="importInput" accept=".json" onchange="importData(this)" style="border: 1px solid #cbd5e1; padding: 8px; border-radius: 4px;">
                 <div id="blocs-status" class="config-status empty"></div>
                 <button class="template-btn" style="background-color: #b91c1c; color: white; width: 100%; margin-top: 10px; padding: 9px; font-weight: bold;" onclick="openBulkDelete()">🗑️ Supprimer plusieurs blocs d'un coup…</button>
@@ -3878,11 +3878,11 @@
                 try {
                     imported = JSON.parse(e.target.result);
                 } catch (err) {
-                    alert("❌ Ce fichier est illisible : ce n'est pas un export de blocs, ou il est incomplet.\nRefaites « Exporter mes blocs » sur l'appareil d'origine.");
+                    alert("❌ Ce fichier est illisible : ce n'est pas un fichier d'exercices, ou il est incomplet.\nRefaites « Exporter mes exercices » sur l'appareil d'origine.");
                     return;
                 }
                 if (!imported || !Array.isArray(imported.customRoutes) || typeof imported.markers !== 'object' || imported.markers === null) {
-                    alert("❌ Ce fichier ne contient pas de blocs.\nChoisissez un fichier créé avec « Exporter mes blocs ».");
+                    alert("❌ Ce fichier ne contient pas d'exercices.\nChoisissez un fichier créé avec « Exporter mes exercices ».");
                     return;
                 }
 
