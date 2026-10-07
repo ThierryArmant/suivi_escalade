@@ -6129,7 +6129,7 @@
             let html = videoHtml(o);
             if (o.consigne) html += ficheBox("📋 Ce que tu dois faire", o.consigne, "#f59e0b", 'consigne');
             if (o.attendus) html += ficheBox("✅ Ce que tu dois réussir <span class=\"fiche-hint\">touche chaque ligne quand c'est fait</span>", o.attendus, "#16a34a", 'check');
-            if (o.competences) html += ficheBox("🎯 Ce que tu apprends", o.competences, "#2563eb", 'list');
+            if (o.competences) html += ficheBox("🎯 Ce qu'il y a à apprendre", o.competences, "#2563eb", 'list');
             if (!withoutSource) html += sourceHtml(o);
             return html;
         }
