@@ -757,6 +757,9 @@
             overflow-y: auto;
         }
 
+        /* Mode invité : sur un petit écran, le bandeau ne reste pas collé en haut (il prendrait trop de place) */
+        @media (max-width: 700px) { #guest-strip { position: static !important; font-size: 0.78rem !important; } }
+
         .modal-content h2 { margin-top: 0; color: #1e3a8a; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px;}
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; font-weight: bold; margin-bottom: 5px; color: #334155; }
@@ -789,6 +792,13 @@
     </style>
 </head>
 <body>
+
+    <!-- MODE INVITÉ : bandeau permanent -->
+    <div id="guest-strip" style="display: none; position: sticky; top: 0; z-index: 900; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px 0; padding: 7px 10px; background: #7c3aed; color: #ffffff; border-radius: 8px; font-size: 0.88rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
+        <span>👀 MODE INVITÉ · essayez tout : rien n'est enregistré, tout repart de zéro à la fermeture de la page.</span>
+        <button onclick="openGuestModal()" style="padding: 4px 10px; font-size: 0.8rem; font-weight: bold; background: #ffffff; color: #5b21b6; border: none; border-radius: 6px; cursor: pointer;">En savoir plus</button>
+        <button onclick="leaveGuest()" style="padding: 4px 10px; font-size: 0.8rem; font-weight: bold; background: #4c1d95; color: #ffffff; border: 1px solid #c4b5fd; border-radius: 6px; cursor: pointer;">Quitter</button>
+    </div>
 
     <h1>🧗 Bloc'Note EPS</h1>
     <div class="subtitle">Outil universel de création de voies et bloc virtuel</div>
@@ -1267,7 +1277,26 @@
             <button onclick="welcomeGo('request')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e; font-weight: bold;">✉️ Je découvre l'outil : demander un code d'invitation</button>
             <button onclick="welcomeGo('create')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #2563eb;">➕ J'ai reçu mon code : créer l'équipe de mon établissement</button>
             <button onclick="welcomeGo('login')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #475569;">👥 Mon équipe existe déjà : me connecter</button>
-            <button onclick="closeWelcomeModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #94a3b8; margin-bottom: 0;">👀 Simplement regarder la démonstration</button>
+            <button onclick="enterGuest()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #7c3aed; font-weight: bold;">👀 Essayer tout de suite en mode invité : rien à installer, rien n'est enregistré</button>
+            <button onclick="closeWelcomeModal()" style="display: block; width: 100%; padding: 8px 10px; color: #475569; border: 1px solid #cbd5e1; text-align: left; background-color: #ffffff; font-size: 0.85rem; margin-bottom: 0;">Fermer cette fenêtre et continuer sur cet appareil, sans équipe</button>
+        </div>
+    </div>
+
+    <!-- MODE INVITÉ : fenêtre d'explication -->
+    <div id="guest-modal" class="modal-overlay" style="z-index: 3100;">
+        <div class="modal-content" style="max-width: 580px;">
+            <h2 style="color: #5b21b6; border-bottom-color: #c4b5fd;">👀 Mode invité</h2>
+            <p id="guest-note" style="display: none; margin-top: 0; padding: 8px 10px; background: #fef9c3; border: 2px solid #fde047; border-radius: 8px; color: #713f12; font-size: 0.88rem; font-weight: bold;"></p>
+            <p style="margin-top: 0; color: #334155;">Vous utilisez une <b>copie d'essai</b> de Bloc'Note EPS, avec <span id="guest-source">un mur d'exemple</span>.</p>
+            <p id="guest-missing" style="display: none; margin-top: 0; padding: 8px 10px; background: #fee2e2; border: 2px solid #fca5a5; border-radius: 8px; color: #991b1b; font-size: 0.85rem;">Le mur complet et ses exercices n'ont pas pu être chargés (connexion Internet ?). Un mur d'exemple très réduit est affiché à la place : rechargez la page pour réessayer.</p>
+            <ul style="margin: 6px 0 14px 0; padding-left: 20px; font-size: 0.9rem; color: #334155; line-height: 1.5;">
+                <li><b>Tout est ouvert.</b> Affichez les voies et les blocs, posez des balises, créez, modifiez ou supprimez des exercices, affichez les QR codes, ouvrez la Configuration et les tableaux de suivi.</li>
+                <li><b>Rien n'est enregistré.</b> Vos essais restent dans cette page : ni cet appareil, ni les exercices d'origine ne sont modifiés.</li>
+                <li><b>Tout repart de zéro</b> dès que la page est fermée ou rechargée.</li>
+            </ul>
+            <button onclick="closeGuestModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 12px; color: white; border: none; text-align: left; background-color: #7c3aed; font-weight: bold; font-size: 1rem;">🧗 Essayer l'outil</button>
+            <button onclick="leaveGuest('request')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e;">✉️ L'outil m'intéresse : demander un code d'invitation pour mon établissement</button>
+            <button onclick="leaveGuest()" style="display: block; width: 100%; padding: 10px; color: white; border: none; text-align: left; background-color: #64748b; margin-bottom: 0;">🚪 Quitter le mode invité</button>
         </div>
     </div>
 
@@ -1678,8 +1707,34 @@
         let hasUnsavedChanges = false;
         let currentImageIndex = 0; 
         
+        // =========================================
+        // MODE INVITÉ (lien terminé par ?mode=invite)
+        // =========================================
+        // Le visiteur essaie tout l'outil sur le mur et les exercices d'exemple, mais RIEN n'est enregistré :
+        // ni dans la mémoire de cet appareil, ni dans l'espace en ligne. Tout repart de zéro au rechargement.
+        // Les deux mémoires du navigateur sont remplacées par des mémoires provisoires, et aucun mot de passe
+        // d'équipe n'est jamais chargé : il est donc impossible d'écrire quoi que ce soit en ligne.
+        const GUEST = new URLSearchParams(window.location.search).get('mode') === 'invite';
+        const guestMemory = {};   // remplace la mémoire rapide du navigateur
+        const guestDB = {};       // remplace la grande mémoire (photos, réglages)
+        let guestInfo = null;     // { equipe, etablissement, ids, photos } : l'exemple chargé
+        const store = {
+            getItem(key) {
+                if (GUEST) return Object.prototype.hasOwnProperty.call(guestMemory, key) ? guestMemory[key] : null;
+                return window.localStorage.getItem(key);
+            },
+            setItem(key, value) {
+                if (GUEST) { guestMemory[key] = String(value); return; }
+                window.localStorage.setItem(key, value);
+            },
+            removeItem(key) {
+                if (GUEST) { delete guestMemory[key]; return; }
+                window.localStorage.removeItem(key);
+            }
+        };
+
         window.addEventListener('beforeunload', function (e) {
-            if (hasUnsavedChanges) { 
+            if (hasUnsavedChanges && !GUEST) { 
                 e.preventDefault(); 
                 e.returnValue = ''; 
             }
@@ -1725,6 +1780,7 @@
         }
 
         async function saveToDB(key, value) {
+            if (GUEST) { guestDB[key] = value; return true; }   // mode invité : rien n'est écrit sur l'appareil
             const db = await openDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(STORE_NAME, "readwrite");
@@ -1736,6 +1792,7 @@
         }
 
         async function getFromDB(key) {
+            if (GUEST) return guestDB[key];
             const db = await openDB();
             return new Promise((resolve, reject) => {
                 const transaction = db.transaction(STORE_NAME, "readonly");
@@ -1832,7 +1889,7 @@
 
         function readRouteMarkers(id) {
             let raw = null;
-            try { raw = localStorage.getItem(MARKER_PREFIX + id); } catch (e) { /* mémoire inaccessible */ }
+            try { raw = store.getItem(MARKER_PREFIX + id); } catch (e) { /* mémoire inaccessible */ }
             if (raw) {
                 try { 
                     const list = JSON.parse(raw); 
@@ -1846,7 +1903,7 @@
         function writeRouteMarkers(id, points) {
             const list = Array.isArray(points) ? points : [];
             try { 
-                localStorage.setItem(MARKER_PREFIX + id, JSON.stringify(list)); 
+                store.setItem(MARKER_PREFIX + id, JSON.stringify(list)); 
                 if (schoolConfig.markerStore) delete schoolConfig.markerStore[id];
             } catch (e) { 
                 schoolConfig.markerStore = schoolConfig.markerStore || {}; 
@@ -1857,7 +1914,7 @@
         }
 
         function removeRouteMarkers(id) {
-            try { localStorage.removeItem(MARKER_PREFIX + id); } catch (e) { /* rien à faire */ }
+            try { store.removeItem(MARKER_PREFIX + id); } catch (e) { /* rien à faire */ }
             if (schoolConfig.markerStore && schoolConfig.markerStore[id]) { 
                 delete schoolConfig.markerStore[id]; 
                 saveConfig(); 
@@ -1908,6 +1965,67 @@
             activeBanner.innerHTML = "✨ Mode démo actif : Sélectionnez une voie ou créez un bloc.";
         }
 
+        // Mode invité : le mur et les exercices d'exemple sont lus en ligne (lecture seule, sans mot de passe)
+        // et gardés uniquement dans la page. Renvoie null si l'exemple n'est pas disponible.
+        async function loadGuestContent() {
+            const say = (text) => {
+                activeBanner.style.background = "#ede9fe";
+                activeBanner.style.color = "#5b21b6";
+                activeBanner.innerHTML = text;
+            };
+            say("⏳ Mode invité : chargement du mur et des exercices d'exemple…");
+            let data = null;
+            try { data = await cloudAsk({ action: 'invite' }); } catch (e) { data = null; }
+            if (!data || !data.ok || !data.equipe) return null;
+
+            // Photos des murs, puis photos propres à certains blocs
+            const wanted = (data.photos || []).map(p => p.nom).filter(n => n && !n.startsWith('mur-'));
+            (data.blocs || []).forEach(b => {
+                const name = b && b.route && !b.route.imageSrc && b.route.imageName;
+                if (name && wanted.indexOf(name) === -1) wanted.push(name);
+            });
+            const photos = {};
+            const queue = wanted.slice();
+            let done = 0;
+            const worker = async () => {
+                while (queue.length) {
+                    const nom = queue.shift();
+                    try {
+                        const d = await cloudCall({ action: 'photo', equipe: data.equipe, nom: nom }, false);
+                        if (/^data:image\//.test(d.dataUrl || "")) photos[nom] = d.dataUrl;
+                    } catch (e) { /* photo manquante : les exercices qui l'utilisent ne seront pas affichés */ }
+                    done++;
+                    say(`⏳ Mode invité : chargement des photos du mur (${done}/${wanted.length})…`);
+                }
+            };
+            await Promise.all([worker(), worker(), worker(), worker()]);
+            const walls = {};
+            Object.keys(photos).forEach(n => { if (!n.startsWith('mur-')) walls[n] = photos[n]; });
+            if (Object.keys(walls).length === 0) return null;
+
+            schoolConfig = { images: [], imageNames: [], routes: [], customRoutes: [] };
+            if (data.topo && Array.isArray(data.topo.routes)) {
+                schoolConfig.routes = data.topo.routes.map(r => Object.assign({}, r));
+                schoolConfig.excelName = data.topo.excelName || "";
+                schoolConfig.excelDate = data.topo.excelDate || "";
+                const topoMarkers = data.topo.markers || {};
+                Object.keys(topoMarkers).forEach(id => writeRouteMarkers(id, topoMarkers[id]));
+            }
+            const ids = {};
+            (data.blocs || []).forEach(b => {
+                if (!b || !b.id || !b.route) return;
+                const route = Object.assign({}, b.route);
+                if (!route.imageSrc && route.imageName) route.imageSrc = photos[route.imageName] || "";
+                if (!route.imageSrc) return;
+                schoolConfig.customRoutes.push(route);
+                writeRouteMarkers(b.id, b.markers || []);
+                ids[b.id] = true;
+            });
+            applyPhotos(walls);
+            guestInfo = { equipe: data.equipe, etablissement: data.etablissement || "", ids: ids, photos: Object.keys(photos) };
+            return schoolConfig;
+        }
+
         async function initApp() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('mode') === 'eleve') { 
@@ -1920,7 +2038,7 @@
                 configLoaded = true;
                 let savedConfig = null;
                 try { 
-                    savedConfig = await getFromDB("school_config_master"); 
+                    savedConfig = GUEST ? await loadGuestContent() : await getFromDB("school_config_master"); 
                 } catch(e) { 
                     console.error(e); 
                 }
@@ -1951,7 +2069,8 @@
                 document.getElementById('wall-container').style.maxWidth = '800px';
                 activeBanner.style.background = "#dcfce7"; 
                 activeBanner.style.color = "#166534";
-                activeBanner.innerHTML = "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
+                activeBanner.innerHTML = GUEST ? "👀 Mode invité : choisissez une voie ou un mur de blocs, puis essayez tout. Rien n'est enregistré."
+                    : "✨ Outil prêt : Sélectionnez une voie ou créez un bloc.";
             }
         }
 
@@ -2646,11 +2765,11 @@
         }
 
         function readDraft() {
-            try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
+            try { return JSON.parse(store.getItem(DRAFT_KEY) || 'null'); } catch (e) { return null; }
         }
 
         function clearDraft() {
-            try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* rien */ }
+            try { store.removeItem(DRAFT_KEY); } catch (e) { /* rien */ }
         }
 
         // true = on est sur un mur de blocs, avec des balises posées, sans bloc créé
@@ -2699,7 +2818,7 @@
                 const text = JSON.stringify({ image: schoolConfig.imageNames[currentImageIndex] || "", markers: markersCopy() });
                 if (text !== lastDraft) {
                     lastDraft = text;
-                    try { localStorage.setItem(DRAFT_KEY, text); } catch (e) { /* rien */ }
+                    try { store.setItem(DRAFT_KEY, text); } catch (e) { /* rien */ }
                 }
             }
         }
@@ -4172,18 +4291,27 @@
                     photoOnline = online;
                 }
             }
+            // Mode invité : le téléphone prend la photo dans l'espace de l'exemple ; le passage n'y est jamais noté
+            if (GUEST && guestInfo && found) {
+                const p = blocPhotoName(found, getImportedPhotos());
+                if (p.name && !p.keepSrc && guestInfo.photos.indexOf(p.name) !== -1) {
+                    imageName = p.name;
+                    teamForQR = guestInfo.equipe;
+                }
+            }
             const packed = encodeMarkers(targetMarkers);
             const enc = encodeURIComponent;
 
             const shareUrl = window.location.origin + window.location.pathname 
                 + "?mode=eleve&bg=" + (imageName ? enc(imageName) : "default") 
                 + (teamForQR ? "&eq=" + enc(teamForQR) : "")
+                + (GUEST ? "&invite=1" : "")
                 + "&v=2&c=" + packed.c + "&r=" + packed.r 
                 + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
 
             // La consigne voyage dans le QR code si elle tient (sinon le code serait trop dense à scanner)
             // Le téléphone ira chercher la fiche complète (consigne, attendus, compétences) dans l'espace de l'équipe
-            const hasFiche = !!(teamForQR && found && isSharedBloc(found));
+            const hasFiche = !!(teamForQR && found && isSharedBloc(found) && (!GUEST || (guestInfo && guestInfo.ids[found.id])));
             const withId = shareUrl + (hasFiche ? "&b=" + enc(String(found.id).replace(/^custom_/, '')) : "");
             const consigneQR = found && found.consigne ? found.consigne.replace(/\s+/g, ' ').slice(0, 220) : "";
             const links = [];
@@ -4394,6 +4522,8 @@
                         cloudCall({ action: 'ficheBloc', equipe: params.get('eq'), id: 'custom_' + params.get('b') }, false).then(fiche => {
                             const zone = document.getElementById('student-fiche');
                             if (zone && fiche && (fiche.consigne || fiche.attendus || fiche.competences || fiche.video)) zone.innerHTML = studentFicheHtml(fiche);
+                            // QR code affiché en mode invité : l'élève voit la fiche, mais aucun passage n'est noté
+                            if (params.get('invite')) return;
                             if (zone && fiche && fiche.suivi) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'));
                             else if (zone && fiche && fiche.suiviBloc) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'), true);
                         }).catch(() => { /* ancien stockage ou hors ligne : la consigne du QR code reste affichée */ });
@@ -4445,8 +4575,9 @@
         let cloudStateText = "";
 
         function loadTeam() {
+            if (GUEST) return;   // mode invité : aucune équipe, donc aucun mot de passe, donc aucune écriture en ligne
             try {
-                const saved = JSON.parse(localStorage.getItem(TEAM_KEY) || "null");
+                const saved = JSON.parse(store.getItem(TEAM_KEY) || "null");
                 if (saved && saved.equipe && saved.mdp) cloudTeam = saved;
             } catch (e) { cloudTeam = null; }
         }
@@ -4482,6 +4613,7 @@
         }
 
         async function cloudCall(payload, withAuth) {
+            if (withAuth !== false && (GUEST || !cloudTeam)) throw new Error("Aucune équipe connectée : rien n'est enregistré en ligne.");
             const body = withAuth === false ? payload : Object.assign({}, payload, { equipe: cloudTeam.equipe, mdp: cloudTeam.mdp });
             let response;
             try {
@@ -4855,8 +4987,8 @@
         function updateTeamUI() {
             const btn = document.getElementById('team-btn');
             if (btn) {
-                btn.textContent = cloudTeam ? `👥 ${cloudTeam.equipe}${cloudStateText ? " · " + cloudStateText : ""}` : "👥 Équipe";
-                btn.style.backgroundColor = cloudTeam ? (cloudStateText.startsWith("⚠️") ? "#b45309" : "#0f766e") : "#475569";
+                btn.textContent = GUEST ? "👀 Mode invité" : (cloudTeam ? `👥 ${cloudTeam.equipe}${cloudStateText ? " · " + cloudStateText : ""}` : "👥 Équipe");
+                btn.style.backgroundColor = GUEST ? "#7c3aed" : (cloudTeam ? (cloudStateText.startsWith("⚠️") ? "#b45309" : "#0f766e") : "#475569");
             }
             const connected = document.getElementById('team-connected');
             if (!connected) return;
@@ -5052,6 +5184,7 @@
         }
 
         function openTeamModal() {
+            if (GUEST) { openGuestModal("L'espace d'équipe enregistre en ligne les photos, le topo et les exercices, et les partage entre collègues. Il s'ouvre après la création de l'équipe de votre établissement."); return; }
             if (!cloudTeam && teamPanel === 'choice' && !pendingTeam) teamPanel = 'login';
             toggleTeamPassword(true);
             document.getElementById('team-error').textContent = "";
@@ -5142,7 +5275,7 @@
             if (!(schoolConfig.cloud && schoolConfig.cloud.equipe === pendingTeam.equipe)) schoolConfig.cloud = {};
             cloudTeam = pendingTeam;
             pendingTeam = null;
-            try { localStorage.setItem(TEAM_KEY, JSON.stringify(cloudTeam)); } catch (e) { /* on restera connecté jusqu'à la fermeture de la page */ }
+            try { store.setItem(TEAM_KEY, JSON.stringify(cloudTeam)); } catch (e) { /* on restera connecté jusqu'à la fermeture de la page */ }
             document.getElementById('team-input-pass').value = "";
             teamPanel = 'login';
             updateTeamUI();
@@ -5158,7 +5291,7 @@
             if (!confirm("Se déconnecter de l'équipe ?\nLes données restent sur cet appareil, mais ne seront plus enregistrées en ligne.")) return;
             cloudTeam = null;
             clearTimeout(cloudTimer);
-            try { localStorage.removeItem(TEAM_KEY); } catch (e) { /* rien */ }
+            try { store.removeItem(TEAM_KEY); } catch (e) { /* rien */ }
             setCloudState("");
         }
 
@@ -5180,14 +5313,51 @@
                 cloudSync().then(() => maybeOpenGuide());
                 return;
             }
+            if (GUEST) { showGuestStrip(); openGuestModal(); return; }
             // Tant que l'on n'est connecté à aucune équipe, l'accueil s'affiche à chaque ouverture
             openWelcomeModal();
+            // Retour du mode invité : on ouvre directement le bon écran (demande de code, création, connexion)
+            const go = new URLSearchParams(window.location.search).get('ouvrir');
+            if (['request', 'create', 'login'].indexOf(go) !== -1) welcomeGo(go);
+        }
+
+        // --- Mode invité : fenêtre d'explication, bandeau permanent, entrée et sortie ---
+        function showGuestStrip() {
+            document.getElementById('guest-strip').style.display = 'flex';
+        }
+
+        function openGuestModal(note) {
+            const noteBox = document.getElementById('guest-note');
+            noteBox.textContent = note || "";
+            noteBox.style.display = note ? 'block' : 'none';
+            document.getElementById('guest-source').textContent = guestInfo
+                ? "le mur et les exercices " + (guestInfo.etablissement ? "de l'équipe EPS « " + guestInfo.etablissement + " »" : "d'une équipe EPS")
+                : "un mur d'exemple";
+            document.getElementById('guest-missing').style.display = guestInfo ? 'none' : 'block';
+            document.getElementById('guest-modal').style.display = 'flex';
+        }
+
+        function closeGuestModal() {
+            document.getElementById('guest-modal').style.display = 'none';
+        }
+
+        // Entre dans le mode invité : la page est rechargée, pour que rien de cet appareil ne soit lu ni modifié
+        function enterGuest() {
+            if (hasUnsavedChanges && !confirm("Le tracé en cours n'est pas enregistré.\nOuvrir quand même le mode invité ?")) return;
+            hasUnsavedChanges = false;
+            window.location.href = window.location.pathname + "?mode=invite";
+        }
+
+        // Quitte le mode invité (tous les essais sont oubliés) ; « panel » ouvre directement un écran de l'accueil
+        function leaveGuest(panel) {
+            window.location.href = window.location.pathname + (panel ? "?ouvrir=" + panel : "");
         }
 
         // =========================================
         // ACCUEIL ET « LES ÉQUIPES »
         // =========================================
         function openWelcomeModal() {
+            if (GUEST) { openGuestModal(); return; }
             document.getElementById('welcome-modal').style.display = 'flex';
         }
 
@@ -5220,8 +5390,8 @@
         function howToOnce(tab) {
             const key = 'eps_howto_' + tab;
             try {
-                if (localStorage.getItem(key)) return;
-                localStorage.setItem(key, '1');
+                if (store.getItem(key)) return;
+                store.setItem(key, '1');
             } catch (e) { return; }
             openHowTo(tab);
         }
@@ -5244,11 +5414,11 @@
         }
 
         function setGuideOff(off) {
-            try { if (off) localStorage.setItem('eps_guide_off', '1'); else localStorage.removeItem('eps_guide_off'); } catch (e) { /* rien */ }
+            try { if (off) store.setItem('eps_guide_off', '1'); else store.removeItem('eps_guide_off'); } catch (e) { /* rien */ }
         }
 
         function isGuideOff() {
-            try { return !!localStorage.getItem('eps_guide_off'); } catch (e) { return false; }
+            try { return !!store.getItem('eps_guide_off'); } catch (e) { return false; }
         }
 
         // S'ouvre tout seul tant que l'espace de l'équipe n'a ni photos ni blocs
@@ -5323,6 +5493,7 @@
         }
 
         async function openTeamsModal() {
+            if (GUEST) { openGuestModal("« Les équipes » montre les titres des exercices des autres établissements, permet de leur demander l'accès et de les contacter. Cette zone s'ouvre après la création de votre équipe."); return; }
             if (!cloudTeam) { openWelcomeModal(); return; }
             document.getElementById('teams-modal').style.display = 'flex';
             setTeamsMessage("");
@@ -5369,7 +5540,7 @@
         function seenGrantsKey() { return 'eps_teams_seen_' + (cloudTeam ? cloudTeam.equipe : ''); }
 
         function readSeenGrants() {
-            try { return JSON.parse(localStorage.getItem(seenGrantsKey()) || '[]'); } catch (e) { return []; }
+            try { return JSON.parse(store.getItem(seenGrantsKey()) || '[]'); } catch (e) { return []; }
         }
 
         function updateTeamsBadge(markSeen) {
@@ -5379,7 +5550,7 @@
             if (!cloudTeam || !teamsData) { badge.style.display = 'none'; return; }
             const granted = (teamsData.equipes || []).filter(t => t.acces === 'accorde').map(t => t.equipe);
             if (markSeen) {
-                try { localStorage.setItem(seenGrantsKey(), JSON.stringify(granted)); } catch (e) { /* rien */ }
+                try { store.setItem(seenGrantsKey(), JSON.stringify(granted)); } catch (e) { /* rien */ }
             }
             const seen = readSeenGrants();
             const requests = (teamsData.demandesRecues || []).length;
@@ -5553,7 +5724,7 @@
         let pasteInfo = null;      // fiche du tracé collé, reprise à la création du bloc
 
         function readClip() {
-            try { return JSON.parse(localStorage.getItem(CLIP_KEY) || 'null'); } catch (e) { return null; }
+            try { return JSON.parse(store.getItem(CLIP_KEY) || 'null'); } catch (e) { return null; }
         }
 
         function updatePasteButton() {
@@ -5606,7 +5777,7 @@
             if (list.length === 0) { alert("Cet exercice n'a aucune balise à copier."); return; }
             const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
             ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (route[key]) clip[key] = route[key]; });
-            try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
+            try { store.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
             if (silent) return true;
             alert(`📋 « ${route.name} » est copié (${list.length} balises et sa fiche).\n\n1. Choisissez le mur de destination dans le menu « Choix du mur de blocs », en haut.\n2. Cliquez sur « 📥 Coller », dans les outils à gauche.\n3. Ajustez, puis « + Créer un Bloc ».`);
@@ -5618,7 +5789,7 @@
             const source = currentRouteId ? ((schoolConfig.customRoutes || []).find(r => r.id === currentRouteId) || null) : (inPreview ? previewRoute : null);
             const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
             if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (source[key]) clip[key] = source[key]; });
-            try { localStorage.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
+            try { store.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
             alert(`📋 ${clip.markers.length} balise(s) copiée(s)` + (clip.name ? ` (« ${clip.name} »)` : "") + `.\n\nAffichez maintenant votre mur (menu « Choix du mur de blocs »), puis cliquez sur « 📥 Coller ».`);
         }
@@ -5684,7 +5855,7 @@
             if (!zone || document.getElementById('suivi-box')) return;
             suiviTarget = { equipe: equipe, id: id, exercice: !!exercice };
             let saved = {};
-            try { saved = JSON.parse(localStorage.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+            try { saved = JSON.parse(store.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
             const box = document.createElement('div');
             box.id = 'suivi-box';
             box.className = 'fiche-card';
@@ -5719,7 +5890,7 @@
         // Les groupes changent : la croix retire un code, et tout nouveau code tapé s'ajoute tout seul.
         function readEleve() {
             let saved = {};
-            try { saved = JSON.parse(localStorage.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
+            try { saved = JSON.parse(store.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
             if (!Array.isArray(saved.codes)) saved.codes = saved.code ? [saved.code] : [];
             return saved;
         }
@@ -5742,7 +5913,7 @@
             const saved = readEleve();
             saved.codes = saved.codes.filter(c => c !== code);
             if (saved.code === code) saved.code = saved.codes[0] || "";
-            try { localStorage.setItem(ELEVE_KEY, JSON.stringify(saved)); } catch (e) { /* rien */ }
+            try { store.setItem(ELEVE_KEY, JSON.stringify(saved)); } catch (e) { /* rien */ }
             if (cleanCodeEleve(document.getElementById('suivi-code').value) === code) document.getElementById('suivi-code').value = saved.code;
             renderGroupe();
         }
@@ -5750,7 +5921,7 @@
             const saved = readEleve();
             const codes = saved.classe === classe ? saved.codes.filter(c => c !== code) : [];
             codes.push(code);
-            try { localStorage.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code, codes: codes.slice(-6) })); } catch (e) { /* rien */ }
+            try { store.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code, codes: codes.slice(-6) })); } catch (e) { /* rien */ }
             renderGroupe();
         }
 
@@ -5817,7 +5988,7 @@
             }
             document.getElementById('suivi-classe').value = classe;
             document.getElementById('suivi-code').value = code;
-            try { localStorage.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code })); } catch (e) { /* rien */ }
+            try { store.setItem(ELEVE_KEY, JSON.stringify({ classe: classe, code: code })); } catch (e) { /* rien */ }
             list.innerHTML = '<p style="color: #64748b; text-align: center; font-size: 0.85rem;">Chargement de ton parcours…</p>';
             let data;
             try {
@@ -5845,6 +6016,7 @@
 
         // QR code qui mène les élèves à leur parcours (à afficher, imprimer ou envoyer)
         function showParcoursQR() {
+            if (GUEST) { alert("Avec une équipe, ce bouton affiche le QR code (et le lien) du parcours sécurité : chaque élève y retrouve les fiches vues et celles qui restent à voir.\n\nIl n'est pas proposé en mode invité, où aucun élève n'est enregistré."); return; }
             if (!cloudTeam) return;
             const url = window.location.origin + window.location.pathname + "?mode=eleve&parcours=1&eq=" + encodeURIComponent(cloudTeam.equipe);
             if (typeof QRCode === 'undefined' || !drawQRCode(url)) { prompt("Lien du parcours sécurité à donner aux élèves :", url); return; }
@@ -5868,20 +6040,20 @@
         let listesCache = null;
         function readListes() {
             if (listesCache) return listesCache;
-            try { return JSON.parse(localStorage.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { return {}; }
+            try { return JSON.parse(store.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { return {}; }
         }
         // Les listes sont rangées dans la grande mémoire de l'appareil (celle des photos), jamais envoyées en ligne
         async function loadListes() {
             let fromDb = null;
             try { fromDb = await getFromDB(LISTES_KEY); } catch (e) { /* rien */ }
             let old = {};
-            try { old = JSON.parse(localStorage.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { /* rien */ }
+            try { old = JSON.parse(store.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { /* rien */ }
             listesCache = Object.assign({}, old, (fromDb && typeof fromDb === 'object') ? fromDb : {});
         }
         async function writeListes(listes) {
             listesCache = listes;
-            try { await saveToDB(LISTES_KEY, listes); try { localStorage.removeItem(LISTES_KEY); } catch (e) {} return true; } catch (e) { /* on essaie l'autre mémoire */ }
-            try { localStorage.setItem(LISTES_KEY, JSON.stringify(listes)); return true; } catch (e) { return false; }
+            try { await saveToDB(LISTES_KEY, listes); try { store.removeItem(LISTES_KEY); } catch (e) {} return true; } catch (e) { /* on essaie l'autre mémoire */ }
+            try { store.setItem(LISTES_KEY, JSON.stringify(listes)); return true; } catch (e) { return false; }
         }
 
         // Codes des élèves de chaque classe : ceux des listes de cet appareil, complétés par ceux enregistrés en ligne
@@ -5980,14 +6152,41 @@
                 : "Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».";
             document.getElementById('suivi-parcours-btn').style.display = blocsMode ? 'none' : '';
             document.getElementById('suivi-genre').style.display = blocsMode ? '' : 'none';
-            if (!cloudTeam) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
+            if (GUEST) document.getElementById('suivi-secu-aide').textContent = "👀 Mode invité : la classe et les résultats ci-dessous sont inventés pour l'exemple. " + document.getElementById('suivi-secu-aide').textContent;
+            if (!cloudTeam && !GUEST) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
             await loadListes();
             document.getElementById('suivi-secu-modal').style.display = 'flex';
             await refreshSuiviSecu();
         }
 
+        // Mode invité : une classe et des résultats inventés, pour montrer à quoi ressemblent les tableaux de suivi
+        let guestSuiviReady = false;
+        function guestSuivi() {
+            if (guestSuiviReady) return;
+            guestSuiviReady = true;
+            const names = ["Emma MARTIN", "Lucas BERNARD", "Jade PETIT", "Noah ROBERT", "Lina RICHARD", "Adam DURAND",
+                "Chloé MOREAU", "Hugo SIMON", "Inès LAURENT", "Tom MICHEL", "Sarah GARCIA", "Nathan ROUX"];
+            writeListes(Object.assign({ "4B": names }, listesCache || {}));   // gardée dans la mémoire provisoire de la page
+            const day = 86400000, now = Date.now();
+            suiviData = [];
+            suiviEcheances = { "4B": new Date(now + 150 * day).toISOString() };
+            const blocs = (schoolConfig.customRoutes || []).filter(r => r.type === 'bloc');
+            localCodes(names).forEach((code, i) => {
+                blocs.forEach((r, j) => {
+                    const dice = (i * 7 + j * 13 + i * j) % 10;
+                    const date = new Date(now - ((i + j) % 20) * day).toISOString();
+                    if (/^s[ée]curit[ée]/i.test((r.theme || "").trim())) {
+                        if (dice < 7) suiviData.push({ classe: "4B", eleve: code, id: r.id, date: date, etat: "" });
+                    } else if (dice < 6) {
+                        suiviData.push({ classe: "4B", eleve: code, id: r.id, date: date, etat: dice < 3 ? "reussi" : "essaye" });
+                    }
+                });
+            });
+        }
+
         async function refreshSuiviSecu() {
             const box = document.getElementById('suivi-secu-table');
+            if (GUEST) { guestSuivi(); renderSuiviSecu(); return; }
             box.innerHTML = '<p style="color: #64748b; text-align: center;">Chargement…</p>';
             try {
                 const ping = await cloudAsk({ action: 'ping' });
@@ -6094,6 +6293,14 @@
         async function clearSuiviSecu() {
             if (!suiviClasse) return;
             if (!confirm(`Effacer le suivi ${suiviMode === 'blocs' ? "des blocs" : "des fiches de sécurité"} de la classe ${suiviClasse} ?\nÀ faire en fin de cycle. C'est définitif.`)) return;
+            if (GUEST) {
+                // Seul l'exemple affiché dans cette page est vidé
+                const secu = {};
+                securityFiches().forEach(r => { secu[r.id] = true; });
+                suiviData = (suiviData || []).filter(v => v.classe !== suiviClasse || !!secu[v.id] !== (suiviMode === 'secu'));
+                renderSuiviSecu();
+                return;
+            }
             try {
                 await cloudCall({ action: 'effacerValidations', classe: suiviClasse, genre: suiviMode });
                 await refreshSuiviSecu();
@@ -6151,8 +6358,9 @@
         async function bulkDelete() {
             const ids = Array.from(document.querySelectorAll('#bulk-list input.bulk-bloc:checked')).map(box => box.value);
             if (ids.length === 0) return;
-            if (!confirm(`Supprimer définitivement ${ids.length} bloc(s), pour toute l'équipe ?\nUne sauvegarde de vos blocs va d'abord être téléchargée.`)) return;
-            exportData();
+            if (!confirm(GUEST ? `Supprimer ${ids.length} bloc(s) ?\nMode invité : ils reviendront au rechargement de la page.`
+                : `Supprimer définitivement ${ids.length} bloc(s), pour toute l'équipe ?\nUne sauvegarde de vos blocs va d'abord être téléchargée.`)) return;
+            if (!GUEST) exportData();
             schoolConfig.customRoutes = schoolConfig.customRoutes.filter(r => ids.indexOf(r.id) === -1);
             ids.forEach(id => { cloudForgetBloc(id); removeRouteMarkers(id); });
             if (ids.indexOf(currentRouteId) !== -1) {
@@ -6283,6 +6491,7 @@
                 if (value) route[key] = value; else delete route[key];
             });
             document.getElementById('consigne-modal').style.display = 'none';
+            if (GUEST && guestInfo) delete guestInfo.ids[route.id];   // fiche modifiée par le visiteur : son QR code ne renverra plus à la fiche d'origine
             schoolConfig.localUpdate = Date.now();
             await saveConfig();
             cloudSchedule();

@@ -14,6 +14,11 @@
  * l'adresse « email_referent » de l'onglet « Reglages », et seules les adresses académiques
  * (@ac-….fr) sont acceptées.
  *
+ * Mode invité : un visiteur peut essayer l'appli sur le mur et les exercices de l'équipe nommée
+ * dans la case « equipe_invite » de l'onglet « Reglages ». Il ne fait que LIRE ses photos, son topo
+ * et ses blocs : il n'a aucun mot de passe et ne peut donc rien modifier. Les classes et les saisies
+ * des élèves ne lui sont jamais envoyées. Pour fermer le mode invité, videz cette case.
+ *
  * Aucune donnée d'élève ne doit être rangée ici.
  */
 
@@ -29,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 12;
+var VERSION = 13;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -56,6 +61,7 @@ function installer() {
   }
   codeInvitation_(); // crée le code d'invitation s'il n'existe pas encore
   emailReferent_();  // crée la ligne « email_referent » (adresse qui reçoit les demandes d'accès)
+  equipeInvite_();   // crée la ligne « equipe_invite » (équipe montrée aux visiteurs en mode invité)
   dossierParent_(); // demande dès maintenant l'autorisation d'accéder à Drive
   return 'Installation terminée';
 }
@@ -107,6 +113,7 @@ function traiter_(d) {
     if (action === 'demanderAcces') return demanderAcces_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
     if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
+    if (action === 'invite') return lireInvite_();
     if (action === 'parcoursSecurite') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve);
     if (action === 'validerFiche') {
       var verrouEleve = LockService.getScriptLock();
@@ -354,6 +361,35 @@ function lireTout_(equipe) {
   });
 
   return { ok: true, equipe: equipe, blocs: blocs, topo: topo, photos: photos };
+}
+
+/* =========================================================
+   4 ter. MODE INVITÉ : lecture seule de l'équipe d'exemple, sans mot de passe
+   =========================================================
+   L'équipe montrée est celle de la case « equipe_invite » de l'onglet « Reglages ».
+   Au premier appel, la case est créée avec l'équipe du référent (à défaut, la première équipe).
+   Case vide = mode invité fermé. */
+function equipeInvite_() {
+  return cle_(reglage_('equipe_invite', function () {
+    var referent = cle_(emailReferent_());
+    var lignes = lignes_('Equipes'), premiere = '';
+    for (var i = 0; i < lignes.length; i++) {
+      var nom = cle_(lignes[i][0]);
+      if (!nom) continue;
+      if (!premiere) premiere = nom;
+      if (referent && cle_(lignes[i][4]) === referent) return nom;
+    }
+    return premiere;
+  }));
+}
+
+function lireInvite_() {
+  var equipe = equipeInvite_();
+  var infos = equipe ? infosEquipes_()[equipe] : null;
+  if (!infos) return { ok: false, erreur: "Le mode invité n'est pas ouvert." };
+  var tout = lireTout_(equipe);   // photos (noms), topo et blocs : aucune classe, aucune saisie d'élève
+  tout.etablissement = infos.etablissement;
+  return tout;
 }
 
 /* =========================================================
