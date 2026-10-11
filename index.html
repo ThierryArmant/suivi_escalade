@@ -1324,7 +1324,7 @@
                     <li><b>Cliquez sur « + Créer un Bloc »</b> : donnez un nom, un niveau (c'est lui qui donne leur couleur aux cercles), un gabarit et un thème, puis « Valider ».</li>
                     <li>Le bloc apparaît dans <b>« Exercices bloc »</b>, rangé par thème. Cliquez sur son nom pour le revoir.</li>
                     <li><b>Pour le modifier</b> : affichez-le, déplacez ou ajoutez des balises, puis cliquez sur « 💾 Enregistrer » en haut.</li>
-                    <li><b>Pour le montrer aux élèves</b> : le bouton 📱 affiche un QR code. L'élève le scanne et voit le tracé sur son téléphone.</li>
+                    <li><b>Pour le montrer aux élèves</b> : le bouton <svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style="vertical-align: middle; display: inline-block;"><path fill="#0f172a" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z"/><path fill="#ffffff" d="M2.5 2.5h4v4h-4zM14.5 2.5h4v4h-4zM2.5 14.5h4v4h-4z"/><path fill="#0f172a" d="M3.5 3.5h2v2h-2zM15.5 3.5h2v2h-2zM3.5 15.5h2v2h-2zM10 1h2v2h-2zM10 5h2v3h-2zM1 10h3v2H1zM6 10h2v2H6zM10 10h2v2h-2zM14 10h2v2h-2zM18 10h2v2h-2zM10 14h2v2h-2zM13 13h3v3h-3zM18 13h2v2h-2zM10 18h3v2h-3zM14 17h2v3h-2zM17 17h3v3h-3z"/></svg> (petit QR code) affiche un QR code. L'élève le scanne et voit le tracé sur son téléphone.</li>
                 </ol>
                 <p class="help-text" style="font-size: 0.82rem;">Le bouton ❌ supprime le bloc pour toute l'équipe. « + Créer un bloc personnalisé » fait un tracé personnel pour un élève : il reste sur cet appareil et n'est jamais partagé.</p>
             </div>
@@ -1556,7 +1556,7 @@
             <h2>👥 Espace d'équipe</h2>
 
             <div id="team-login">
-                <p class="help-text" style="margin-top: 0;">Connectez-vous à l'espace de votre équipe pour retrouver ses photos, ses voies et ses blocs sur n'importe quel appareil, et partager les vôtres. Le nom d'équipe et le mot de passe sont donnés par le collègue référent.</p>
+                <p class="help-text" style="margin-top: 0;">Connectez-vous à l'espace de votre équipe pour retrouver ses photos, ses voies et ses blocs sur n'importe quel appareil, et partager les vôtres. Le nom d'équipe et le mot de passe sont donnés par le collègue qui a créé l'équipe de votre établissement.</p>
                 <div class="form-group">
                     <label>Nom de l'équipe :</label>
                     <input type="text" id="team-input-name" placeholder="Ex : giono" autocomplete="username">
@@ -1571,6 +1571,7 @@
                 <div id="team-error" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
                 <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; margin-top: 6px;">
                     <a href="#" onclick="teamForgot(); return false;" style="color: #2563eb; font-weight: bold;">Mot de passe oublié ?</a>
+                    <a href="#" onclick="showTeamPanel('join'); return false;" style="color: #0f766e; font-weight: bold;">✉️ Je n'ai pas le mot de passe : le demander au responsable de mon équipe</a>
                     <a href="#" onclick="showTeamPanel('create'); return false;" style="color: #2563eb; font-weight: bold;">➕ Créer une nouvelle équipe</a>
                 </div>
                 <div style="text-align: right; margin-top: 15px;">
@@ -1622,6 +1623,7 @@
 
             <div id="team-request" style="display: none;">
                 <p class="help-text" style="margin-top: 0;">L'outil est réservé aux personnels de l'Éducation nationale. Envoyez votre demande : le référent vous répondra à votre adresse académique avec le code d'invitation qui permet de créer votre équipe.</p>
+                <p style="margin: 0 0 12px 0; padding: 8px 10px; background: #ecfdf5; border: 2px solid #6ee7b7; border-radius: 8px; font-size: 0.85rem; color: #065f46;"><b>Votre établissement a déjà son équipe ?</b> Inutile de demander un code : <a href="#" onclick="showTeamPanel('join'); return false;" style="color: #0f766e; font-weight: bold;">demandez plutôt à la rejoindre</a>. C'est le collègue qui l'a créée qui vous donnera le mot de passe.</p>
                 <div class="form-group">
                     <label>Prénom et nom :</label>
                     <input type="text" id="team-req-name" autocomplete="name">
@@ -1639,6 +1641,29 @@
                 <div style="text-align: right; margin-top: 15px;">
                     <button onclick="showTeamPanel('create')" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Retour</button>
                     <button id="team-request-btn" onclick="teamRequest()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">✉️ Envoyer la demande</button>
+                </div>
+            </div>
+
+            <div id="team-join" style="display: none;">
+                <p class="help-text" style="margin-top: 0;">Votre établissement a déjà son équipe : choisissez-la. Votre demande est envoyée par e-mail au collègue qui l'a créée ; c'est lui qui vous répondra, à votre adresse académique, avec le nom de l'équipe et son mot de passe.</p>
+                <div class="form-group">
+                    <label>L'équipe à rejoindre :</label>
+                    <select id="team-join-team" style="width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #cbd5e1 !important; background-color: #fff !important; color: #333 !important; border-radius: 5px; font-weight: bold;"><option value="">Chargement…</option></select>
+                    <div class="help-text">Votre établissement n'est pas dans la liste ? <a href="#" onclick="showTeamPanel('request'); return false;" style="color: #2563eb; font-weight: bold;">Demandez un code pour créer son équipe</a>.</div>
+                </div>
+                <div class="form-group">
+                    <label>Prénom et nom :</label>
+                    <input type="text" id="team-join-name" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label>Votre adresse académique :</label>
+                    <input type="text" id="team-join-email" placeholder="prenom.nom@ac-academie.fr" autocomplete="email" inputmode="email">
+                    <div class="help-text">Seules les adresses se terminant par @ac-….fr sont acceptées.</div>
+                </div>
+                <div id="team-join-msg" style="color: #991b1b; font-weight: bold; font-size: 0.9rem; min-height: 1.2em;"></div>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="showTeamPanel('login')" style="background-color: #64748b; color: white; margin-right: 10px; padding: 10px 15px;">Retour</button>
+                    <button id="team-join-btn" onclick="teamJoin()" style="background-color: #0f766e; color: white; padding: 10px 20px; font-weight: bold;">✉️ Envoyer la demande</button>
                 </div>
             </div>
 
@@ -2188,7 +2213,7 @@
 
                 const qrBtn = document.createElement('button');
                 qrBtn.className = 'qr-custom-btn'; 
-                qrBtn.textContent = '📱'; 
+                qrBtn.innerHTML = QR_ICON; 
                 qrBtn.title = "Affiche le QR code de cet exercice : l'élève le scanne et voit le tracé et la consigne sur son téléphone.";
                 qrBtn.onclick = (e) => { 
                     e.stopPropagation(); 
@@ -2268,7 +2293,7 @@
                 
                 let allQrBtn = document.createElement('button');
                 allQrBtn.className = 'theme-qr-btn';
-                allQrBtn.textContent = '📱 Tous';
+                allQrBtn.innerHTML = QR_ICON + ' Tous';
                 allQrBtn.title = "Affiche sur un seul écran les QR codes de tous les blocs de ce thème : les élèves scannent chacun le leur, sans faire la queue.";
                 allQrBtn.onclick = (e) => { e.stopPropagation(); showThemeQR(theme); };
                 titleSpan.style.flex = '1';
@@ -4179,6 +4204,8 @@
         // QR CODE & MODE ÉLÈVE
         // =========================================
         // Les nouveaux types s'ajoutent toujours À LA FIN : les QR codes déjà imprimés restent lisibles
+        // Petit dessin de QR code pour les boutons (l'émoticône « téléphone » ne se reconnaît pas sur tous les écrans)
+        const QR_ICON = '<svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style="vertical-align: middle; display: inline-block;"><path fill="#0f172a" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z"/><path fill="#ffffff" d="M2.5 2.5h4v4h-4zM14.5 2.5h4v4h-4zM2.5 14.5h4v4h-4z"/><path fill="#0f172a" d="M3.5 3.5h2v2h-2zM15.5 3.5h2v2h-2zM3.5 15.5h2v2h-2zM10 1h2v2h-2zM10 5h2v3h-2zM1 10h3v2H1zM6 10h2v2H6zM10 10h2v2h-2zM14 10h2v2h-2zM18 10h2v2h-2zM10 14h2v2h-2zM13 13h3v3h-3zM18 13h2v2h-2zM10 18h3v2h-3zM14 17h2v3h-2zM17 17h3v3h-3z"/></svg>';
         const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
@@ -4994,7 +5021,7 @@
             const connected = document.getElementById('team-connected');
             if (!connected) return;
             connected.style.display = cloudTeam ? 'block' : 'none';
-            ['login', 'create', 'request', 'choice'].forEach(name => {
+            ['login', 'create', 'request', 'choice', 'join'].forEach(name => {
                 document.getElementById('team-' + name).style.display = (!cloudTeam && teamPanel === name) ? 'block' : 'none';
             });
             if (cloudTeam) {
@@ -5023,7 +5050,59 @@
             const requestMsg = document.getElementById('team-request-msg');
             requestMsg.textContent = ""; 
             requestMsg.style.color = "#991b1b";
+            const joinMsg = document.getElementById('team-join-msg');
+            joinMsg.textContent = "";
+            joinMsg.style.color = "#991b1b";
+            if (name === 'join') loadTeamList();
             updateTeamUI();
+        }
+
+        // --- Rejoindre une équipe existante : la demande part au collègue qui a créé l'équipe (le référent en reçoit une copie) ---
+        async function loadTeamList() {
+            const select = document.getElementById('team-join-team');
+            const msg = document.getElementById('team-join-msg');
+            select.innerHTML = '<option value="">Chargement…</option>';
+            let answer = null;
+            try { answer = await cloudAsk({ action: 'listeEquipes' }); } catch (e) { answer = null; }
+            if (!answer || !answer.ok || !Array.isArray(answer.equipes)) {
+                select.innerHTML = '<option value="">(liste indisponible)</option>';
+                msg.textContent = "❌ La liste des équipes n'a pas pu être chargée. Vérifiez la connexion Internet, ou demandez directement le mot de passe à votre collègue.";
+                return;
+            }
+            select.innerHTML = '<option value="">-- Choisir mon établissement --</option>'
+                + answer.equipes.map(t => `<option value="${escapeHtml(t.equipe)}">${escapeHtml(t.etablissement || t.equipe)}</option>`).join("");
+        }
+
+        async function teamJoin() {
+            const msg = document.getElementById('team-join-msg');
+            const equipe = document.getElementById('team-join-team').value;
+            const nom = document.getElementById('team-join-name').value.trim();
+            const email = cleanEmail(document.getElementById('team-join-email').value);
+            document.getElementById('team-join-email').value = email;
+            msg.style.color = "#991b1b";
+            msg.textContent = "";
+
+            let problem = "";
+            if (!equipe) problem = "Choisissez l'équipe de votre établissement.";
+            else if (nom.length < 2) problem = "Indiquez votre prénom et votre nom.";
+            else if (!ACADEMIC_EMAIL.test(email)) problem = "Seules les adresses académiques sont acceptées (se terminant par @ac-….fr).";
+            if (problem) { msg.textContent = "❌ " + problem; return; }
+
+            const btn = document.getElementById('team-join-btn');
+            btn.disabled = true;
+            btn.textContent = "Envoi…";
+            let answer = null;
+            try {
+                answer = await cloudAsk({ action: 'demanderRejoindre', equipe: equipe, nom: nom, email: email });
+            } catch (e) {
+                msg.textContent = "❌ Impossible de joindre le stockage en ligne. Vérifiez la connexion Internet.";
+            }
+            btn.disabled = false;
+            btn.textContent = "✉️ Envoyer la demande";
+            if (!answer) return;
+            if (!answer.ok) { msg.textContent = "❌ " + (answer.erreur || "Demande refusée."); return; }
+            msg.style.color = "#166534";
+            msg.textContent = `✅ Demande envoyée au responsable de l'équipe. Sa réponse arrivera sur ${email} : vous pourrez alors vous connecter avec le nom de l'équipe et son mot de passe.`;
         }
 
         // Demande d'accès : envoyée automatiquement au référent, qui répond avec le code d'invitation
@@ -5468,7 +5547,7 @@
                   how: `Donnez-leur le lien de l'appli, le nom de l'équipe (« ${team} ») et son mot de passe. Ils cliquent sur « Mon équipe existe déjà » et retrouvent tout.` },
                 { done: null, title: "Aller plus loin", 
                   state: "",
-                  how: "Le bouton 📱 d'un bloc affiche son QR code pour les élèves. « 🌍 Les équipes » montre les blocs des autres établissements. La fiche de suivi des élèves se télécharge dans la Configuration, point 3." }
+                  how: "Le bouton « QR code » d'un bloc affiche son QR code pour les élèves. « 🌍 Les équipes » montre les blocs des autres établissements. La fiche de suivi des élèves se télécharge dans la Configuration, point 3." }
             ];
             const remaining = steps.filter(x => x.done === false).length;
             document.getElementById('guide-intro').textContent = remaining > 0

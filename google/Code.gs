@@ -34,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 13;
+var VERSION = 14;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -111,6 +111,8 @@ function traiter_(d) {
     if (action === 'creerEquipe') return creerEquipe_(d);
     if (action === 'motDePasseOublie') return motDePasseOublie_(d);
     if (action === 'demanderAcces') return demanderAcces_(d);
+    if (action === 'listeEquipes') return listeEquipes_();
+    if (action === 'demanderRejoindre') return demanderRejoindre_(d);
     if (action === 'photo') return lirePhoto_(cle_(d.equipe), String(d.nom || ''));
     if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
     if (action === 'invite') return lireInvite_();
@@ -269,7 +271,7 @@ function demanderAcces_(d) {
 
     var unJour = Date.now() - 24 * 3600000;
     var recentes = lignes_('Demandes').filter(function (l) { var t = Date.parse(String(l[0])); return !isNaN(t) && t > unJour; });
-    if (recentes.some(function (l) { return cle_(l[3]) === email; })) {
+    if (recentes.some(function (l) { return cle_(l[3]) === email && String(l[2]).indexOf('Rejoindre : ') !== 0; })) {
       return { ok: false, erreur: 'Votre demande a déjà été envoyée. Le référent vous répondra à votre adresse académique.' };
     }
     if (recentes.length >= DEMANDES_MAX_PAR_JOUR) {
@@ -288,6 +290,67 @@ function demanderAcces_(d) {
       'POUR REFUSER : ne répondez pas, rien ne sera créé.',
       { replyTo: email, name: "Bloc'Note EPS" });
     ecrireLigne_(feuille_('Demandes'), -1, [maintenant_(), nom, etablissement, email]);
+    return { ok: true };
+  } finally {
+    verrou.releaseLock();
+  }
+}
+
+// Liste des équipes pour « rejoindre une équipe » : nom et établissement seulement (jamais d'adresse ni de mot de passe)
+function listeEquipes_() {
+  var infos = infosEquipes_();
+  var equipes = Object.keys(infos).map(function (nom) { return { equipe: nom, etablissement: infos[nom].etablissement }; });
+  equipes.sort(function (a, b) { return (a.etablissement || a.equipe).localeCompare(b.etablissement || b.equipe); });
+  return { ok: true, equipes: equipes };
+}
+
+// Un collègue veut rejoindre une équipe qui existe déjà : la demande part au collègue qui a créé l'équipe
+// (colonne « email » de l'onglet « Equipes »), et le référent en reçoit une copie cachée pour information.
+// C'est le responsable de l'équipe qui donne le mot de passe, en répondant au message.
+function demanderRejoindre_(d) {
+  var nom = String(d.nom == null ? '' : d.nom).trim().replace(/\s+/g, ' ');
+  var email = emailPropre_(d.email);
+  var equipe = cle_(d.equipe);
+  if (nom.length < 2 || nom.length > 80) return { ok: false, erreur: 'Indiquez votre prénom et votre nom.' };
+  if (!emailAcademique_(email)) {
+    return { ok: false, erreur: "Seules les adresses académiques sont acceptées (se terminant par @ac-….fr)." };
+  }
+  var infos = equipe ? infosEquipes_()[equipe] : null;
+  if (!infos) return { ok: false, erreur: "Cette équipe n'existe pas." };
+  var verrou = LockService.getScriptLock();
+  verrou.waitLock(25000);
+  try {
+    var referent = emailReferent_();
+    var responsable = emailValide_(infos.email) ? infos.email : '';
+    var destinataire = responsable || (emailValide_(referent) ? referent : '');
+    if (!destinataire) return { ok: false, erreur: "Aucune adresse n'est enregistrée pour cette équipe. Demandez directement le mot de passe à votre collègue." };
+
+    var marque = 'Rejoindre : ' + equipe;
+    var unJour = Date.now() - 24 * 3600000;
+    var recentes = lignes_('Demandes').filter(function (l) { var t = Date.parse(String(l[0])); return !isNaN(t) && t > unJour; });
+    if (recentes.some(function (l) { return cle_(l[3]) === email && String(l[2]) === marque; })) {
+      return { ok: false, erreur: "Votre demande a déjà été envoyée au responsable de l'équipe. Il vous répondra à votre adresse académique." };
+    }
+    if (recentes.length >= DEMANDES_MAX_PAR_JOUR) {
+      return { ok: false, erreur: "Trop de demandes aujourd'hui. Réessayez demain." };
+    }
+
+    var nomAffiche = infos.etablissement ? infos.etablissement + ' (équipe « ' + equipe + ' »)' : 'équipe « ' + equipe + ' »';
+    var options = { replyTo: email, name: "Bloc'Note EPS" };
+    if (responsable && emailValide_(referent) && cle_(referent) !== cle_(responsable)) options.bcc = referent;
+    MailApp.sendEmail(destinataire, "Bloc'Note EPS : " + nom + ' demande à rejoindre votre équipe',
+      'Bonjour,\n\n' +
+      "Un collègue demande à rejoindre votre équipe dans l'appli Bloc'Note EPS : " + nomAffiche + '.\n\n' +
+      'Nom : ' + nom + '\n' +
+      'Adresse académique : ' + email + '\n\n' +
+      'POUR ACCEPTER : cliquez sur « Répondre ». Votre réponse partira directement à ' + email + '.\n' +
+      "Donnez-lui le nom de l'équipe (" + equipe + ') et son mot de passe : il se connectera avec « Mon équipe existe déjà ».\n' +
+      "Mot de passe oublié ? Dans l'appli : bouton « Équipe », puis « Mot de passe oublié ? ».\n\n" +
+      'POUR REFUSER : ne répondez pas.\n\n' +
+      "Ne donnez le mot de passe qu'à un collègue de votre établissement : il permet de modifier les exercices de l'équipe." +
+      (responsable ? '' : "\n\n(Aucune adresse n'est enregistrée pour cette équipe : la demande vous arrive en tant que référent de l'outil.)"),
+      options);
+    ecrireLigne_(feuille_('Demandes'), -1, [maintenant_(), nom, marque, email]);
     return { ok: true };
   } finally {
     verrou.releaseLock();
