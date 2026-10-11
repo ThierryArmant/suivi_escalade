@@ -29,12 +29,12 @@ var ONGLETS = {
   Photos:  ['equipe', 'nom', 'fichier_id', 'modifie_le'],
   Reglages: ['cle', 'valeur'],
   Demandes: ['date', 'nom', 'etablissement', 'email'],
-  Partages: ['proprietaire', 'demandeur', 'etat', 'date'],
+  Partages: ['proprietaire', 'demandeur', 'etat', 'date', 'themes'],
   Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat'],
   Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 14;
+var VERSION = 15;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -147,7 +147,7 @@ function traiter_(d) {
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
       if (action === 'supprimerPhoto') return supprimerPhoto_(equipe.equipe, String(d.nom || ''));
       if (action === 'demanderPartage') return demanderPartage_(equipe.equipe, cle_(d.cible));
-      if (action === 'repondrePartage') return repondrePartage_(equipe.equipe, cle_(d.demandeur), d.accepter === true);
+      if (action === 'repondrePartage') return repondrePartage_(equipe.equipe, cle_(d.demandeur), d.accepter === true, d.themes);
       if (action === 'contacterEquipe') return contacterEquipe_(equipe.equipe, cle_(d.cible), String(d.message || ''));
     } finally {
       verrou.releaseLock();
@@ -486,17 +486,33 @@ function blocsDe_(equipe, complet) {
 function partage_(proprietaire, demandeur) {
   var position = chercher_('Partages', function (l) { return cle_(l[0]) === proprietaire && cle_(l[1]) === demandeur; });
   if (position < 0) return { position: -1, etat: 'aucun', date: '' };
-  var ligne = feuille_('Partages').getRange(position, 1, 1, 4).getValues()[0];
-  return { position: position, etat: String(ligne[2]), date: String(ligne[3]) };
+  var ligne = feuille_('Partages').getRange(position, 1, 1, 5).getValues()[0];
+  return { position: position, etat: String(ligne[2]), date: String(ligne[3]), themes: themesPartages_(ligne[4]) };
+}
+
+// Thèmes ouverts par un partage : la case « themes » de l'onglet « Partages » (liste entre crochets).
+// Case vide = tous les thèmes, comme avant. Renvoie null (tous) ou la liste des thèmes ouverts.
+function themesPartages_(cellule) {
+  var texte = String(cellule == null ? '' : cellule).trim();
+  if (!texte) return null;
+  try {
+    var liste = JSON.parse(texte);
+    return Array.isArray(liste) ? liste.map(function (t) { return String(t); }) : null;
+  } catch (err) { return null; }
+}
+
+// Thème d'un bloc, écrit comme dans l'appli (un bloc sans thème est rangé dans « Libre / Autre »)
+function themeDe_(route) {
+  return String((route && route.theme) || '').trim() || 'Libre / Autre';
 }
 
 function annuaire_(moi) {
   var infos = infosEquipes_();
   var partages = lignes_('Partages');
   var equipes = Object.keys(infos).sort().map(function (nom) {
-    var acces = nom === moi ? 'moi' : 'aucun';
-    partages.forEach(function (l) { if (cle_(l[0]) === nom && cle_(l[1]) === moi) acces = String(l[2]); });
-    return { equipe: nom, etablissement: infos[nom].etablissement, blocs: blocsDe_(nom, false), acces: acces, contact: emailValide_(infos[nom].email) };
+    var acces = nom === moi ? 'moi' : 'aucun', themes = null;
+    partages.forEach(function (l) { if (cle_(l[0]) === nom && cle_(l[1]) === moi) { acces = String(l[2]); themes = themesPartages_(l[4]); } });
+    return { equipe: nom, etablissement: infos[nom].etablissement, blocs: blocsDe_(nom, false), acces: acces, themes: acces === 'accorde' ? themes : null, contact: emailValide_(infos[nom].email) };
   });
   var recues = [], donnes = [];
   partages.forEach(function (l) {
@@ -504,7 +520,7 @@ function annuaire_(moi) {
     var demandeur = cle_(l[1]);
     var fiche = { demandeur: demandeur, etablissement: (infos[demandeur] || {}).etablissement || '', date: String(l[3]) };
     if (String(l[2]) === 'demande') recues.push(fiche);
-    if (String(l[2]) === 'accorde') donnes.push(fiche);
+    if (String(l[2]) === 'accorde') { fiche.themes = themesPartages_(l[4]); donnes.push(fiche); }
   });
   return { ok: true, moi: moi, equipes: equipes, demandesRecues: recues, accesDonnes: donnes };
 }
@@ -535,21 +551,33 @@ function demanderPartage_(moi, cible) {
     'Bonjour,\n\n' +
     "L'équipe « " + moi + " »" + (infos[moi].etablissement ? ' (' + infos[moi].etablissement + ')' : '') + " souhaite consulter les blocs de votre équipe « " + cible + " » dans l'appli Bloc'Note EPS.\n\n" +
     "POUR ACCEPTER OU REFUSER : ouvrez l'appli, connectez-vous à votre équipe, cliquez sur « Les équipes », puis regardez la rubrique « Demandes reçues ».\n\n" +
-    "Accepter permet à cette équipe de voir vos blocs et de les recopier chez elle. Elle ne peut ni les modifier ni les supprimer chez vous.\n\n" +
+    "Accepter permet à cette équipe de voir vos blocs et de les recopier chez elle. Vous choisissez les thèmes que vous ouvrez. Elle ne peut ni les modifier ni les supprimer chez vous.\n\n" +
     'Pour écrire à ce collègue, répondez simplement à ce message.',
     infos[moi].email);
   return { ok: true, acces: 'demande', prevenu: prevenu };
 }
 
-function repondrePartage_(moi, demandeur, accepter) {
+// « themes » : liste des thèmes ouverts à l'équipe qui demande ; absente = tous les thèmes
+function repondrePartage_(moi, demandeur, accepter, themes) {
   var actuel = partage_(moi, demandeur);
   if (actuel.position < 0) return { ok: false, erreur: 'Demande introuvable.' };
   var infos = infosEquipes_();
-  ecrireLigne_(feuille_('Partages'), actuel.position, [moi, demandeur, accepter ? 'accorde' : 'refuse', maintenant_()]);
+  var choisis = '';
+  if (accepter && Array.isArray(themes)) {
+    var propres = [];
+    themes.slice(0, 80).forEach(function (t) {
+      t = String(t == null ? '' : t).trim().substring(0, 100);
+      if (t && propres.indexOf(t) === -1) propres.push(t);
+    });
+    if (!propres.length) return { ok: false, erreur: 'Cochez au moins un thème, ou refusez la demande.' };
+    choisis = JSON.stringify(propres);
+  }
+  ecrireLigne_(feuille_('Partages'), actuel.position, [moi, demandeur, accepter ? 'accorde' : 'refuse', maintenant_(), choisis]);
   if (infos[demandeur] && actuel.etat === 'demande') {
     envoyer_(infos[demandeur].email, "Bloc'Note EPS : réponse de l'équipe « " + moi + " »",
       'Bonjour,\n\n' +
       "L'équipe « " + moi + " » a " + (accepter ? 'accepté' : 'refusé') + " votre demande de consultation de ses blocs.\n\n" +
+      (accepter && choisis ? 'Thèmes ouverts : ' + JSON.parse(choisis).join(', ') + '.\n\n' : '') +
       (accepter ? "Ouvrez l'appli, cliquez sur « Les équipes », puis sur le titre d'un bloc de cette équipe pour l'afficher.\n\n" : '') +
       'Pour écrire à ce collègue, répondez simplement à ce message.',
       (infos[moi] || {}).email);
@@ -558,10 +586,15 @@ function repondrePartage_(moi, demandeur, accepter) {
 }
 
 function lireBlocsEquipe_(moi, cible) {
-  if (cible !== moi && partage_(cible, moi).etat !== 'accorde') {
+  var partage = cible === moi ? { etat: 'accorde', themes: null } : partage_(cible, moi);
+  if (partage.etat !== 'accorde') {
     return { ok: false, erreur: "Cette équipe ne vous a pas (encore) autorisé à consulter ses blocs." };
   }
-  return { ok: true, equipe: cible, blocs: blocsDe_(cible, true) };
+  // Les blocs des thèmes non ouverts sont remplacés par une case vide : l'ordre reste celui de la liste des titres
+  var blocs = blocsDe_(cible, true).map(function (b) {
+    return (!partage.themes || partage.themes.indexOf(themeDe_(b.route)) !== -1) ? b : null;
+  });
+  return { ok: true, equipe: cible, blocs: blocs };
 }
 
 // Message libre d'une équipe à une autre : il part à l'adresse du responsable, qui n'est jamais montrée

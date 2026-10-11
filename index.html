@@ -1381,7 +1381,7 @@
     <div id="teams-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 720px;">
             <h2>🌍 Les équipes</h2>
-            <p class="help-text" style="margin-top: 0;">Vous voyez ici les autres équipes et les titres de leurs blocs. Pour afficher un bloc, demandez l'accès à l'équipe : elle accepte ou refuse. Un bloc consulté peut être recopié dans votre équipe, jamais modifié chez elle.</p>
+            <p class="help-text" style="margin-top: 0;">Vous voyez ici les autres équipes et les titres de leurs blocs. Pour afficher un bloc, demandez l'accès à l'équipe : elle accepte (pour tous ses thèmes ou seulement certains) ou refuse. Un bloc consulté peut être recopié dans votre équipe, jamais modifié chez elle.</p>
             <div id="teams-msg" style="font-weight: bold; font-size: 0.9rem; min-height: 1.2em; margin-bottom: 6px;"></div>
             <div id="teams-requests"></div>
             <div id="teams-list" style="max-height: 55vh; overflow-y: auto;"></div>
@@ -5599,6 +5599,7 @@
                     return;
                 }
                 teamsData = await cloudCall({ action: 'annuaire' });
+                Object.keys(sharedBlocs).forEach(k => delete sharedBlocs[k]);   // les thèmes ouverts ont pu changer
                 renderTeams();
             } catch (e) {
                 list.innerHTML = `<p style="color: #991b1b; font-weight: bold;">❌ ${escapeHtml(e && e.message ? e.message : "Erreur")}</p>`;
@@ -5611,7 +5612,8 @@
             btn.style.cssText = `background: ${background}; color: white; border: none; padding: 6px 10px; font-size: 0.8rem; margin: 4px 6px 0 0;`;
             btn.onclick = onClick;
             const tips = [
-                [/Autoriser/, "Cette équipe pourra afficher vos blocs et les recopier chez elle, sans jamais modifier les vôtres."],
+                [/Autoriser/, "Vous choisissez les thèmes que vous ouvrez. Cette équipe pourra afficher ces blocs et les recopier chez elle, sans jamais modifier les vôtres."],
+                [/Changer les thèmes/, "Ouvrir ou refermer certains thèmes pour cette équipe, sans lui retirer tout l'accès."],
                 [/^Refuser/, "Cette équipe ne verra que les titres de vos blocs."],
                 [/Retirer/, "Cette équipe ne pourra plus afficher vos blocs. Elle devra refaire une demande."],
                 [/Voir (mes|les)/, "Ouvre la liste complète des blocs, rangés par thème, avec leur niveau."],
@@ -5721,7 +5723,7 @@
                 box.className = 'config-status';
                 box.style.cssText = "background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; margin-bottom: 8px;";
                 box.innerHTML = `📩 L'équipe <b>${escapeHtml(d.demandeur)}</b>${d.etablissement ? " (" + escapeHtml(d.etablissement) + ")" : ""} demande à consulter vos blocs.<br><span>Elle pourra les voir et les recopier chez elle, sans pouvoir modifier les vôtres.</span><br>`;
-                box.appendChild(teamButton("✅ Autoriser", "#16a34a", () => answerShare(d.demandeur, true)));
+                box.appendChild(teamButton("✅ Autoriser : choisir les thèmes…", "#16a34a", () => openShareChooser(box, d.demandeur, null)));
                 box.appendChild(teamButton("Refuser", "#64748b", () => answerShare(d.demandeur, false)));
                 requests.appendChild(box);
             });
@@ -5729,7 +5731,9 @@
                 const box = document.createElement('div');
                 box.className = 'config-status ok';
                 box.style.marginBottom = "8px";
-                box.innerHTML = `👁️ L'équipe <b>${escapeHtml(d.demandeur)}</b>${d.etablissement ? " (" + escapeHtml(d.etablissement) + ")" : ""} peut consulter vos blocs. `;
+                box.innerHTML = `👁️ L'équipe <b>${escapeHtml(d.demandeur)}</b>${d.etablissement ? " (" + escapeHtml(d.etablissement) + ")" : ""} peut consulter `
+                    + (Array.isArray(d.themes) ? `<b>${d.themes.length} thème(s)</b> de vos blocs : ${escapeHtml(d.themes.join(", "))}. ` : `<b>tous</b> vos blocs. `);
+                box.appendChild(teamButton("✏️ Changer les thèmes ouverts", "#0f766e", () => openShareChooser(box, d.demandeur, d.themes || null)));
                 box.appendChild(teamButton("Retirer l'accès", "#b45309", () => answerShare(d.demandeur, false)));
                 requests.appendChild(box);
             });
@@ -5786,7 +5790,9 @@
                 state.style.cssText = "font-size: 0.8rem; font-weight: bold;";
                 if (granted) {
                     state.style.color = "#166534";
-                    state.textContent = "👁️ Accès accordé : ouvrez la liste des blocs et cliquez sur un titre pour l'afficher.";
+                    state.textContent = Array.isArray(team.themes)
+                        ? `👁️ Accès accordé pour ${team.themes.length} thème(s) : ${team.themes.join(", ")}. Ouvrez la liste des blocs et cliquez sur un titre pour l'afficher.`
+                        : "👁️ Accès accordé : ouvrez la liste des blocs et cliquez sur un titre pour l'afficher.";
                 } else if (team.acces === 'demande') {
                     state.style.color = "#92400e";
                     state.textContent = "⏳ Demande envoyée : en attente de la réponse de cette équipe.";
@@ -6627,7 +6633,9 @@
             ask.style.display = 'none';
             if (granted) {
                 state.style.cssText = "margin-bottom: 10px; background: #dcfce7; color: #166534; border: 1px solid #86efac;";
-                state.textContent = mine ? "Cliquez sur un bloc pour l'afficher." : "👁️ Accès accordé : cliquez sur un bloc pour l'afficher sur le mur de cette équipe.";
+                state.textContent = mine ? "Cliquez sur un bloc pour l'afficher."
+                    : (Array.isArray(team.themes) ? "👁️ Accès accordé pour certains thèmes : cliquez sur un bloc pour l'afficher. Les blocs marqués 🔒 ne sont pas partagés par cette équipe."
+                        : "👁️ Accès accordé : cliquez sur un bloc pour l'afficher sur le mur de cette équipe.");
             } else if (team.acces === 'demande') {
                 state.style.cssText = "margin-bottom: 10px; background: #fffbeb; color: #92400e; border: 1px solid #fcd34d;";
                 state.textContent = "⏳ Demande envoyée : vous pourrez afficher ces blocs quand l'équipe aura accepté.";
@@ -6640,14 +6648,17 @@
             const list = document.getElementById('team-blocs-list');
             list.innerHTML = "";
             const palette = ["#ea580c", "#0d9488", "#7c3aed", "#2563eb", "#be185d", "#4d7c0f", "#b45309", "#475569"];
+            const allGranted = granted;
             groups.forEach((group, g) => {
+                // Un thème que l'équipe n'a pas ouvert reste verrouillé, même si l'accès est accordé pour d'autres
+                const granted = allGranted && (mine || !Array.isArray(team.themes) || team.themes.indexOf(group.theme) !== -1);
                 const color = palette[g % palette.length];
                 const section = document.createElement('div');
                 section.className = 'team-blocs-theme';
                 section.style.cssText = `border: 3px solid ${color}; border-radius: 10px; margin-bottom: 10px; overflow: hidden;`;
                 const head = document.createElement('div');
                 head.style.cssText = `background: ${color}; color: #ffffff; font-weight: bold; padding: 6px 10px; font-size: 0.9rem; display: flex; justify-content: space-between;`;
-                head.innerHTML = `<span>${escapeHtml(group.theme)}</span><span>${group.items.length} bloc(s)</span>`;
+                head.innerHTML = `<span>${granted ? "" : "🔒 "}${escapeHtml(group.theme)}</span><span>${group.items.length} bloc(s)${!granted && allGranted ? " · non partagé" : ""}</span>`;
                 section.appendChild(head);
                 const body = document.createElement('div');
                 body.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; padding: 8px; background: #ffffff;";
@@ -6726,12 +6737,47 @@
             }
         }
 
-        async function answerShare(requester, accept) {
+        // Choix des thèmes ouverts à une équipe : tout est coché au départ, on décoche ce que l'on garde pour soi
+        function openShareChooser(box, requester, current) {
+            const old = document.getElementById('share-chooser');
+            if (old) old.remove();
+            const groups = groupByTheme((schoolConfig.customRoutes || []).filter(isSharedBloc));
+            const zone = document.createElement('div');
+            zone.id = 'share-chooser';
+            zone.style.cssText = "margin-top: 8px; padding: 10px; background: #ffffff; border: 2px solid #16a34a; border-radius: 8px; color: #1e293b; font-weight: normal;";
+            zone.innerHTML = `<div style="font-weight: bold; margin-bottom: 6px;">Quels thèmes ouvrez-vous à l'équipe « ${escapeHtml(requester)} » ?</div>`
+                + `<div style="font-size: 0.8rem; color: #475569; margin-bottom: 6px;">Décochez les thèmes que vous gardez pour vous. Les titres restent visibles, mais ces blocs ne pourront être ni affichés ni recopiés.</div>`
+                + (groups.length ? groups.map(g => `<label style="display: block; padding: 3px 0; font-size: 0.88rem; cursor: pointer;"><input type="checkbox" class="share-theme" value="${escapeHtml(g.theme)}"${!current || current.indexOf(g.theme) !== -1 ? " checked" : ""}> <b>${escapeHtml(g.theme)}</b> · ${g.items.length} bloc(s)</label>`).join("")
+                    : `<div style="font-size: 0.85rem;">Vous n'avez pas encore de bloc : l'accès portera sur vos futurs blocs.</div>`);
+            const all = (checked) => zone.querySelectorAll('.share-theme').forEach(c => { c.checked = checked; });
+            const row = document.createElement('div');
+            row.style.marginTop = "6px";
+            row.appendChild(teamButton("Tout cocher", "#64748b", () => all(true)));
+            row.appendChild(teamButton("Tout décocher", "#64748b", () => all(false)));
+            row.appendChild(teamButton("✅ Valider", "#16a34a", () => {
+                const boxes = Array.from(zone.querySelectorAll('.share-theme'));
+                const chosen = boxes.filter(c => c.checked).map(c => c.value);
+                if (boxes.length && chosen.length === 0) { alert("Cochez au moins un thème, ou utilisez « Refuser » / « Retirer l'accès »."); return; }
+                // Tout coché = accès complet, y compris aux thèmes que vous créerez plus tard
+                answerShare(requester, true, chosen.length === boxes.length ? null : chosen);
+            }));
+            row.appendChild(teamButton("Annuler", "#94a3b8", () => zone.remove()));
+            zone.appendChild(row);
+            box.appendChild(zone);
+        }
+
+        async function answerShare(requester, accept, themes) {
             if (!accept && !confirm(`Ne pas (ou ne plus) autoriser l'équipe « ${requester} » à consulter vos blocs ?`)) return;
             setTeamsMessage("Enregistrement…");
             try {
-                await cloudCall({ action: 'repondrePartage', demandeur: requester, accepter: accept });
-                setTeamsMessage(accept ? `✅ L'équipe « ${requester} » peut maintenant consulter vos blocs.` : `L'équipe « ${requester} » n'a pas accès à vos blocs.`);
+                if (accept && themes) {
+                    const ping = await cloudAsk({ action: 'ping' });
+                    if (!ping || !(ping.version >= 15)) throw new Error("Le choix des thèmes demande la version 15 du script Google : installez-la et redéployez, ou cochez tous les thèmes.");
+                }
+                const payload = { action: 'repondrePartage', demandeur: requester, accepter: accept };
+                if (accept && themes) payload.themes = themes;
+                await cloudCall(payload);
+                setTeamsMessage(accept ? (themes ? `✅ L'équipe « ${requester} » peut consulter ${themes.length} thème(s) de vos blocs.` : `✅ L'équipe « ${requester} » peut maintenant consulter tous vos blocs.`) : `L'équipe « ${requester} » n'a pas accès à vos blocs.`);
                 await refreshTeams();
             } catch (e) {
                 setTeamsMessage("❌ " + e.message, true);
@@ -6784,7 +6830,7 @@
                     sharedBlocs[teamName] = (await cloudCall({ action: 'lireBlocsEquipe', cible: teamName })).blocs || [];
                 }
                 const bloc = sharedBlocs[teamName][index];
-                if (!bloc || !bloc.route) throw new Error("Bloc introuvable.");
+                if (!bloc || !bloc.route) throw new Error("Ce bloc n'est pas partagé par cette équipe (thème non ouvert).");
                 const route = bloc.route;
                 let photo = route.imageSrc || "";
                 if (!photo && route.imageName) {
