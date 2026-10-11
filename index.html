@@ -796,6 +796,7 @@
     <!-- MODE INVITÉ : bandeau permanent -->
     <div id="guest-strip" style="display: none; position: sticky; top: 0; z-index: 900; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px 0; padding: 7px 10px; background: #7c3aed; color: #ffffff; border-radius: 8px; font-size: 0.88rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
         <span>👀 MODE INVITÉ · essayez tout : rien n'est enregistré, tout repart de zéro à la fermeture de la page.</span>
+        <button onclick="openGuestWelcome()" style="padding: 5px 12px; font-size: 0.85rem; font-weight: bold; background: #fde047; color: #1e1b4b; border: none; border-radius: 6px; cursor: pointer;">✨ Intéressé ? Cliquez ici pour créer votre équipe</button>
         <button onclick="openGuestModal()" style="padding: 4px 10px; font-size: 0.8rem; font-weight: bold; background: #ffffff; color: #5b21b6; border: none; border-radius: 6px; cursor: pointer;">En savoir plus</button>
         <button onclick="leaveGuest()" style="padding: 4px 10px; font-size: 0.8rem; font-weight: bold; background: #4c1d95; color: #ffffff; border: 1px solid #c4b5fd; border-radius: 6px; cursor: pointer;">Quitter</button>
     </div>
@@ -1277,7 +1278,7 @@
             <button onclick="welcomeGo('request')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e; font-weight: bold;">✉️ Je découvre l'outil : demander un code d'invitation</button>
             <button onclick="welcomeGo('create')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #2563eb;">➕ J'ai reçu mon code : créer l'équipe de mon établissement</button>
             <button onclick="welcomeGo('login')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #475569;">👥 Mon équipe existe déjà : me connecter</button>
-            <button onclick="enterGuest()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #7c3aed; font-weight: bold;">👀 Essayer tout de suite en mode invité : rien à installer, rien n'est enregistré</button>
+            <button id="welcome-guest-btn" onclick="enterGuest()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #7c3aed; font-weight: bold;">👀 Essayer tout de suite en mode invité : rien à installer, rien n'est enregistré</button>
             <button onclick="closeWelcomeModal()" style="display: block; width: 100%; padding: 8px 10px; color: #475569; border: 1px solid #cbd5e1; text-align: left; background-color: #ffffff; font-size: 0.85rem; margin-bottom: 0;">Fermer cette fenêtre et continuer sur cet appareil, sans équipe</button>
         </div>
     </div>
@@ -1295,7 +1296,7 @@
                 <li><b>Tout repart de zéro</b> dès que la page est fermée ou rechargée.</li>
             </ul>
             <button onclick="closeGuestModal()" style="display: block; width: 100%; margin-bottom: 8px; padding: 12px; color: white; border: none; text-align: left; background-color: #7c3aed; font-weight: bold; font-size: 1rem;">🧗 Essayer l'outil</button>
-            <button onclick="leaveGuest('request')" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e;">✉️ L'outil m'intéresse : demander un code d'invitation pour mon établissement</button>
+            <button onclick="openGuestWelcome()" style="display: block; width: 100%; margin-bottom: 8px; padding: 10px; color: white; border: none; text-align: left; background-color: #0f766e;">✨ L'outil m'intéresse : créer l'équipe de mon établissement</button>
             <button onclick="leaveGuest()" style="display: block; width: 100%; padding: 10px; color: white; border: none; text-align: left; background-color: #64748b; margin-bottom: 0;">🚪 Quitter le mode invité</button>
         </div>
     </div>
@@ -4987,7 +4988,7 @@
         function updateTeamUI() {
             const btn = document.getElementById('team-btn');
             if (btn) {
-                btn.textContent = GUEST ? "👀 Mode invité" : (cloudTeam ? `👥 ${cloudTeam.equipe}${cloudStateText ? " · " + cloudStateText : ""}` : "👥 Équipe");
+                btn.textContent = GUEST ? "✨ Intéressé ? Créer mon équipe" : (cloudTeam ? `👥 ${cloudTeam.equipe}${cloudStateText ? " · " + cloudStateText : ""}` : "👥 Équipe");
                 btn.style.backgroundColor = GUEST ? "#7c3aed" : (cloudTeam ? (cloudStateText.startsWith("⚠️") ? "#b45309" : "#0f766e") : "#475569");
             }
             const connected = document.getElementById('team-connected');
@@ -5184,7 +5185,7 @@
         }
 
         function openTeamModal() {
-            if (GUEST) { openGuestModal("L'espace d'équipe enregistre en ligne les photos, le topo et les exercices, et les partage entre collègues. Il s'ouvre après la création de l'équipe de votre établissement."); return; }
+            if (GUEST) { openGuestWelcome(); return; }
             if (!cloudTeam && teamPanel === 'choice' && !pendingTeam) teamPanel = 'login';
             toggleTeamPassword(true);
             document.getElementById('team-error').textContent = "";
@@ -5337,6 +5338,13 @@
             document.getElementById('guest-modal').style.display = 'flex';
         }
 
+        // Visiteur intéressé : la fenêtre d'accueil habituelle (demander un code, créer son équipe, se connecter)
+        function openGuestWelcome() {
+            closeGuestModal();
+            document.getElementById('welcome-guest-btn').style.display = 'none';
+            document.getElementById('welcome-modal').style.display = 'flex';
+        }
+
         function closeGuestModal() {
             document.getElementById('guest-modal').style.display = 'none';
         }
@@ -5367,6 +5375,7 @@
 
         // Depuis l'accueil : ouvre la fenêtre d'équipe sur le bon écran
         function welcomeGo(panel) {
+            if (GUEST) { leaveGuest(panel); return; }   // on quitte la copie d'essai pour ouvrir le vrai écran
             closeWelcomeModal();
             openTeamModal();
             if (!cloudTeam) showTeamPanel(panel);
