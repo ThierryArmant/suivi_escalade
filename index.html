@@ -795,6 +795,14 @@
             .modal-content h2 { font-size: 1.25rem; }
         }
 
+        /* Grand écran : la photo du mur reste en place à l'écran, ce sont les menus qui défilent */
+        @media (min-width: 1101px) {
+            body:not(.eleve) .center-col { position: sticky; top: 8px; align-self: flex-start; }
+            body:not(.eleve) #wall-container { width: fit-content; }
+            body:not(.eleve) #wall-image { width: auto; max-width: 100%; max-height: calc(100vh - 24px); }
+            body:not(.eleve) .right-sidebar { position: sticky; top: 8px; align-self: flex-start; max-height: calc(100vh - 16px); }
+        }
+
         /* Media Query pour écrans plus petits */
         @media (max-width: 1100px) {
             .workspace { flex-direction: column; align-items: center; }
