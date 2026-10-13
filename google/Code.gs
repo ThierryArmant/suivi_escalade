@@ -34,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 15;
+var VERSION = 16;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -117,10 +117,11 @@ function traiter_(d) {
     if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
     if (action === 'invite') return lireInvite_();
     if (action === 'parcoursSecurite') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve);
+    if (action === 'parcoursEleve') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve, true);
     if (action === 'validerFiche') {
       var verrouEleve = LockService.getScriptLock();
       verrouEleve.waitLock(25000);
-      try { return validerFiche_(cle_(d.equipe), String(d.id || ''), d.classe, d.eleve, d.etat); }
+      try { return validerFiche_(cle_(d.equipe), String(d.id || ''), d.classe, d.eleve, d.etat, d.degaine); }
       finally { verrouEleve.releaseLock(); }
     }
 
@@ -722,7 +723,8 @@ function ficheBloc_(equipe, id) {
           source: String(route.source || ''),
           video: String(route.video || ''),
           suivi: ficheSuivie_(route),
-          suiviBloc: !ficheSuivie_(route) && route.type === 'bloc'
+          suiviBloc: !ficheSuivie_(route) && route.type === 'bloc',
+          voie: /^voies?\s*[·:\-–]/i.test(String(route.theme || '').trim())
         };
       } catch (err) { break; }
     }
@@ -751,7 +753,15 @@ function codeElevePropre_(texte) {
 }
 
 // Validation envoyée par le téléphone de l'élève : sans mot de passe, donc très encadrée
-function validerFiche_(equipe, id, classe, eleve, etat) {
+// Dégaine atteinte dans une voie : 1 à 5, ou 6 pour le haut de la voie (« top »). 0 = non indiquée.
+function degainePropre_(texte) {
+  var t = String(texte == null ? '' : texte).trim().toLowerCase();
+  if (t === 'top' || t === 't') return 6;
+  var n = parseInt(t, 10);
+  return (n >= 1 && n <= 6) ? n : 0;
+}
+
+function validerFiche_(equipe, id, classe, eleve, etat, degaine) {
   classe = classePropre_(classe);
   eleve = codeElevePropre_(eleve);
   if (!equipe || !/^custom_[0-9A-Za-z_-]{1,40}$/.test(id)) return { ok: false, erreur: 'Fiche introuvable.' };
@@ -774,6 +784,8 @@ function validerFiche_(equipe, id, classe, eleve, etat) {
   }
   if (!suivie && !exercice) return { ok: false, erreur: "Cette fiche n'est pas suivie." };
   etat = exercice ? (String(etat || '') === 'reussi' ? 'reussi' : 'essaye') : '';
+  degaine = exercice ? degainePropre_(degaine) : 0;
+  var saisie = degaine ? [etat, null, degaine] : [etat, null];
 
   // Une ligne par élève : on ne relit que les trois premières colonnes pour le retrouver
   var feuille = feuille_('Suivi');
@@ -789,9 +801,10 @@ function validerFiche_(equipe, id, classe, eleve, etat) {
   if (ligne === -1) {
     if (total >= ELEVES_MAX_PAR_EQUIPE) return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
     var premier = {};
-    premier[id] = [etat, quand];
+    saisie[1] = quand;
+    premier[id] = saisie;
     ajouterTexte_(feuille, [equipe, classe, eleve, JSON.stringify(premier), quand, quand]);
-    return { ok: true, etat: etat };
+    return { ok: true, etat: etat, degaine: degaine };
   }
   var plage = feuille.getRange(ligne, 4, 1, 3);
   var valeurs = plage.getValues()[0];
@@ -800,35 +813,46 @@ function validerFiche_(equipe, id, classe, eleve, etat) {
   // Saisies de plus de 6 mois : un nouveau cycle commence, on repart de zéro
   if (tropVieux_(cree)) { d = {}; cree = quand; }
   if (d[id]) {
-    // Déjà notée : un bloc « essayé » peut devenir « réussi », jamais l'inverse
-    if (!(etat === 'reussi' && String(d[id][0]) !== 'reussi')) return { ok: true, deja: true, etat: String(d[id][0] || '') };
+    // Déjà notée : un bloc « essayé » peut devenir « réussi », jamais l'inverse ;
+    // dans une voie, la dégaine atteinte ne peut que monter
+    var avant = d[id], degAvant = parseInt(avant[2], 10) || 0;
+    var monteEtat = etat === 'reussi' && String(avant[0]) !== 'reussi';
+    var monteDeg = degaine > degAvant;
+    if (!monteEtat && !monteDeg) return { ok: true, deja: true, etat: String(avant[0] || ''), degaine: degAvant };
+    saisie = [monteEtat ? etat : String(avant[0] || etat), null];
+    if (Math.max(degaine, degAvant)) saisie[2] = Math.max(degaine, degAvant);
   } else if (Object.keys(d).length >= SAISIES_MAX_PAR_ELEVE) {
     return { ok: false, erreur: 'Le suivi est plein : préviens ton professeur.' };
   }
-  d[id] = [etat, quand];
+  saisie[1] = quand;
+  d[id] = saisie;
   plage.setValues([[JSON.stringify(d), cree, quand]]);
-  return { ok: true, etat: etat };
+  return { ok: true, etat: saisie[0], degaine: saisie[2] || 0 };
 }
 
 // Parcours d'un élève : toutes les fiches de sécurité de l'équipe, avec ce qu'il a déjà vu.
 // Sans mot de passe (l'élève y accède de chez lui) ; ne renvoie que ce qu'un QR code de fiche montre déjà.
-function parcoursSecurite_(equipe, classe, eleve) {
+function parcoursSecurite_(equipe, classe, eleve, tout) {
   classe = classePropre_(classe);
   eleve = codeElevePropre_(eleve);
   if (!equipe || !classe || !eleve) return { ok: false, erreur: 'Indique ta classe et ton code.' };
-  var vues = {};
+  var vues = {}, etats = {}, degaines = {};
   lignes_('Validations').forEach(function (l) {
-    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) vues[String(l[3])] = true;
+    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) { vues[String(l[3])] = true; etats[String(l[3])] = String(l[5] || ''); }
   });
   lignes_('Suivi').forEach(function (l) {
-    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve) Object.keys(donneesSuivi_(l[3])).forEach(function (id) { vues[id] = true; });
+    if (cle_(l[0]) === equipe && String(l[1]) === classe && String(l[2]) === eleve && !tropVieux_(l[4])) {
+      var d = donneesSuivi_(l[3]);
+      Object.keys(d).forEach(function (id) { vues[id] = true; etats[id] = String(d[id][0] || ''); degaines[id] = parseInt(d[id][2], 10) || 0; });
+    }
   });
   var fiches = [];
   lignes_('Blocs').forEach(function (l) {
     if (cle_(l[0]) !== equipe) return;
     try {
       var bloc = JSON.parse(recoller_(l, 3));
-      if (!ficheSuivie_(bloc.route)) return;
+      var secu = ficheSuivie_(bloc.route);
+      if (!secu && !(tout && bloc.route && bloc.route.type === 'bloc')) return;
       fiches.push({
         id: String(l[1]),
         nom: String(bloc.route.name || ''),
@@ -838,7 +862,9 @@ function parcoursSecurite_(equipe, classe, eleve) {
         couleur: String(bloc.route.color || ''),
         image: String(bloc.route.imageName || ''),
         markers: bloc.markers || [],
-        vue: vues[String(l[1])] === true
+        vue: vues[String(l[1])] === true,
+        etat: secu ? '' : (etats[String(l[1])] || ''),
+        degaine: degaines[String(l[1])] || 0
       });
     } catch (err) { /* ligne abîmée : on l'ignore */ }
   });
@@ -897,7 +923,7 @@ function lireValidations_(equipe) {
     if (cle_(l[0]) !== equipe) return;
     var d = donneesSuivi_(l[3]);
     Object.keys(d).forEach(function (id) {
-      liste.push({ classe: String(l[1]), eleve: String(l[2]), id: id, date: String(d[id][1] || ''), etat: String(d[id][0] || '') });
+      liste.push({ classe: String(l[1]), eleve: String(l[2]), id: id, date: String(d[id][1] || ''), etat: String(d[id][0] || ''), degaine: parseInt(d[id][2], 10) || 0 });
     });
     if (!debut[String(l[1])] || String(l[4]) < debut[String(l[1])]) debut[String(l[1])] = String(l[4]);
   });

@@ -503,6 +503,11 @@
         .parcours-item.ici { outline: 3px solid #7c3aed; }
         .parcours-nom { flex: 1; font-weight: bold; text-align: left; }
         .parcours-go { font-size: 0.75rem; color: #6d28d9; white-space: nowrap; }
+        .deg-chip { flex: 1; padding: 10px 0; font-size: 1rem; font-weight: 800; background: #ffffff; color: #1e3a8a; border: 2px solid #93c5fd; border-radius: 10px; }
+        .deg-chip.on { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+        .avancee-theme { margin: 6px 0; border: 2px solid #ddd6fe; border-radius: 10px; padding: 2px 8px; background: #faf5ff; }
+        .avancee-theme summary { cursor: pointer; font-weight: bold; color: #5b21b6; padding: 6px 0; display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+        .avancee-deg { flex: 0 0 auto; font-size: 0.75rem; font-weight: bold; color: #1d4ed8; background: #dbeafe; border-radius: 8px; padding: 2px 6px; white-space: nowrap; }
         table.suivi-secu { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
         table.suivi-secu th, table.suivi-secu td { border: 1px solid #cbd5e1; padding: 5px 6px; text-align: center; }
         table.suivi-secu thead th { background: #ede9fe; color: #4c1d95; position: sticky; top: 0; }
@@ -711,9 +716,10 @@
         /* PME : triangle reliant les 3 appuis (1 main et 2 pieds), à pivoter et agrandir pour le caler sur les prises */
         .marker.pme-triangle { width: 72px; height: 64px; }
         /* PME étirable : trois points libres (la main en orange, les deux pieds en bleu), reliés par un triangle */
-        .marker.pme-pt { width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 1px 4px rgba(0,0,0,0.6); z-index: 6; }
-        .marker.pme-pt.pme-main { background: #f59e0b; }
-        .marker.pme-pt.pme-pied { background: #2b6cb0; }
+        /* Anneaux vides : la prise reste visible au centre */
+        .marker.pme-pt { width: 24px; height: 24px; border-radius: 50%; background: transparent; border: 4px solid #f59e0b; box-shadow: 0 0 0 2px #ffffff, 0 1px 4px rgba(0,0,0,0.6), inset 0 0 0 2px #ffffff; z-index: 6; }
+        .marker.pme-pt.pme-main { border-color: #f59e0b; }
+        .marker.pme-pt.pme-pied { border-color: #2b6cb0; }
         #pme-links { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
         .pme-label { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font: bold 12px Arial, sans-serif; color: #ffffff; background: #1e3a8a; border-radius: 6px; padding: 1px 6px; white-space: nowrap; z-index: 5; }
         .marker.pme-triangle svg { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
@@ -1462,6 +1468,7 @@
                 <select id="suivi-secu-classe" onchange="suiviClasse = this.value; renderSuiviSecu();" style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"></select>
                 <select id="suivi-genre" onchange="renderSuiviSecu()" title="Choisir ce que le tableau affiche : les blocs, les voies, ou les deux." style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"><option value="">Blocs et voies</option><option value="blocs">Blocs seulement</option><option value="voies">Voies seulement</option></select>
                 <button onclick="refreshSuiviSecu()" style="background-color: #2563eb; color: white; border: none; padding: 7px 12px;" title="Recharge les validations envoyées par les élèves.">🔄 Actualiser</button>
+                <button onclick="exportSuivi()" style="background-color: #15803d; color: white; border: none; padding: 7px 12px;" title="Télécharge le tableau de la classe affichée en fichier tableur (s'ouvre dans Excel ou LibreOffice), avec les noms s'ils sont sur cet appareil et le détail de chaque exercice.">📥 Exporter (Excel)</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
                 <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
                 <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : les noms s'affichent dans le tableau et restent sur cet appareil.">📋 Liste de la classe</button>
@@ -1469,16 +1476,18 @@
             </div>
             <div id="liste-classe-zone" style="display: none; background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left;">
                 <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>Les noms restent sur cet appareil. En ligne, seuls les codes sont enregistrés, pour retrouver la classe sur vos autres appareils.</b></div>
-                <label style="font-weight: bold; font-size: 0.85rem;">Classe : <input id="liste-classe-nom" type="text" maxlength="10" placeholder="4B" onchange="loadListeClasse()" style="width: 90px; padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;"></label>
-                <textarea id="liste-classe-texte" rows="7" placeholder="Thomas Arnaud&#10;Léa Bernard&#10;…" style="width: 100%; box-sizing: border-box; margin-top: 6px; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
+                <label style="font-weight: bold; font-size: 0.85rem;">Classe : <input id="liste-classe-nom" type="text" maxlength="10" placeholder="4B" onchange="loadListeClasse()" oninput="saveBrouillonListe()" style="width: 90px; padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;"></label>
+                <div id="liste-classe-info" style="display: none; margin-top: 6px; font-size: 0.8rem; font-weight: bold; border-radius: 6px; padding: 6px 8px;"></div>
+                <textarea id="liste-classe-texte" oninput="saveBrouillonListe()" rows="7" placeholder="Thomas Arnaud&#10;Léa Bernard&#10;…" style="width: 100%; box-sizing: border-box; margin-top: 6px; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
                 <div style="text-align: right; margin-top: 6px;">
-                    <button onclick="document.getElementById('liste-classe-zone').style.display='none'" style="background-color: #64748b; color: white; border: none; padding: 7px 12px; margin-right: 6px;">Annuler</button>
+                    <button id="liste-classe-retour" onclick="restoreListePrecedente()" style="display: none; background-color: #ffffff; color: #0f766e; border: 2px solid #0f766e; padding: 5px 10px; margin-right: 6px;" title="Remet la liste telle qu'elle était avant le dernier enregistrement (en cas de fausse manipulation).">↩️ Liste précédente</button>
+                    <button onclick="closeListeClasse()" style="background-color: #64748b; color: white; border: none; padding: 7px 12px; margin-right: 6px;">Fermer</button>
                     <button onclick="saveListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px; font-weight: bold;">Enregistrer la liste</button>
                 </div>
             </div>
             <div id="suivi-secu-table" style="max-height: 58vh; overflow: auto;"></div>
             <div style="text-align: right; margin-top: 12px;">
-                <button onclick="document.getElementById('suivi-secu-modal').style.display='none'" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
+                <button onclick="closeSuiviModal()" style="background-color: #16a34a; padding: 10px 20px; font-weight: bold;">Fermer</button>
             </div>
         </div>
     </div>
@@ -1760,7 +1769,7 @@
         };
 
         window.addEventListener('beforeunload', function (e) {
-            if (hasUnsavedChanges && !GUEST) { 
+            if ((hasUnsavedChanges || (typeof listeModifiee === 'function' && listeModifiee())) && !GUEST) { 
                 e.preventDefault(); 
                 e.returnValue = ''; 
             }
@@ -4468,17 +4477,20 @@
             banner.style.color = "#0369a1"; 
             banner.style.maxWidth = "900px";
 
-            // Page « Mon parcours sécurité » : pas de mur, seulement la liste des fiches à voir
-            if (params.get('parcours') && params.get('eq')) {
+            // Page « Mon parcours sécurité » (ou « Mon avancée » : tous les exercices) : pas de mur, seulement la liste
+            if ((params.get('parcours') || params.get('avancee')) && params.get('eq')) {
+                const tout = !!params.get('avancee');
                 studentMode = true;
                 document.body.classList.add('eleve');
                 document.getElementById('wall-container').style.display = 'none';
-                banner.innerHTML = `<b>🛡️ Mon parcours sécurité</b><br><span style="font-size:0.75rem; font-weight:normal;">Regarde les fiches quand tu veux : en cours, au CDI ou à la maison.</span>`;
+                banner.innerHTML = tout
+                    ? `<b>📊 Mon avancée</b><br><span style="font-size:0.75rem; font-weight:normal;">Ce que tu as essayé et réussi, et ce qui reste à faire : choisis ta prochaine voie ou ton prochain bloc.</span>`
+                    : `<b>🛡️ Mon parcours sécurité</b><br><span style="font-size:0.75rem; font-weight:normal;">Regarde les fiches quand tu veux : en cours, au CDI ou à la maison.</span>`;
                 const zone = document.createElement('div');
                 zone.id = 'student-under';
                 zone.innerHTML = `<div id="student-fiche"></div>`;
                 document.getElementById('wall-container').parentNode.appendChild(zone);
-                initStudentSuivi(params.get('eq'), null);
+                initStudentSuivi(params.get('eq'), null, false, { tout: tout });
                 loadParcours();
                 return;
             }
@@ -4553,7 +4565,8 @@
                             // QR code affiché en mode invité : l'élève voit la fiche, mais aucun passage n'est noté
                             if (params.get('invite')) return;
                             if (zone && fiche && fiche.suivi) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'));
-                            else if (zone && fiche && fiche.suiviBloc) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'), true);
+                            else if (zone && fiche && fiche.suiviBloc) initStudentSuivi(params.get('eq'), 'custom_' + params.get('b'), true,
+                                { voie: fiche.voie === true || /^voies?\s*[·:\-–]/i.test(String(params.get('t') || '').trim()) });
                         }).catch(() => { /* ancien stockage ou hors ligne : la consigne du QR code reste affichée */ });
                     }
                 } else if (params.get('route')) {
@@ -5944,10 +5957,19 @@
         }
 
         // Côté élève : sous la fiche, la zone « Qui es-tu ? » et le bouton d'envoi
-        function initStudentSuivi(equipe, id, exercice) {
+        let suiviDegaine = 0;   // dégaine atteinte dans une voie : 1 à 5, 6 = haut de la voie (top)
+        const degaineLabel = d => d >= 6 ? "TOP" : (d ? "dégaine " + d : "");
+        function pickDegaine(d, keepMsg) {
+            suiviDegaine = d;
+            document.querySelectorAll('#suivi-degaine .deg-chip').forEach(b => b.classList.toggle('on', parseInt(b.dataset.d, 10) === d));
+            const msg = document.getElementById('suivi-msg');
+            if (msg && !keepMsg) msg.textContent = "";
+        }
+        function initStudentSuivi(equipe, id, exercice, opts) {
+            opts = opts || {};
             const zone = document.getElementById('student-fiche');
             if (!zone || document.getElementById('suivi-box')) return;
-            suiviTarget = { equipe: equipe, id: id, exercice: !!exercice };
+            suiviTarget = { equipe: equipe, id: id, exercice: !!exercice, voie: !!opts.voie, tout: !!opts.tout || !!exercice };
             let saved = {};
             try { saved = JSON.parse(store.getItem(ELEVE_KEY) || '{}') || {}; } catch (e) { saved = {}; }
             const box = document.createElement('div');
@@ -5962,6 +5984,8 @@
                 + `</div>`
                 + `<div id="suivi-groupe" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px;"></div>`
                 + `<div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Ton code = l'initiale de ton prénom, l'initiale de ton nom, puis ton numéro dans la liste de la classe. Exemple : Thomas Arnaud, n° 12 → <b>TA 12</b>. N'écris pas ton nom.</div>`
+                + (exercice && opts.voie ? `<div id="suivi-degaine" style="margin-top: 8px;"><div style="font-size: 0.85rem; font-weight: bold; color: #1e293b; margin-bottom: 4px;">🪝 Jusqu'où es-tu monté ? Touche la dernière dégaine mousquetonnée</div>`
+                    + `<div style="display: flex; gap: 5px;">${[1, 2, 3, 4, 5, 6].map(d => `<button class="deg-chip" data-d="${d}" onclick="pickDegaine(${d})">${d === 6 ? "🔝 TOP" : d}</button>`).join("")}</div></div>` : "")
                 + (exercice ? `<div style="display: flex; gap: 8px; margin-top: 8px;">`
                     + `<button id="suivi-essaye" onclick="sendStudentSuivi('essaye')" style="flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; background: #f59e0b; color: #ffffff; border: none;">👍 J'ai essayé</button>`
                     + `<button id="suivi-reussi" onclick="sendStudentSuivi('reussi')" style="flex: 1; padding: 12px 6px; font-size: 0.95rem; font-weight: bold; background: #16a34a; color: #ffffff; border: none;">✅ J'ai réussi</button></div>`
@@ -5971,10 +5995,9 @@
                 + `<div id="parcours-list"></div>`
                 + `</div>`;
             if (!id) box.querySelector('.fiche-head').textContent = "🙋 Qui es-tu ?";
-            if (exercice) {
-                box.querySelector('.fiche-head').textContent = "🧗 Note ton passage sur ce bloc";
-                box.querySelector('#parcours-btn').style.display = 'none';
-            }
+            if (exercice) box.querySelector('.fiche-head').textContent = opts.voie ? "🧗 Note ton passage dans cette voie" : "🧗 Note ton passage sur ce bloc";
+            if (exercice || opts.tout) box.querySelector('#parcours-btn').textContent = "📊 Voir mon avancée (blocs, voies, sécurité)";
+            if (opts.tout) box.querySelector('.fiche-head').textContent = "🙋 Qui es-tu ?";
             zone.parentNode.insertBefore(box, zone.nextSibling);
             renderGroupe();
             updateSuiviButton();
@@ -6039,6 +6062,8 @@
             msg.style.color = "#991b1b";
             if (!classe) { msg.textContent = "Écris ta classe (par exemple 4B)."; return; }
             if (!code) { msg.textContent = "Ton code n'est pas bon : deux lettres puis ton numéro, par exemple TA 12."; return; }
+            if (etat && suiviTarget.voie && !suiviDegaine) { msg.textContent = "Touche d'abord la dernière dégaine atteinte (1 à 5, ou TOP)."; return; }
+            const degaine = suiviTarget.voie ? suiviDegaine : 0;
             document.getElementById('suivi-classe').value = classe;
             document.getElementById('suivi-code').value = code;
             rememberEleve(classe, code);
@@ -6046,13 +6071,18 @@
             msg.style.color = "#475569";
             msg.textContent = "Envoi…";
             try {
-                const sent = await cloudCall({ action: 'validerFiche', equipe: suiviTarget.equipe, id: suiviTarget.id, classe: classe, eleve: code, etat: etat || "" }, false);
+                const sent = await cloudCall({ action: 'validerFiche', equipe: suiviTarget.equipe, id: suiviTarget.id, classe: classe, eleve: code, etat: etat || "", degaine: degaine >= 6 ? 'top' : (degaine || "") }, false);
                 if (etat) {
-                    // Bloc d'exercice : essayer compte déjà ; on peut revenir appuyer sur « réussi » plus tard
+                    // Exercice : essayer compte déjà ; on peut revenir appuyer sur « réussi » plus tard
                     btn.disabled = false;
                     msg.style.color = "#166534";
-                    msg.textContent = etat === 'reussi' ? `Bravo ${code} ! Bloc noté comme réussi.`
-                        : (sent && sent.etat === 'reussi' ? `${code}, ce bloc est déjà noté comme réussi.` : `Bien joué ${code} ! Essai noté. Reviens appuyer sur « J'ai réussi » quand tu y arrives.`);
+                    const quoi = suiviTarget.voie ? "Voie" : "Bloc";
+                    const best = sent && sent.degaine ? sent.degaine : degaine;
+                    const haut = suiviTarget.voie && best ? ` Plus haut atteint : ${degaineLabel(best)}.` : "";
+                    msg.textContent = (etat === 'reussi' ? `Bravo ${code} ! ${quoi} notée comme réussie.`.replace("Bloc notée comme réussie", "Bloc noté comme réussi")
+                        : (sent && sent.etat === 'reussi' ? `${code}, c'est déjà noté comme réussi.` : `Bien joué ${code} ! Essai noté. Reviens appuyer sur « J'ai réussi » quand tu y arrives.`)) + haut;
+                    // Le grimpeur suivant du groupe indique sa propre dégaine
+                    if (suiviTarget.voie) pickDegaine(0, true);
                     return;
                 }
                 btn.dataset.sent = '1';
@@ -6086,14 +6116,15 @@
             list.innerHTML = '<p style="color: #64748b; text-align: center; font-size: 0.85rem;">Chargement de ton parcours…</p>';
             let data;
             try {
-                data = await cloudCall({ action: 'parcoursSecurite', equipe: suiviTarget.equipe, classe: classe, eleve: code }, false);
+                data = await cloudCall({ action: suiviTarget.tout ? 'parcoursEleve' : 'parcoursSecurite', equipe: suiviTarget.equipe, classe: classe, eleve: code }, false);
             } catch (e) {
                 list.innerHTML = `<p style="color: #991b1b; font-weight: bold; text-align: center; font-size: 0.85rem;">${e && e.offline ? "Pas de connexion Internet." : "Le parcours n'est pas encore activé : préviens ton professeur."}</p>`;
                 return;
             }
+            const enc = encodeURIComponent;
+            if (suiviTarget.tout) { renderAvancee(list, data.fiches || [], classe, code); return; }
             const fiches = sortByVoie((data.fiches || []).map(f => Object.assign({ name: f.nom }, f)));
             const seen = fiches.filter(f => f.vue).length;
-            const enc = encodeURIComponent;
             let html = `<div style="margin: 10px 0 6px 0; font-weight: 800; color: #4c1d95; text-align: center;">${escapeHtml(code)} · ${escapeHtml(classe)} — ${seen} fiche(s) vue(s) sur ${fiches.length}</div>`
                 + `<div style="height: 10px; background: #e9d5ff; border-radius: 6px; overflow: hidden; margin-bottom: 8px;"><div style="height: 100%; width: ${fiches.length ? Math.round(seen / fiches.length * 100) : 0}%; background: #16a34a;"></div></div>`;
             fiches.forEach(f => {
@@ -6108,13 +6139,61 @@
             list.innerHTML = html;
         }
 
+        // Lien vers la fiche d'un exercice, à partir de ce que renvoie l'espace en ligne
+        function ficheUrl(f) {
+            const enc = encodeURIComponent;
+            const packed = encodeMarkers((f.markers || []).map(m => Object.assign({}, m, { color: f.couleur || m.color })));
+            return window.location.origin + window.location.pathname + "?mode=eleve&bg=" + enc(f.image || "default") + "&eq=" + enc(suiviTarget.equipe)
+                + "&v=2&c=" + packed.c + "&r=" + packed.r + "&n=" + enc(f.nom) + "&g=" + enc(String(f.niveau || "").split(' ')[0]) + "&h=" + enc(f.gabarit || "") + "&t=" + enc(f.theme || "")
+                + "&b=" + enc(String(f.id).replace(/^custom_/, ''));
+        }
+
+        // « Mon avancée » : tous les exercices de l'équipe, rangés comme dans l'appli (sécurité, blocs, voies), avec l'état de l'élève
+        function renderAvancee(list, raw, classe, code) {
+            const fiches = sortByVoie(raw.map(f => Object.assign({ name: f.nom }, f)));
+            const isSecu = f => /^s[ée]curit[ée]/i.test((f.theme || "").trim());
+            const isVoie = f => /^voies?\s*[·:\-–]/i.test((f.theme || "").trim());
+            const sections = [
+                ["🛡️ Sécurité", fiches.filter(isSecu), true],
+                ["🧗 Exercices voies", fiches.filter(f => !isSecu(f) && isVoie(f)), false],
+                ["🧱 Exercices bloc", fiches.filter(f => !isSecu(f) && !isVoie(f)), false]
+            ].filter(s => s[1].length);
+            const colors = { Jaune: "#eab308", Vert: "#22c55e", Bleu: "#3b82f6", Rouge: "#ef4444", Noir: "#0f172a" };
+            const count = (rs, secu) => secu ? `${rs.filter(f => f.vue).length}/${rs.length} vues`
+                : `✅ ${rs.filter(f => f.etat === 'reussi').length} · 👍 ${rs.filter(f => f.etat === 'essaye').length} · ${rs.length} au total`;
+            let html = `<div style="margin: 10px 0 6px 0; font-weight: 800; color: #4c1d95; text-align: center;">${escapeHtml(code)} · ${escapeHtml(classe)}</div>`
+                + `<div style="font-size: 0.75rem; color: #475569; text-align: center; margin-bottom: 6px;">✅ réussi · 👍 essayé · ⏳ pas encore. Touche un exercice pour ouvrir sa fiche.</div>`;
+            sections.forEach(([titre, rs, secu]) => {
+                html += `<div style="margin-top: 10px; padding: 6px 8px; border-radius: 8px; background: #ede9fe; color: #4c1d95; font-weight: 800; display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap;"><span>${titre}</span><span style="font-weight: bold; font-size: 0.8rem;">${count(rs, secu)}</span></div>`;
+                groupByTheme(rs).forEach(g => {
+                    const items = g.items.map(o => o.b);
+                    const ici = items.some(f => f.id === suiviTarget.id);
+                    const theme = String(g.theme).replace(/^voies?\s*[·:\-–]\s*/i, "");
+                    html += `<details class="avancee-theme"${ici ? " open" : ""}><summary><span>${escapeHtml(theme)}</span><span style="font-weight: normal; font-size: 0.78rem;">${count(items, secu)}</span></summary>`;
+                    items.forEach(f => {
+                        const etat = secu ? (f.vue ? "✅" : "⏳") : (f.etat === 'reussi' ? "✅" : (f.etat === 'essaye' ? "👍" : "⏳"));
+                        const dot = colors[String(f.niveau || "").split(' ')[0]];
+                        const deg = !secu && f.degaine ? `<span class="avancee-deg">${f.degaine >= 6 ? "🔝 TOP" : "🪝 " + f.degaine}</span>` : "";
+                        const current = f.id === suiviTarget.id;
+                        html += `<a class="parcours-item${(secu ? f.vue : f.etat === 'reussi') ? ' vue' : ''}${current ? ' ici' : ''}" href="${escapeHtml(ficheUrl(f))}"><span class="parcours-etat">${etat}</span>`
+                            + (dot ? `<span style="flex: 0 0 auto; width: 12px; height: 12px; border-radius: 50%; background: ${dot};"></span>` : "")
+                            + `<span class="parcours-nom">${escapeHtml(f.nom)}</span>${deg}<span class="parcours-go">${current ? "tu es ici" : "›"}</span></a>`;
+                    });
+                    html += `</details>`;
+                });
+            });
+            if (!sections.length) html += `<p style="color: #64748b; text-align: center;">Aucun exercice pour l'instant.</p>`;
+            list.innerHTML = html;
+        }
+
         // QR code qui mène les élèves à leur parcours (à afficher, imprimer ou envoyer)
         function showParcoursQR() {
             if (GUEST) { alert("Avec une équipe, ce bouton affiche le QR code (et le lien) du parcours sécurité : chaque élève y retrouve les fiches vues et celles qui restent à voir.\n\nIl n'est pas proposé en mode invité, où aucun élève n'est enregistré."); return; }
             if (!cloudTeam) return;
-            const url = window.location.origin + window.location.pathname + "?mode=eleve&parcours=1&eq=" + encodeURIComponent(cloudTeam.equipe);
-            if (typeof QRCode === 'undefined' || !drawQRCode(url)) { prompt("Lien du parcours sécurité à donner aux élèves :", url); return; }
-            document.getElementById('qr-modal-title').textContent = "🛡️ Parcours sécurité des élèves";
+            const tout = suiviMode === 'blocs';
+            const url = window.location.origin + window.location.pathname + (tout ? "?mode=eleve&avancee=1&eq=" : "?mode=eleve&parcours=1&eq=") + encodeURIComponent(cloudTeam.equipe);
+            if (typeof QRCode === 'undefined' || !drawQRCode(url)) { prompt(tout ? "Lien « Mon avancée » à donner aux élèves :" : "Lien du parcours sécurité à donner aux élèves :", url); return; }
+            document.getElementById('qr-modal-title').textContent = tout ? "📊 Avancée des élèves (blocs, voies, sécurité)" : "🛡️ Parcours sécurité des élèves";
             const warning = document.getElementById('qr-warning');
             warning.style.cssText = "display: block; font-size: 0.8rem; font-weight: normal; color: #1e293b; background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px; padding: 8px; word-break: break-all;";
             warning.textContent = "Lien à donner aux élèves (ENT, Pronote) : " + url;
@@ -6143,6 +6222,8 @@
             let old = {};
             try { old = JSON.parse(store.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { /* rien */ }
             listesCache = Object.assign({}, old, (fromDb && typeof fromDb === 'object') ? fromDb : {});
+            // Demande au navigateur de ne pas effacer de lui-même la mémoire de l'appli (listes, photos)
+            try { if (!GUEST && navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* rien */ }
         }
         async function writeListes(listes) {
             listesCache = listes;
@@ -6178,21 +6259,96 @@
         function codeFromName(name, number) {
             const words = String(name || "").normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z \-]/g, " ").trim().split(/\s+/).filter(w => w);
             if (words.length < 2) return "";
-            // Le nom de famille : le premier mot écrit en majuscules après le prénom (sinon le deuxième mot)
-            const family = words.slice(1).find(w => w.length > 1 && w === w.toUpperCase()) || words[1];
+            const upper = w => w.length > 1 && w === w.toUpperCase();
+            // Liste « NOM Prénom » (export Pronote) : le prénom est le premier mot écrit en minuscules
+            if (upper(words[0]) && words.slice(1).some(w => !upper(w))) {
+                const first = words.slice(1).find(w => !upper(w));
+                return (first[0] + words[0][0]).toUpperCase() + " " + number;
+            }
+            // Liste « Prénom NOM » : le nom de famille est le premier mot écrit en majuscules après le prénom (sinon le deuxième mot)
+            const family = words.slice(1).find(w => upper(w)) || words[1];
             return (words[0][0] + family[0]).toUpperCase() + " " + number;
         }
+        // Un élève qui a tapé ses initiales à l'envers (« RC 10 » au lieu de « CR 10 ») est rangé sur la bonne ligne
+        function alignCode(code, known) {
+            if (!code || known[code]) return code;
+            const m = /^([A-Z])([A-Z]) (\d+)$/.exec(code);
+            return m && known[m[2] + m[1] + " " + m[3]] ? m[2] + m[1] + " " + m[3] : code;
+        }
 
+        // Protection de la saisie : tout ce qui est tapé est gardé au fur et à mesure (brouillon), même si la page
+        // se ferme ou si l'on revient en arrière ; la version d'avant chaque enregistrement est gardée aussi.
+        const BROUILLON_KEY = 'eps_liste_brouillon', PRECEDENTES_KEY = 'eps_listes_precedentes';
+        let listeChargee = "";   // texte de la liste tel qu'il a été ouvert (pour savoir s'il y a du nouveau)
+        function readJson(key) { try { return JSON.parse(store.getItem(key) || 'null'); } catch (e) { return null; } }
+        function listeInfo(text, ok) {
+            const info = document.getElementById('liste-classe-info');
+            info.style.display = text ? 'block' : 'none';
+            info.style.background = ok ? '#dcfce7' : '#fef9c3';
+            info.style.color = ok ? '#166534' : '#713f12';
+            info.textContent = text || "";
+        }
+        function listeModifiee() {
+            const zone = document.getElementById('liste-classe-zone');
+            return zone && zone.style.display === 'block' && document.getElementById('liste-classe-texte').value.trim() !== listeChargee.trim();
+        }
+        function saveBrouillonListe() {
+            const texte = document.getElementById('liste-classe-texte').value;
+            try {
+                if (texte.trim() && texte.trim() !== listeChargee.trim()) store.setItem(BROUILLON_KEY, JSON.stringify({ classe: document.getElementById('liste-classe-nom').value, texte: texte, date: new Date().toISOString() }));
+                else store.removeItem(BROUILLON_KEY);
+            } catch (e) { /* rien */ }
+        }
+        function updateRetourListe(classe) {
+            const prev = (readJson(PRECEDENTES_KEY) || {})[classe];
+            document.getElementById('liste-classe-retour').style.display = prev ? '' : 'none';
+        }
         function openListeClasse() {
             const listes = readListes();
-            document.getElementById('liste-classe-nom').value = suiviClasse || "";
-            document.getElementById('liste-classe-texte').value = (listes[suiviClasse] || []).join("\n");
+            const nom = document.getElementById('liste-classe-nom'), zone = document.getElementById('liste-classe-texte');
+            nom.value = suiviClasse || "";
+            zone.value = listeChargee = (listes[suiviClasse] || []).join("\n");
+            listeInfo("");
+            // Une saisie non enregistrée (page fermée, retour en arrière…) est proposée à nouveau
+            const b = readJson(BROUILLON_KEY);
+            if (b && b.texte && b.texte.trim()) {
+                const quand = new Date(b.date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+                nom.value = b.classe || nom.value;
+                listeChargee = (listes[cleanClasse(nom.value)] || []).join("\n");
+                zone.value = b.texte;
+                listeInfo(`📝 Saisie non enregistrée retrouvée (${quand}). Vérifiez-la puis appuyez sur « Enregistrer la liste ».`);
+            }
+            updateRetourListe(cleanClasse(nom.value));
             document.getElementById('liste-classe-zone').style.display = 'block';
+        }
+        function closeListeClasse() {
+            if (listeModifiee() && !confirm("La liste a été modifiée mais pas enregistrée.\n\nFermer quand même ? (La saisie reste gardée en brouillon et vous sera proposée à la prochaine ouverture.)")) return;
+            document.getElementById('liste-classe-zone').style.display = 'none';
         }
 
         function loadListeClasse() {
             const classe = cleanClasse(document.getElementById('liste-classe-nom').value);
-            document.getElementById('liste-classe-texte').value = (readListes()[classe] || []).join("\n");
+            const zone = document.getElementById('liste-classe-texte');
+            const saved = (readListes()[classe] || []).join("\n");
+            // On ne remplace jamais une saisie en cours : changer le nom de la classe garde ce qui est tapé
+            if (zone.value.trim() && zone.value.trim() !== listeChargee.trim()) {
+                listeChargee = saved;
+                if (saved) listeInfo(`⚠️ La classe ${classe} a déjà une liste enregistrée. Ce qui est tapé ci-dessous la remplacera si vous enregistrez.`);
+                updateRetourListe(classe);
+                return;
+            }
+            zone.value = listeChargee = saved;
+            listeInfo("");
+            updateRetourListe(classe);
+        }
+
+        function restoreListePrecedente() {
+            const classe = cleanClasse(document.getElementById('liste-classe-nom').value);
+            const prev = (readJson(PRECEDENTES_KEY) || {})[classe];
+            if (!prev) return;
+            document.getElementById('liste-classe-texte').value = prev.noms.join("\n");
+            saveBrouillonListe();
+            listeInfo(`↩️ Liste du ${new Date(prev.date).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })} remise (${prev.noms.length} élèves). Appuyez sur « Enregistrer la liste » pour la garder.`);
         }
 
         async function saveListeClasse() {
@@ -6200,8 +6356,26 @@
             if (!classe) { alert("Indiquez le nom de la classe (par exemple 4B)."); return; }
             const names = document.getElementById('liste-classe-texte').value.split("\n").map(l => l.replace(/^\s*\d+\s*[.)\-–·:]?\s*/, "").replace(/[\s.)\-–·:]*\d+\s*$/, "").replace(/\s+/g, " ").trim()).filter(l => l);
             const listes = readListes();
+            const before = listes[classe] || [];
+            // Garde-fous contre une fausse manipulation
+            if (!names.length && before.length && !confirm(`Effacer la liste de la classe ${classe} (${before.length} élèves) ?\n\nElle restera récupérable avec « ↩️ Liste précédente ».`)) return;
+            if (names.length && before.length - names.length >= 3 && !confirm(`La nouvelle liste de ${classe} compte ${names.length} élèves au lieu de ${before.length}.\n\nEnregistrer quand même ? (L'ancienne reste récupérable avec « ↩️ Liste précédente ».)`)) return;
+            const enLigne = cloudClasses[classe] || [], nouveaux = localCodes(names);
+            const known = {}; nouveaux.forEach(c => { known[c] = true; });
+            const absents = enLigne.filter(c => !known[alignCode(c, known)]);
+            if (!before.length && enLigne.length && names.length && absents.length) {
+                const diff = absents.slice(0, 6).join(", ");
+                if (!confirm(`Attention : ces noms ne donnent pas exactement les codes déjà utilisés par la classe ${classe}${diff ? " (codes qui disparaîtraient : " + diff + "…)" : ""}.\n\nVérifiez que la liste est dans le même ordre que la première fois. Enregistrer quand même ?`)) return;
+            }
+            if (before.length && JSON.stringify(before) !== JSON.stringify(names)) {
+                const prev = readJson(PRECEDENTES_KEY) || {};
+                prev[classe] = { noms: before, date: new Date().toISOString() };
+                try { store.setItem(PRECEDENTES_KEY, JSON.stringify(prev)); } catch (e) { /* rien */ }
+            }
             if (names.length) listes[classe] = names; else delete listes[classe];
             if (!(await writeListes(listes))) { alert("❌ Enregistrement impossible : la mémoire du navigateur est bloquée (navigation privée ?)."); return; }
+            try { store.removeItem(BROUILLON_KEY); } catch (e) { /* rien */ }
+            listeChargee = names.join("\n");
             suiviClasse = classe;
             document.getElementById('liste-classe-zone').style.display = 'none';
             // En ligne : seulement les codes, pour retrouver la classe sur les autres appareils
@@ -6228,7 +6402,18 @@
         let suiviMode = 'secu';
         let suiviEcheances = {};
         // Bandeau bien visible : les saisies d'une classe sont effacées 6 mois après la première
+        // Classe connue en ligne (codes) mais sans les noms sur cet appareil : on le dit clairement
+        function nomsManquantsBanner() {
+            if (!suiviClasse || GUEST || (readListes()[suiviClasse] || []).length || !(cloudClasses[suiviClasse] || []).length) return "";
+            return `<div style="background: #fff7ed; border: 2px solid #fb923c; color: #9a3412; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; text-align: left; font-size: 0.85rem;">`
+                + `<b>📋 Les noms de la classe ${escapeHtml(suiviClasse)} ne sont pas sur cet appareil.</b> Les codes et les saisies des élèves sont bien gardés en ligne ; seuls les noms restent sur l'appareil où la liste a été collée `
+                + `(ils disparaissent si le navigateur efface ses données, par exemple à la fermeture sur un ordinateur partagé). `
+                + `<button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 4px 10px; margin-left: 4px;">Coller la liste</button></div>`;
+        }
         function echeanceBanner() {
+            return nomsManquantsBanner() + echeanceOnly();
+        }
+        function echeanceOnly() {
             const iso = suiviEcheances[suiviClasse];
             if (!iso) return `<div style="background: #e0f2fe; border: 2px solid #7dd3fc; color: #075985; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-weight: bold; text-align: left;">🗓️ Les saisies d'une classe sont gardées 6 mois à partir de la première, puis effacées automatiquement.</div>`;
             const end = new Date(iso), days = Math.ceil((end.getTime() - Date.now()) / 86400000);
@@ -6244,14 +6429,80 @@
             document.getElementById('suivi-secu-aide').textContent = blocsMode
                 ? "Ce que chaque élève déclare avoir essayé ou réussi. Le tableau n'affiche que les codes : les noms ne se voient que dans « Liste de la classe »."
                 : "Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».";
-            document.getElementById('suivi-parcours-btn').style.display = blocsMode ? 'none' : '';
+            const qrBtn = document.getElementById('suivi-parcours-btn');
+            qrBtn.textContent = blocsMode ? "📱 QR code « Mon avancée »" : "📱 QR code du parcours";
+            qrBtn.title = blocsMode ? "QR code et lien à donner aux élèves : chacun voit, avec sa classe et son code, ce qu'il a essayé et réussi (dégaines comprises) et choisit son prochain exercice. À afficher près du mur ou à mettre sur l'ENT."
+                : "QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.";
             document.getElementById('suivi-genre').style.display = blocsMode ? '' : 'none';
             if (GUEST) document.getElementById('suivi-secu-aide').textContent = "👀 Mode invité : la classe et les résultats ci-dessous sont inventés pour l'exemple. " + document.getElementById('suivi-secu-aide').textContent;
             if (!cloudTeam && !GUEST) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
             await loadListes();
             document.getElementById('suivi-secu-modal').style.display = 'flex';
+            // Le bouton « retour » du navigateur ferme la fenêtre au lieu de quitter la page
+            try { if (!history.state || !history.state.suivi) history.pushState({ suivi: 1 }, ""); } catch (e) { /* rien */ }
             await refreshSuiviSecu();
         }
+
+        // Export du tableau de la classe affichée : un fichier .csv (séparateur « ; ») qu'Excel ouvre directement
+        function exportSuivi() {
+            if (!suiviClasse) { alert("Choisissez d'abord une classe."); return; }
+            const blocsMode = suiviMode === 'blocs';
+            const genre = document.getElementById('suivi-genre').value;
+            const estVoie = r => /^voies?\s*[·:\-–]/i.test((r.theme || "").trim());
+            const items = blocsMode
+                ? sortByVoie((schoolConfig.customRoutes || []).filter(r => r.type === 'bloc' && !/^s[ée]curit[ée]/i.test((r.theme || "").trim()) && (!genre || (genre === 'voies') === estVoie(r))))
+                : securityFiches();
+            const ids = {}; items.forEach(r => { ids[r.id] = true; });
+            const noms = readListes()[suiviClasse] || [];
+            const nomDe = {}; noms.forEach((n, i) => { const c = codeFromName(n, i + 1); if (c) nomDe[c] = n; });
+            const known = {}; (classCodes()[suiviClasse] || []).forEach(c => { known[c] = true; });
+            const st = {}; Object.keys(known).forEach(c => { st[c] = {}; });
+            (suiviData || []).filter(v => v.classe === suiviClasse && ids[v.id]).forEach(v => {
+                const who = alignCode(v.eleve, known), cell = ((st[who] = st[who] || {})[v.id] = st[who][v.id] || {});
+                if (!blocsMode) { cell.date = v.date; return; }
+                if (cell.etat !== 'reussi') cell.etat = v.etat === 'reussi' ? 'reussi' : 'essaye';
+                if (v.degaine) cell.deg = Math.max(cell.deg || 0, v.degaine);
+            });
+            const codes = Object.keys(st).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
+            const q = x => { const t = String(x == null ? "" : x); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+            const day = iso => { try { return new Date(iso).toLocaleDateString('fr-FR'); } catch (e) { return ""; } };
+            const head = ["Classe", "Code", "Nom"].concat(blocsMode ? ["Réussis", "Essayés", "Tops"] : ["Fiches vues"])
+                .concat(items.map(r => (r.theme ? r.theme + " — " : "") + r.name));
+            const lines = [head];
+            codes.forEach(c => {
+                const mine = st[c];
+                const cells = items.map(r => {
+                    const x = mine[r.id];
+                    if (!x) return "";
+                    if (!blocsMode) return "vue le " + day(x.date);
+                    return (x.etat === 'reussi' ? "réussi" : "essayé") + (x.deg ? (x.deg >= 6 ? " · top" : " · dégaine " + x.deg) : "");
+                });
+                const vals = items.map(r => mine[r.id]).filter(x => x);
+                lines.push([suiviClasse, c, nomDe[c] || ""].concat(blocsMode
+                    ? [vals.filter(x => x.etat === 'reussi').length, vals.filter(x => x.etat === 'essaye').length, vals.filter(x => x.deg >= 6).length]
+                    : [vals.length]).concat(cells));
+            });
+            const csv = "\ufeff" + lines.map(l => l.map(q).join(";")).join("\r\n");
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            a.download = `suivi_${blocsMode ? (genre || 'exercices') : 'securite'}_${suiviClasse.replace(/\s+/g, '')}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        }
+
+        function closeSuiviModal(fromBack) {
+            if (listeModifiee() && !confirm("La liste de la classe a été modifiée mais pas enregistrée.\n\nFermer quand même ? (La saisie reste gardée en brouillon.)")) {
+                if (fromBack) { try { history.pushState({ suivi: 1 }, ""); } catch (e) {} }
+                return;
+            }
+            document.getElementById('liste-classe-zone').style.display = 'none';
+            document.getElementById('suivi-secu-modal').style.display = 'none';
+            if (!fromBack && history.state && history.state.suivi) { try { history.back(); } catch (e) {} }
+        }
+        window.addEventListener('popstate', function () {
+            const m = document.getElementById('suivi-secu-modal');
+            if (m && m.style.display === 'flex') closeSuiviModal(true);
+        });
 
         // Mode invité : une classe et des résultats inventés, pour montrer à quoi ressemblent les tableaux de suivi
         let guestSuiviReady = false;
@@ -6316,20 +6567,29 @@
             select.innerHTML = classes.map(c => `<option value="${escapeHtml(c)}"${c === suiviClasse ? " selected" : ""}>${escapeHtml(c)}</option>`).join("") || '<option value="">(aucune classe)</option>';
             if (blocs.length === 0) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun exercice de bloc pour l\'instant.</p>'; return; }
             if (!suiviClasse) { box.innerHTML = '<p style="color: #64748b; text-align: center;">Aucun élève n\'a encore noté de bloc.<br>Faites scanner le QR code d\'un bloc : l\'élève indique sa classe et son code, puis appuie sur « J\'ai essayé » ou « J\'ai réussi ».</p>'; return; }
-            const students = {}, realNames = {};
+            const students = {}, realNames = {}, degs = {};
             (classCodes()[suiviClasse] || []).forEach(code => { students[code] = {}; realNames[code] = true; });
-            data.filter(v => v.classe === suiviClasse).forEach(v => { (students[v.eleve] = students[v.eleve] || {})[v.id] = v.etat === 'reussi' ? 'reussi' : 'essaye'; });
+            data.filter(v => v.classe === suiviClasse).forEach(v => {
+                const who = alignCode(v.eleve, realNames), mine = (students[who] = students[who] || {});
+                // Deux saisies pour le même exercice (code tapé à l'envers puis à l'endroit) : on garde la meilleure
+                if (mine[v.id] !== 'reussi') mine[v.id] = v.etat === 'reussi' ? 'reussi' : 'essaye';
+                if (v.degaine) { const d = (degs[who] = degs[who] || {}); d[v.id] = Math.max(d[v.id] || 0, v.degaine); }
+            });
+            const avecVoies = blocs.some(estVoie);
             const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
             const groups = groupByTheme(blocs);
             const grades = [["Jaune", "#eab308"], ["Vert", "#22c55e"], ["Bleu", "#3b82f6"], ["Rouge", "#ef4444"], ["Noir", "#0f172a"]]
                 .filter(g => blocs.some(r => String(r.grade || "").split(' ')[0] === g[0]));
-            const list = (rs) => rs.map(r => r.name).join(" ; ");
+            let mineDegs = {};
+            const degTxt = d => d >= 6 ? "top" : "dégaine " + d;
+            const list = (rs) => rs.map(r => r.name + (mineDegs[r.id] ? " (" + degTxt(mineDegs[r.id]) + ")" : "")).join(" ; ");
             let html = echeanceBanner() + `<table class="suivi-secu"><thead><tr><th style="text-align: left;">Élève</th>`
                 + groups.map(g => `<th>${escapeHtml(g.theme)}<br><span style="font-weight: normal;">${g.items.length} exercices</span></th>`).join("")
                 + grades.map(g => `<th data-tip="Blocs réussis de niveau ${g[0].toLowerCase()}"><span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: ${g[1]};"></span></th>`).join("")
-                + `<th>Réussis</th><th>Essayés</th></tr></thead><tbody>`;
+                + `<th>Réussis</th><th>Essayés</th>` + (avecVoies ? `<th data-tip="Voies montées jusqu'en haut (top)">🔝 Tops</th>` : "") + `</tr></thead><tbody>`;
             names.forEach(name => {
                 const mine = students[name];
+                mineDegs = degs[name] || {};
                 const ok = blocs.filter(r => mine[r.id] === 'reussi'), tried = blocs.filter(r => mine[r.id] === 'essaye');
                 const label = `${escapeHtml(name)}${(classCodes()[suiviClasse] || []).length && !realNames[name] ? ' <span style="font-weight: normal; color: #b45309;">· code absent de la liste</span>' : ''}`;
                 html += `<tr><td style="text-align: left; font-weight: bold; white-space: nowrap;">${label}</td>`
@@ -6338,13 +6598,17 @@
                         const o = rs.filter(r => mine[r.id] === 'reussi'), t = rs.filter(r => mine[r.id] === 'essaye');
                         if (!o.length && !t.length) return `<td></td>`;
                         const tip = (o.length ? "Réussis : " + list(o) + ". " : "") + (t.length ? "Essayés : " + list(t) + "." : "");
-                        return `<td class="${o.length ? 'vu' : ''}" data-tip="${escapeHtml(tip)}" style="cursor: help;">${o.length ? `<b>✅ ${o.length}</b>` : ""}${o.length && t.length ? " · " : ""}${t.length ? `<span style="color: #b45309;">👍 ${t.length}</span>` : ""}</td>`;
+                        // Dans les voies : les dégaines atteintes, sous les compteurs (T = haut de la voie)
+                        const ds = rs.map(r => mineDegs[r.id]).filter(d => d).sort((a, b) => b - a);
+                        const dl = ds.length ? `<div style="font-size: 0.72rem; color: #1d4ed8; white-space: nowrap;">🪝 ${ds.map(d => d >= 6 ? "T" : d).join("·")}</div>` : "";
+                        return `<td class="${o.length ? 'vu' : ''}" data-tip="${escapeHtml(tip)}" style="cursor: help;">${o.length ? `<b>✅ ${o.length}</b>` : ""}${o.length && t.length ? " · " : ""}${t.length ? `<span style="color: #b45309;">👍 ${t.length}</span>` : ""}${dl}</td>`;
                     }).join("")
                     + grades.map(g => { const n = ok.filter(r => String(r.grade || "").split(' ')[0] === g[0]).length; return `<td>${n || ""}</td>`; }).join("")
-                    + `<td style="font-weight: bold; color: #166534;">${ok.length}</td><td style="font-weight: bold; color: #b45309;">${tried.length}</td></tr>`;
+                    + `<td style="font-weight: bold; color: #166534;">${ok.length}</td><td style="font-weight: bold; color: #b45309;">${tried.length}</td>`
+                    + (avecVoies ? `<td style="font-weight: bold; color: #1d4ed8;">${blocs.filter(r => estVoie(r) && mineDegs[r.id] >= 6).length || ""}</td>` : "") + `</tr>`;
             });
             html += `</tbody></table>`
-                + `<div style="margin-top: 8px; font-size: 0.78rem; color: #475569; text-align: left;">${names.length} élève(s) dans cette classe. ✅ = exercices réussis, 👍 = exercices essayés sans réussite. Passez la souris sur une case pour voir leurs noms. Les pastilles de couleur comptent les exercices réussis par niveau. C'est déclaratif : l'élève ou son observateur note le passage.</div>`;
+                + `<div style="margin-top: 8px; font-size: 0.78rem; color: #475569; text-align: left;">${names.length} élève(s) dans cette classe. ✅ = exercices réussis, 👍 = exercices essayés sans réussite, 🪝 = dégaines atteintes dans les voies (T = haut de la voie). Passez la souris sur une case pour voir les noms des exercices. Les pastilles de couleur comptent les exercices réussis par niveau. C'est déclaratif : l'élève ou son observateur note le passage.</div>`;
             box.innerHTML = html;
         }
 
@@ -6364,7 +6628,7 @@
             const realNames = {};
             // La liste de classe (sur cet appareil) donne une ligne par élève, même s'il n'a encore rien validé
             (classCodes()[suiviClasse] || []).forEach(code => { students[code] = {}; realNames[code] = true; });
-            rows.forEach(v => { (students[v.eleve] = students[v.eleve] || {})[v.id] = v.date; });
+            rows.forEach(v => { const who = alignCode(v.eleve, realNames); (students[who] = students[who] || {})[v.id] = v.date; });
             const names = Object.keys(students).sort((a, b) => (parseInt(a.split(' ')[1], 10) || 0) - (parseInt(b.split(' ')[1], 10) || 0) || a.localeCompare(b));
             const short = (r, i) => { const num = voieNumber(r.name); return num !== null ? String(num) : String(i + 1); };
             const when = (iso) => { try { return new Date(iso).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ""; } };
