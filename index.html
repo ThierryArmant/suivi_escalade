@@ -6492,11 +6492,11 @@
             const enLigne = cloudClasses[classe] || [], nouveaux = localCodes(names, ordre);
             const known = {}; nouveaux.forEach(c => { known[c] = true; });
             const absents = enLigne.filter(c => !known[alignCode(c, known)]);
-            if (!before.length && enLigne.length && names.length && absents.length) {
-                // Pour chaque code qui disparaît : le nouveau code au même numéro et la ligne correspondante
+            // Codes qui changent : on enregistre quand même, puis on le signale (simple information, rien à annuler)
+            let changes = "";
+            if (enLigne.length && names.length && absents.length) {
                 const parNum = {}; names.forEach((n, i) => { const c = codeFromName(n, i + 1, ordre); if (c) parNum[c.split(' ')[1]] = [c, n]; });
-                const lignes = absents.slice(0, 8).map(c => { const x = parNum[c.split(' ')[1]]; return `• n° ${c.split(' ')[1]} : avant ${c}, maintenant ${x ? x[0] + " (" + x[1] + ")" : "personne"}`; }).join("\n");
-                if (!confirm(`Vérification : ${absents.length} élève(s) de la classe ${classe} n'ont plus le même code.\n\n${lignes}\n\nSi c'est bien le bon élève (faute de frappe corrigée, nouvel élève…), appuyez sur OK : ses saisies passées restent sous l'ancien code. Sinon, Annuler et vérifiez la ligne.`)) return;
+                changes = absents.slice(0, 8).map(c => { const x = parNum[c.split(' ')[1]]; return `• n° ${c.split(' ')[1]} : avant ${c}, maintenant ${x ? x[0] + " (" + x[1] + ")" : "personne"}`; }).join("\n");
             }
             if (before.length && JSON.stringify(before) !== JSON.stringify(names)) {
                 const prev = readJson(PRECEDENTES_KEY) || {};
@@ -6516,6 +6516,13 @@
                 if (names.length) cloudClasses[classe] = localCodes(names, ordre); else delete cloudClasses[classe];
             } catch (e) { /* script pas encore à jour ou hors ligne : la liste reste sur cet appareil */ }
             renderSuiviSecu();
+            // Contrôle : la liste est-elle bien relue depuis la mémoire de l'appareil ?
+            let relue = null;
+            try { relue = await getFromDB(LISTES_KEY); } catch (e) { relue = null; }
+            if (!relue || !relue[classe]) { try { relue = JSON.parse(store.getItem(LISTES_KEY) || 'null'); } catch (e) { /* rien */ } }
+            const ok = GUEST || !names.length || !!(relue && JSON.stringify(relue[classe]) === JSON.stringify(names));
+            alert((ok ? `✅ Liste de la classe ${classe} enregistrée (${names.length} élèves).` : `⚠️ Ce navigateur n'a pas gardé la liste de ${classe} dans sa mémoire. Elle est quand même enregistrée en ligne (chiffrée) et sera reprise automatiquement à la prochaine ouverture du suivi.`)
+                + (changes ? `\n\nPour information, ces codes ont changé :\n${changes}\nLes saisies faites avec l'ancien code restent visibles sur leur propre ligne.` : ""));
         }
 
         // Feuille à imprimer : le code de chaque élève de la classe (fabriquée sur cet appareil, rien n'est envoyé)
