@@ -1483,10 +1483,20 @@
                 <select id="suivi-genre" onchange="renderSuiviSecu()" title="Choisir ce que le tableau affiche : les blocs, les voies, ou les deux." style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"><option value="">Blocs et voies</option><option value="blocs">Blocs seulement</option><option value="voies">Voies seulement</option></select>
                 <button onclick="refreshSuiviSecu()" style="background-color: #2563eb; color: white; border: none; padding: 7px 12px;" title="Recharge les validations envoyées par les élèves.">🔄 Actualiser</button>
                 <button onclick="exportSuivi()" style="background-color: #15803d; color: white; border: none; padding: 7px 12px;" title="Télécharge le tableau de la classe affichée en fichier tableur (s'ouvre dans Excel ou LibreOffice), avec les noms s'ils sont sur cet appareil et le détail de chaque exercice.">📥 Exporter (Excel)</button>
+                <button onclick="openFusion()" style="background-color: #0369a1; color: white; border: none; padding: 7px 12px;" title="Deux noms pour la même classe (par exemple « 35 » et « 3E5 ») : toutes les saisies passent sous un seul nom.">🔗 Réunir deux classes</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
                 <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
                 <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : l'appli calcule les codes ; les noms sont gardés chiffrés en ligne et se retrouvent sur vos autres appareils.">📋 Liste de la classe</button>
                 <button onclick="printCodesClasse()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="Imprimer la liste des codes de la classe (un code par élève), à afficher ou à découper pour les distribuer.">🖨️ Codes des élèves</button>
+            </div>
+            <div id="fusion-zone" style="display: none; background: #f0f9ff; border: 2px solid #7dd3fc; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left; font-size: 0.85rem;">
+                <b>🔗 Réunir deux classes</b> — toutes les saisies de la première passent dans la seconde ; un élève présent dans les deux garde le meilleur résultat de chaque exercice.
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px;">
+                    <span>Mettre les saisies de</span> <select id="fusion-source" style="padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px;"></select>
+                    <span>dans la classe</span> <select id="fusion-cible" style="padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px;"></select>
+                    <button onclick="doFusion()" style="background-color: #0369a1; color: white; border: none; padding: 6px 12px; font-weight: bold;">Réunir</button>
+                    <button onclick="document.getElementById('fusion-zone').style.display='none'" style="background-color: #64748b; color: white; border: none; padding: 6px 12px;">Fermer</button>
+                </div>
             </div>
             <div id="liste-classe-zone" style="display: none; background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left;">
                 <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>En ligne, les codes sont enregistrés, et les noms seulement chiffrés avec le mot de passe de l'équipe : illisibles dans la feuille Google, ils se retrouvent sur vos autres appareils connectés à l'équipe.</b></div>
@@ -6581,6 +6591,42 @@
             // Le bouton « retour » du navigateur ferme la fenêtre au lieu de quitter la page
             try { if (!history.state || !history.state.suivi) history.pushState({ suivi: 1 }, ""); } catch (e) { /* rien */ }
             await refreshSuiviSecu();
+        }
+
+        // Réunir deux classes (deux noms pour la même classe)
+        function openFusion() {
+            if (GUEST) { alert("En mode invité, rien n'est enregistré : cette fonction sert à réunir deux noms donnés à la même classe (par exemple « 35 » et « 3E5 »)."); return; }
+            const classes = Array.from(new Set((suiviData || []).map(v => v.classe).concat(Object.keys(classCodes())))).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+            if (classes.length < 2) { alert("Il faut au moins deux classes pour les réunir."); return; }
+            const opts = classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+            const src = document.getElementById('fusion-source'), dst = document.getElementById('fusion-cible');
+            src.innerHTML = opts; dst.innerHTML = opts;
+            // Proposition : la classe affichée part dans la classe au nom le plus long qui lui ressemble (35 → 3E5)
+            src.value = suiviClasse || classes[0];
+            const digits = t => t.replace(/[^0-9]/g, "");
+            const twin = classes.find(c => c !== src.value && digits(c) === digits(src.value) && c.length > src.value.length);
+            dst.value = twin || classes.find(c => c !== src.value);
+            document.getElementById('fusion-zone').style.display = 'block';
+        }
+        async function doFusion() {
+            const source = document.getElementById('fusion-source').value, cible = document.getElementById('fusion-cible').value;
+            if (!source || !cible || source === cible) { alert("Choisissez deux classes différentes."); return; }
+            if (!confirm(`Toutes les saisies de la classe ${source} vont passer dans la classe ${cible}, et le nom ${source} disparaîtra.\n\nRéunir ?`)) return;
+            let res;
+            try { res = await cloudCall({ action: 'fusionnerClasses', source: source, cible: cible }); }
+            catch (e) { alert(/Action inconnue/i.test(e && e.message || "") ? "Cette fonction demande le script Google version 19 : installez-le, puis redéployez (« Nouvelle version »)." : "❌ " + (e && e.message ? e.message : "Erreur")); return; }
+            // Sur cet appareil : la liste de la source passe à la cible si celle-ci n'en a pas
+            const listes = readListes();
+            if (listes[source]) {
+                if (!(listes[cible] || []).length) { listes[cible] = listes[source]; setOrdre(cible, ordreDe(source)); }
+                delete listes[source]; setOrdre(source, "");
+                await writeListes(listes);
+            }
+            delete cloudClasses[source];
+            suiviClasse = cible;
+            document.getElementById('fusion-zone').style.display = 'none';
+            await refreshSuiviSecu();
+            alert(`✅ Classes réunies : ${res.deplaces || 0} élève(s) déplacé(s) de ${source} vers ${cible}` + (res.reunis ? `, ${res.reunis} élève(s) présents dans les deux réunis sur une seule ligne.` : "."));
         }
 
         // Export du tableau de la classe affichée : un fichier .csv (séparateur « ; ») qu'Excel ouvre directement

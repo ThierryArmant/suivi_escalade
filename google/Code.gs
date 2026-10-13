@@ -34,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le', 'noms_chiffres'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 18;
+var VERSION = 19;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -144,6 +144,7 @@ function traiter_(d) {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
       if (action === 'enregistrerClasse') return enregistrerClasse_(equipe.equipe, d.classe, d.codes, d.noms);
+      if (action === 'fusionnerClasses') return fusionnerClasses_(equipe.equipe, d.source, d.cible);
       if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe, d.genre);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
@@ -1017,6 +1018,59 @@ function effacerValidations_(equipe, classe, genre) {
     if (Object.keys(garde).length) suivi.getRange(j + 2, 4).setValue(JSON.stringify(garde)); else suivi.deleteRow(j + 2);
   }
   return { ok: true, efface: efface };
+}
+
+// Réunit deux classes (par exemple « 35 » tapée par erreur et « 3E5 ») : toutes les saisies de la classe source
+// passent dans la classe cible. Un élève présent dans les deux garde le meilleur de chaque exercice.
+function fusionnerClasses_(equipe, source, cible) {
+  source = classePropre_(source);
+  cible = classePropre_(cible);
+  if (!source || !cible || source === cible) return { ok: false, erreur: 'Choisissez deux classes différentes.' };
+  var rang = function (v) { return String(v && v[0] || '') === 'reussi' ? 2 : 1; };
+  var feuille = feuille_('Suivi');
+  var lignes = lignes_('Suivi');
+  var dansCible = {};
+  lignes.forEach(function (l, i) { if (cle_(l[0]) === equipe && String(l[1]) === cible) dansCible[String(l[2])] = i; });
+  var aEffacer = [], deplaces = 0, reunis = 0;
+  lignes.forEach(function (l, i) {
+    if (cle_(l[0]) !== equipe || String(l[1]) !== source) return;
+    var eleve = String(l[2]);
+    if (dansCible[eleve] === undefined) {
+      feuille.getRange(i + 2, 2).setNumberFormat('@').setValue(cible);
+      deplaces++;
+      return;
+    }
+    // Même élève dans les deux classes : on réunit ses saisies sur la ligne de la classe cible
+    var j = dansCible[eleve];
+    var a = donneesSuivi_(lignes[j][3]), b = donneesSuivi_(l[3]);
+    Object.keys(b).forEach(function (id) {
+      var x = a[id], y = b[id];
+      if (!x) { a[id] = y; return; }
+      var best = rang(y) > rang(x) ? y.slice() : x.slice();
+      var deg = Math.max(parseInt(x[2], 10) || 0, parseInt(y[2], 10) || 0);
+      if (deg) best[2] = deg;
+      a[id] = best;
+    });
+    var cree = [String(lignes[j][4]), String(l[4])].filter(function (t) { return t; }).sort()[0] || maintenant_();
+    feuille.getRange(j + 2, 4, 1, 3).setValues([[JSON.stringify(a), cree, maintenant_()]]);
+    aEffacer.push(i + 2);
+    reunis++;
+  });
+  aEffacer.sort(function (x, y) { return y - x; }).forEach(function (n) { feuille.deleteRow(n); });
+  // Ancien onglet « Validations »
+  var val = feuille_('Validations');
+  lignes_('Validations').forEach(function (l, i) {
+    if (cle_(l[0]) === equipe && String(l[1]) === source) val.getRange(i + 2, 2).setNumberFormat('@').setValue(cible);
+  });
+  // Liste de classe : la cible garde la sienne ; sinon la liste de la source prend le nom de la cible
+  var classes = feuille_('Classes');
+  var lc = lignes_('Classes'), iSource = -1, iCible = -1;
+  lc.forEach(function (l, i) { if (cle_(l[0]) === equipe) { if (String(l[1]) === source) iSource = i; if (String(l[1]) === cible) iCible = i; } });
+  if (iSource !== -1) {
+    if (iCible === -1) classes.getRange(iSource + 2, 2).setNumberFormat('@').setValue(cible);
+    else classes.deleteRow(iSource + 2);
+  }
+  return { ok: true, deplaces: deplaces, reunis: reunis };
 }
 
 /* =========================================================
