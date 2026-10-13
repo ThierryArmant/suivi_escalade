@@ -672,20 +672,26 @@
         .marker.arrow { font-size: 26px;color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .marker.cross { font-size: 24px; color: #dc3545; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px;}
         
+        /* Balises SD, TOP, ZONE, JETÉ, JOKER, CM, CP : cadre vide de couleur (la prise reste visible à l'intérieur),
+           le nom de la balise est écrit dans une petite étiquette sous le cadre */
         .marker.tech-tag { 
-            padding: 2px 5px; 
-            border-radius: 4px; 
-            font-size: 0.65rem; 
-            color: white; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.6); 
-            white-space: nowrap; 
-            border: 1px solid rgba(255,255,255,0.9); 
+            --tc: #0ea5e9;
+            width: 36px; height: 28px; padding: 0; 
+            background: transparent; 
+            border: 4px solid var(--tc); border-radius: 6px; 
+            box-shadow: 0 0 0 1.5px #ffffff, inset 0 0 0 1.5px #ffffff, 0 0 5px rgba(0,0,0,0.8); 
+        }
+        .marker.tech-tag::after { 
+            content: attr(data-label); position: absolute; top: 100%; left: 50%; transform: translate(-50%, 3px); 
+            background: var(--tc); color: #ffffff; font-size: 0.6rem; font-weight: bold; line-height: 1; padding: 2px 4px; 
+            border-radius: 3px; border: 1px solid #ffffff; white-space: nowrap; 
         }
         
         /* Couleurs Balises Spécifiques */
-        .marker.tech-sd { background-color: #1e293b; color: #fbbf24; border-color: #fbbf24; }
-        .marker.tech-top { background-color: #ca8a04; color: white; border-color: #fef08a; }
-        .marker.tech-zone { background-color: #0ea5e9; color: white; border-color: #bae6fd; }
+        .marker.tech-sd { --tc: #1e293b; }
+        .marker.tech-sd::after { color: #fbbf24; }
+        .marker.tech-top { --tc: #ca8a04; }
+        .marker.tech-zone { --tc: #0ea5e9; }
         /* Mains et pieds : formes vides pour laisser voir la prise.
            Cercle = main, rectangle = pied ; vert = gauche, rouge = droite. */
         .marker.limb { 
@@ -709,10 +715,10 @@
         .limb-icon.hand { border-radius: 50%; }
         .limb-icon.foot { width: 15px; height: 10px; border-radius: 2px; }
         .limb-icon.right { border-color: #dc2626; }
-        .marker.tech-jete { background-color: #ec4899; }
-        .marker.tech-pied { background-color: #f59e0b; }
-        .marker.tech-joker { background-color: #10b981; border: 2px dashed #6ee7b7; }
-        .marker.tech-pme { background-color: #2b6cb0; }
+        .marker.tech-jete { --tc: #ec4899; }
+        .marker.tech-pied { --tc: #f59e0b; }
+        .marker.tech-joker { --tc: #10b981; border-style: dashed; }
+        .marker.tech-pme { --tc: #2b6cb0; }
         /* PME : triangle reliant les 3 appuis (1 main et 2 pieds), à pivoter et agrandir pour le caler sur les prises */
         .marker.pme-triangle { width: 72px; height: 64px; }
         /* PME étirable : trois points libres (la main en orange, les deux pieds en bleu), reliés par un triangle */
@@ -733,8 +739,8 @@
         .arrow-dir-btn:hover { background: #dbeafe; border-color: #2563eb; }
         .arrow-dir-btn.current { background: #2563eb; color: #ffffff; border-color: #1e3a8a; }
         .pme-mini svg { width: 100%; height: 100%; overflow: visible; }
-        .marker.tech-cm { background-color: #0d9488; }
-        .marker.tech-cp { background-color: #16a34a; }
+        .marker.tech-cm { --tc: #0d9488; }
+        .marker.tech-cp { --tc: #16a34a; }
 
         /* =========================================
            FENÊTRES MODALES (Pop-ups)
@@ -1461,7 +1467,7 @@
 
     <div id="suivi-secu-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 980px;">
-            <h2 title="À quoi sert ce tableau ? À voir d'un coup d'œil quels élèves ont vu les fiches de sécurité (encordement, assurage, descente…) et lesquels doivent encore les voir avant de grimper. Une ligne par élève, une colonne par fiche. Les noms restent sur cet appareil : en ligne, seuls la classe et le code sont enregistrés."><span id="suivi-secu-titre">🛡️ Suivi des fiches de sécurité</span> <span style="font-size: 0.8rem; color: #64748b; cursor: help;">ⓘ</span></h2>
+            <h2 title="À quoi sert ce tableau ? À voir d'un coup d'œil quels élèves ont vu les fiches de sécurité (encordement, assurage, descente…) et lesquels doivent encore les voir avant de grimper. Une ligne par élève, une colonne par fiche. En ligne, la classe et le code sont enregistrés ; les noms n'y sont gardés que chiffrés avec le mot de passe de l'équipe."><span id="suivi-secu-titre">🛡️ Suivi des fiches de sécurité</span> <span style="font-size: 0.8rem; color: #64748b; cursor: help;">ⓘ</span></h2>
             <p class="help-text" id="suivi-secu-aide" style="margin-top: 0;">Qui a vu quelle fiche. Le tableau n'affiche que les codes (initiales et numéro dans la liste) : les noms ne se voient que dans « Liste de la classe ».</p>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
                 <label style="font-weight: bold;">Classe :</label>
@@ -1471,11 +1477,11 @@
                 <button onclick="exportSuivi()" style="background-color: #15803d; color: white; border: none; padding: 7px 12px;" title="Télécharge le tableau de la classe affichée en fichier tableur (s'ouvre dans Excel ou LibreOffice), avec les noms s'ils sont sur cet appareil et le détail de chaque exercice.">📥 Exporter (Excel)</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
                 <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
-                <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : les noms s'affichent dans le tableau et restent sur cet appareil.">📋 Liste de la classe</button>
+                <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : l'appli calcule les codes ; les noms sont gardés chiffrés en ligne et se retrouvent sur vos autres appareils.">📋 Liste de la classe</button>
                 <button onclick="printCodesClasse()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="Imprimer la liste des codes de la classe (un code par élève), à afficher ou à découper pour les distribuer.">🖨️ Codes des élèves</button>
             </div>
             <div id="liste-classe-zone" style="display: none; background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left;">
-                <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>Les noms restent sur cet appareil. En ligne, seuls les codes sont enregistrés, pour retrouver la classe sur vos autres appareils.</b></div>
+                <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>En ligne, les codes sont enregistrés, et les noms seulement chiffrés avec le mot de passe de l'équipe : illisibles dans la feuille Google, ils se retrouvent sur vos autres appareils connectés à l'équipe.</b></div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Classe : <input id="liste-classe-nom" type="text" maxlength="10" placeholder="4B" onchange="loadListeClasse()" oninput="saveBrouillonListe()" style="width: 90px; padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;"></label>
                 <div id="liste-classe-info" style="display: none; margin-top: 6px; font-size: 0.8rem; font-weight: bold; border-radius: 6px; padding: 6px 8px;"></div>
                 <textarea id="liste-classe-texte" oninput="saveBrouillonListe()" rows="7" placeholder="Thomas Arnaud&#10;Léa Bernard&#10;…" style="width: 100%; box-sizing: border-box; margin-top: 6px; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
@@ -3381,8 +3387,8 @@
                 } else if (isZone(p.type)) {
                     const number = zoneNumber(p.type);
                     marker.className = 'marker tech-tag tech-zone';
-                    marker.textContent = number ? `ZONE ${number}` : 'ZONE';
-                    marker.style.backgroundColor = ZONE_COLORS[number];
+                    marker.dataset.label = number ? `ZONE ${number}` : 'ZONE';
+                    if (ZONE_COLORS[number]) marker.style.setProperty('--tc', ZONE_COLORS[number]);
                 } else if (p.type === 'pied') {
                     // Pied sans côté imposé : rectangle vide orange
                     marker.className = 'marker limb foot any';
@@ -3393,7 +3399,7 @@
                     marker.dataset.label = p.type.toUpperCase();
                 } else if (['sd', 'top', 'jete', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
-                    marker.textContent = p.type.toUpperCase();
+                    marker.dataset.label = p.type === 'jete' ? 'JETÉ' : p.type.toUpperCase();
                 } else {
                     marker.className = `marker ${p.type}`;
                 }
@@ -6207,7 +6213,7 @@
             return sortByVoie((schoolConfig.customRoutes || []).filter(r => r.type === 'bloc' && /^s[ée]curit[ée]/i.test((r.theme || "").trim())));
         }
 
-        // Listes de classe : elles restent sur CET appareil (jamais envoyées en ligne).
+        // Listes de classe : en clair sur l'appareil ; en ligne, seulement une copie chiffrée avec le mot de passe de l'équipe.
         // Une ligne par élève, dans l'ordre de la liste d'appel : « Prénom Nom ».
         const LISTES_KEY = 'eps_listes';
         let listesCache = null;
@@ -6215,7 +6221,7 @@
             if (listesCache) return listesCache;
             try { return JSON.parse(store.getItem(LISTES_KEY) || '{}') || {}; } catch (e) { return {}; }
         }
-        // Les listes sont rangées dans la grande mémoire de l'appareil (celle des photos), jamais envoyées en ligne
+        // Les listes sont rangées dans la grande mémoire de l'appareil (celle des photos)
         async function loadListes() {
             let fromDb = null;
             try { fromDb = await getFromDB(LISTES_KEY); } catch (e) { /* rien */ }
@@ -6243,13 +6249,58 @@
             Object.keys(listes).forEach(c => { all[c] = localCodes(listes[c]); });
             return all;
         }
+        // Copie de secours des noms : chiffrée sur l'appareil avec le mot de passe de l'équipe avant d'être envoyée.
+        // Dans la feuille Google elle est illisible ; seuls les appareils connectés à l'équipe savent la relire.
+        let teamKeyCache = null;
+        const b64 = buf => btoa(String.fromCharCode.apply(null, new Uint8Array(buf)));
+        const unb64 = t => Uint8Array.from(atob(t), ch => ch.charCodeAt(0));
+        async function teamKey() {
+            if (!cloudTeam || !window.crypto || !crypto.subtle) return null;
+            const id = cloudTeam.equipe + "\n" + cloudTeam.mdp;
+            if (teamKeyCache && teamKeyCache.id === id) return teamKeyCache.key;
+            const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(cloudTeam.mdp), 'PBKDF2', false, ['deriveKey']);
+            const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: new TextEncoder().encode("BlocNoteEPS|" + cloudTeam.equipe), iterations: 150000, hash: 'SHA-256' },
+                base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+            teamKeyCache = { id: id, key: key };
+            return key;
+        }
+        async function encryptNoms(names) {
+            try {
+                const key = await teamKey();
+                if (!key) return undefined;
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(JSON.stringify(names)));
+                return "v1." + b64(iv) + "." + b64(ct);
+            } catch (e) { return undefined; }
+        }
+        async function decryptNoms(text) {
+            try {
+                const parts = String(text || "").split(".");
+                if (parts.length !== 3 || parts[0] !== "v1") return null;
+                const key = await teamKey();
+                if (!key) return null;
+                const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(parts[1]) }, key, unb64(parts[2]));
+                const names = JSON.parse(new TextDecoder().decode(plain));
+                return Array.isArray(names) ? names.map(n => String(n)) : null;
+            } catch (e) { return null; }   // mot de passe changé depuis : copie illisible, on l'ignore
+        }
         async function syncClasses() {
-            cloudClasses = (await cloudCall({ action: 'lireClasses' })).classes || {};
+            const res = await cloudCall({ action: 'lireClasses' });
+            cloudClasses = res.classes || {};
+            const cloudNoms = res.noms || {};
             const listes = readListes();
+            // Noms absents de cet appareil : on les reprend de la copie chiffrée
+            let changed = false;
+            for (const c of Object.keys(cloudNoms)) {
+                if ((listes[c] || []).length) continue;
+                const names = await decryptNoms(cloudNoms[c]);
+                if (names && names.length) { listes[c] = names; changed = true; }
+            }
+            if (changed) await writeListes(listes);
             for (const c of Object.keys(listes)) {
                 const codes = localCodes(listes[c]);
-                if (codes.length && JSON.stringify(codes) !== JSON.stringify(cloudClasses[c] || [])) {
-                    await cloudCall({ action: 'enregistrerClasse', classe: c, codes: codes });
+                if (codes.length && (JSON.stringify(codes) !== JSON.stringify(cloudClasses[c] || []) || !cloudNoms[c])) {
+                    await cloudCall({ action: 'enregistrerClasse', classe: c, codes: codes, noms: await encryptNoms(listes[c]) });
                     cloudClasses[c] = codes;
                 }
             }
@@ -6380,7 +6431,7 @@
             document.getElementById('liste-classe-zone').style.display = 'none';
             // En ligne : seulement les codes, pour retrouver la classe sur les autres appareils
             try {
-                await cloudCall({ action: 'enregistrerClasse', classe: classe, codes: localCodes(names) });
+                await cloudCall({ action: 'enregistrerClasse', classe: classe, codes: localCodes(names), noms: names.length ? await encryptNoms(names) : undefined });
                 if (names.length) cloudClasses[classe] = localCodes(names); else delete cloudClasses[classe];
             } catch (e) { /* script pas encore à jour ou hors ligne : la liste reste sur cet appareil */ }
             renderSuiviSecu();
@@ -6406,8 +6457,8 @@
         function nomsManquantsBanner() {
             if (!suiviClasse || GUEST || (readListes()[suiviClasse] || []).length || !(cloudClasses[suiviClasse] || []).length) return "";
             return `<div style="background: #fff7ed; border: 2px solid #fb923c; color: #9a3412; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; text-align: left; font-size: 0.85rem;">`
-                + `<b>📋 Les noms de la classe ${escapeHtml(suiviClasse)} ne sont pas sur cet appareil.</b> Les codes et les saisies des élèves sont bien gardés en ligne ; seuls les noms restent sur l'appareil où la liste a été collée `
-                + `(ils disparaissent si le navigateur efface ses données, par exemple à la fermeture sur un ordinateur partagé). `
+                + `<b>📋 Les noms de la classe ${escapeHtml(suiviClasse)} ne sont pas sur cet appareil.</b> Les codes et les saisies des élèves sont bien gardés en ligne, mais la copie chiffrée des noms manque `
+                + `(liste collée avant cette mise à jour, ou mot de passe de l'équipe changé depuis). Recollez la liste une fois, dans le même ordre : elle se retrouvera ensuite sur tous vos appareils. `
                 + `<button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 4px 10px; margin-left: 4px;">Coller la liste</button></div>`;
         }
         function echeanceBanner() {
@@ -6437,6 +6488,7 @@
             if (GUEST) document.getElementById('suivi-secu-aide').textContent = "👀 Mode invité : la classe et les résultats ci-dessous sont inventés pour l'exemple. " + document.getElementById('suivi-secu-aide').textContent;
             if (!cloudTeam && !GUEST) { alert("Connectez-vous d'abord à votre équipe : le suivi est enregistré dans son espace en ligne."); return; }
             await loadListes();
+            if (!GUEST) { try { await syncClasses(); } catch (e) { /* hors ligne : les listes de cet appareil restent affichées */ } }
             document.getElementById('suivi-secu-modal').style.display = 'flex';
             // Le bouton « retour » du navigateur ferme la fenêtre au lieu de quitter la page
             try { if (!history.state || !history.state.suivi) history.pushState({ suivi: 1 }, ""); } catch (e) { /* rien */ }

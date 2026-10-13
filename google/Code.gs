@@ -31,10 +31,10 @@ var ONGLETS = {
   Demandes: ['date', 'nom', 'etablissement', 'email'],
   Partages: ['proprietaire', 'demandeur', 'etat', 'date', 'themes'],
   Validations: ['equipe', 'classe', 'eleve', 'fiche_id', 'date', 'etat'],
-  Classes: ['equipe', 'classe', 'codes', 'modifie_le'],
+  Classes: ['equipe', 'classe', 'codes', 'modifie_le', 'noms_chiffres'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 16;
+var VERSION = 17;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -142,7 +142,7 @@ function traiter_(d) {
     try {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
-      if (action === 'enregistrerClasse') return enregistrerClasse_(equipe.equipe, d.classe, d.codes);
+      if (action === 'enregistrerClasse') return enregistrerClasse_(equipe.equipe, d.classe, d.codes, d.noms);
       if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe, d.genre);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
       if (action === 'enregistrerPhoto') return enregistrerPhoto_(equipe.equipe, String(d.nom || ''), String(d.dataUrl || ''));
@@ -946,15 +946,18 @@ function lireClasses_(equipe) {
   for (var i = brutes.length - 1; i >= 0; i--) {
     if (cle_(brutes[i][0]) === equipe && typeof brutes[i][1] === 'number') feuille.deleteRow(i + 2);
   }
-  var classes = {};
+  var classes = {}, noms = {};
   lignes_('Classes').forEach(function (l) {
     if (cle_(l[0]) !== equipe) return;
     try { classes[String(l[1])] = JSON.parse(String(l[2]) || '[]'); } catch (err) { /* ligne abîmée : on l'ignore */ }
+    if (l[4]) noms[String(l[1])] = String(l[4]);
   });
-  return { ok: true, classes: classes };
+  return { ok: true, classes: classes, noms: noms };
 }
 
-function enregistrerClasse_(equipe, classe, codes) {
+// Les noms des élèves n'arrivent ici que chiffrés par l'appli avec le mot de passe de l'équipe :
+// dans la feuille, la case « noms_chiffres » est illisible ; seuls les appareils de l'équipe savent la lire.
+function enregistrerClasse_(equipe, classe, codes, noms) {
   classe = classePropre_(classe);
   if (!classe) return { ok: false, erreur: 'Classe manquante.' };
   var propres = [];
@@ -965,8 +968,11 @@ function enregistrerClasse_(equipe, classe, codes) {
   var ligne = chercher_('Classes', function (l) { return cle_(l[0]) === equipe && String(l[1]) === classe; });
   var feuille = feuille_('Classes');
   if (!propres.length) { if (ligne > 0) feuille.deleteRow(ligne); return { ok: true, efface: true }; }
-  var valeurs = [equipe, classe, JSON.stringify(propres), maintenant_()];
-  if (ligne > 0) feuille.getRange(ligne, 1, 1, 4).setNumberFormat('@').setValues([valeurs]); else ajouterTexte_(feuille, valeurs);
+  var chiffres = '';
+  if (typeof noms === 'string' && noms.length <= 40000 && /^v1\.[A-Za-z0-9+\/=]+\.[A-Za-z0-9+\/=]+$/.test(noms)) chiffres = noms;
+  else if (ligne > 0) chiffres = String(feuille.getRange(ligne, 5).getValues()[0][0] || '');   // pas de noms envoyés : on garde ceux d'avant
+  var valeurs = [equipe, classe, JSON.stringify(propres), maintenant_(), chiffres];
+  if (ligne > 0) feuille.getRange(ligne, 1, 1, 5).setNumberFormat('@').setValues([valeurs]); else ajouterTexte_(feuille, valeurs);
   return { ok: true };
 }
 
