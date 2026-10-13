@@ -1491,6 +1491,8 @@
             <div id="liste-classe-zone" style="display: none; background: #f0fdfa; border: 2px solid #5eead4; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left;">
                 <div style="font-size: 0.82rem; color: #134e4a; margin-bottom: 6px;">Collez la liste de la classe, <b>un élève par ligne, dans l'ordre de la liste d'appel</b> (« Prénom Nom »). L'appli calcule le code de chacun (TA 12). <b>En ligne, les codes sont enregistrés, et les noms seulement chiffrés avec le mot de passe de l'équipe : illisibles dans la feuille Google, ils se retrouvent sur vos autres appareils connectés à l'équipe.</b></div>
                 <label style="font-weight: bold; font-size: 0.85rem;">Classe : <input id="liste-classe-nom" type="text" maxlength="10" placeholder="4B" onchange="loadListeClasse()" oninput="saveBrouillonListe()" style="width: 90px; padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;"></label>
+                <label style="font-weight: bold; font-size: 0.85rem; margin-left: 10px;">Chaque ligne commence par : <select id="liste-classe-ordre" onchange="saveBrouillonListe()" style="padding: 5px; border: 2px solid #cbd5e1; border-radius: 6px;"><option value="">deviné par l'appli</option><option value="nom">le NOM de famille</option><option value="prenom">le prénom</option></select></label>
+                <div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Le numéro de l'élève peut être écrit au bout de la ligne (« PIC Mathis 22 ») ; sinon c'est la place dans la liste qui compte. Le code commence toujours par l'initiale du prénom (Mathis PIC → MP 22).</div>
                 <div id="liste-classe-info" style="display: none; margin-top: 6px; font-size: 0.8rem; font-weight: bold; border-radius: 6px; padding: 6px 8px;"></div>
                 <textarea id="liste-classe-texte" oninput="saveBrouillonListe()" rows="7" placeholder="Thomas Arnaud&#10;Léa Bernard&#10;…" style="width: 100%; box-sizing: border-box; margin-top: 6px; border: 2px solid #cbd5e1; border-radius: 6px; padding: 6px; font-family: inherit;"></textarea>
                 <div style="text-align: right; margin-top: 6px;">
@@ -6248,13 +6250,21 @@
         // Codes des élèves de chaque classe : ceux des listes de cet appareil, complétés par ceux enregistrés en ligne
         // (en ligne, seuls les codes sont rangés, jamais les noms : on retrouve ainsi ses classes sur tous ses appareils)
         let cloudClasses = {};
-        function localCodes(names) {
-            return (names || []).map((n, i) => codeFromName(n, i + 1)).filter(c => c);
+        // Ordre des mots dans la liste de chaque classe : 'nom' (NOM Prénom), 'prenom' (Prénom NOM) ou '' (deviné)
+        const ORDRE_KEY = 'eps_listes_ordre';
+        function ordreDe(classe) { return (readJson(ORDRE_KEY) || {})[classe] || ""; }
+        function setOrdre(classe, ordre) {
+            const o = readJson(ORDRE_KEY) || {};
+            if (ordre) o[classe] = ordre; else delete o[classe];
+            try { store.setItem(ORDRE_KEY, JSON.stringify(o)); } catch (e) { /* rien */ }
+        }
+        function localCodes(names, ordre) {
+            return (names || []).map((n, i) => codeFromName(n, i + 1, ordre)).filter(c => c);
         }
         function classCodes() {
             const all = Object.assign({}, cloudClasses);
             const listes = readListes();
-            Object.keys(listes).forEach(c => { all[c] = localCodes(listes[c]); });
+            Object.keys(listes).forEach(c => { all[c] = localCodes(listes[c], ordreDe(c)); });
             return all;
         }
         // Copie de secours des noms : chiffrée sur l'appareil avec le mot de passe de l'équipe avant d'être envoyée.
@@ -6272,12 +6282,12 @@
             teamKeyCache = { id: id, key: key };
             return key;
         }
-        async function encryptNoms(names) {
+        async function encryptNoms(names, ordre) {
             try {
                 const key = await teamKey();
                 if (!key) return undefined;
                 const iv = crypto.getRandomValues(new Uint8Array(12));
-                const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(JSON.stringify(names)));
+                const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, new TextEncoder().encode(JSON.stringify({ n: names, o: ordre || "" })));
                 return "v1." + b64(iv) + "." + b64(ct);
             } catch (e) { return undefined; }
         }
@@ -6288,8 +6298,9 @@
                 const key = await teamKey();
                 if (!key) return null;
                 const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: unb64(parts[1]) }, key, unb64(parts[2]));
-                const names = JSON.parse(new TextDecoder().decode(plain));
-                return Array.isArray(names) ? names.map(n => String(n)) : null;
+                const data = JSON.parse(new TextDecoder().decode(plain));
+                const names = Array.isArray(data) ? data : (data && Array.isArray(data.n) ? data.n : null);
+                return names ? { noms: names.map(n => String(n)), ordre: (data && data.o) || "" } : null;
             } catch (e) { return null; }   // mot de passe changé depuis : copie illisible, on l'ignore
         }
         async function syncClasses() {
@@ -6301,24 +6312,31 @@
             let changed = false;
             for (const c of Object.keys(cloudNoms)) {
                 if ((listes[c] || []).length) continue;
-                const names = await decryptNoms(cloudNoms[c]);
-                if (names && names.length) { listes[c] = names; changed = true; }
+                const got = await decryptNoms(cloudNoms[c]);
+                if (got && got.noms.length) { listes[c] = got.noms; if (got.ordre) setOrdre(c, got.ordre); changed = true; }
             }
             if (changed) await writeListes(listes);
             for (const c of Object.keys(listes)) {
-                const codes = localCodes(listes[c]);
+                const codes = localCodes(listes[c], ordreDe(c));
                 if (codes.length && (JSON.stringify(codes) !== JSON.stringify(cloudClasses[c] || []) || !cloudNoms[c])) {
-                    await cloudCall({ action: 'enregistrerClasse', classe: c, codes: codes, noms: await encryptNoms(listes[c]) });
+                    await cloudCall({ action: 'enregistrerClasse', classe: c, codes: codes, noms: await encryptNoms(listes[c], ordreDe(c)) });
                     cloudClasses[c] = codes;
                 }
             }
         }
 
         // Code d'un élève d'après la liste : initiale du prénom, initiale du nom, numéro
-        function codeFromName(name, number) {
+        function codeFromName(name, number, ordre) {
+            // Numéro écrit au bout de la ligne (« NOW JUL 21 ») : c'est lui qui compte
+            const num = /\s(\d{1,2})\s*$/.exec(String(name || ""));
+            if (num) number = parseInt(num[1], 10);
             const words = String(name || "").normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z \-]/g, " ").trim().split(/\s+/).filter(w => w);
             if (words.length < 2) return "";
             const upper = w => w.length > 1 && w === w.toUpperCase();
+            if (ordre === 'nom') return (words[1][0] + words[0][0]).toUpperCase() + " " + number;
+            if (ordre === 'prenom') return (words[0][0] + words[1][0]).toUpperCase() + " " + number;
+            // Tout en majuscules (« PIC MAT ») : comme dans les listes de l'établissement, le NOM vient d'abord
+            if (words.every(upper)) return (words[1][0] + words[0][0]).toUpperCase() + " " + number;
             // Liste « NOM Prénom » (export Pronote) : le prénom est le premier mot écrit en minuscules
             if (upper(words[0]) && words.slice(1).some(w => !upper(w))) {
                 const first = words.slice(1).find(w => !upper(w));
@@ -6354,7 +6372,7 @@
         function saveBrouillonListe() {
             const texte = document.getElementById('liste-classe-texte').value;
             try {
-                if (texte.trim() && texte.trim() !== listeChargee.trim()) store.setItem(BROUILLON_KEY, JSON.stringify({ classe: document.getElementById('liste-classe-nom').value, texte: texte, date: new Date().toISOString() }));
+                if (texte.trim() && texte.trim() !== listeChargee.trim()) store.setItem(BROUILLON_KEY, JSON.stringify({ classe: document.getElementById('liste-classe-nom').value, texte: texte, ordre: document.getElementById('liste-classe-ordre').value, date: new Date().toISOString() }));
                 else store.removeItem(BROUILLON_KEY);
             } catch (e) { /* rien */ }
         }
@@ -6378,6 +6396,7 @@
                 listeInfo(`📝 Saisie non enregistrée retrouvée (${quand}). Vérifiez-la puis appuyez sur « Enregistrer la liste ».`);
             }
             updateRetourListe(cleanClasse(nom.value));
+            document.getElementById('liste-classe-ordre').value = (b && b.texte && b.texte.trim() && b.ordre != null) ? b.ordre : ordreDe(cleanClasse(nom.value));
             document.getElementById('liste-classe-zone').style.display = 'block';
         }
         function closeListeClasse() {
@@ -6397,6 +6416,7 @@
                 return;
             }
             zone.value = listeChargee = saved;
+            document.getElementById('liste-classe-ordre').value = ordreDe(classe);
             listeInfo("");
             updateRetourListe(classe);
         }
@@ -6413,18 +6433,27 @@
         async function saveListeClasse() {
             const classe = cleanClasse(document.getElementById('liste-classe-nom').value);
             if (!classe) { alert("Indiquez le nom de la classe (par exemple 4B)."); return; }
-            const names = document.getElementById('liste-classe-texte').value.split("\n").map(l => l.replace(/^\s*\d+\s*[.)\-–·:]?\s*/, "").replace(/[\s.)\-–·:]*\d+\s*$/, "").replace(/\s+/g, " ").trim()).filter(l => l);
+            // Un numéro tapé au début ou au bout de la ligne est gardé (au bout) : c'est le numéro de l'élève
+            const names = document.getElementById('liste-classe-texte').value.split("\n").map(l => {
+                const head = /^\s*(\d{1,2})\s*[.)\-–·:]?\s+/.exec(l), tail = /[\s.)\-–·:]+(\d{1,2})\s*$/.exec(l);
+                const text = l.replace(/^\s*\d+\s*[.)\-–·:]?\s*/, "").replace(/[\s.)\-–·:]*\d+\s*$/, "").replace(/\s+/g, " ").trim();
+                const n = tail ? tail[1] : (head ? head[1] : "");
+                return text ? (n ? text + " " + parseInt(n, 10) : text) : "";
+            }).filter(l => l);
+            const ordre = document.getElementById('liste-classe-ordre').value;
             const listes = readListes();
             const before = listes[classe] || [];
             // Garde-fous contre une fausse manipulation
             if (!names.length && before.length && !confirm(`Effacer la liste de la classe ${classe} (${before.length} élèves) ?\n\nElle restera récupérable avec « ↩️ Liste précédente ».`)) return;
             if (names.length && before.length - names.length >= 3 && !confirm(`La nouvelle liste de ${classe} compte ${names.length} élèves au lieu de ${before.length}.\n\nEnregistrer quand même ? (L'ancienne reste récupérable avec « ↩️ Liste précédente ».)`)) return;
-            const enLigne = cloudClasses[classe] || [], nouveaux = localCodes(names);
+            const enLigne = cloudClasses[classe] || [], nouveaux = localCodes(names, ordre);
             const known = {}; nouveaux.forEach(c => { known[c] = true; });
             const absents = enLigne.filter(c => !known[alignCode(c, known)]);
             if (!before.length && enLigne.length && names.length && absents.length) {
-                const diff = absents.slice(0, 6).join(", ");
-                if (!confirm(`Attention : ces noms ne donnent pas exactement les codes déjà utilisés par la classe ${classe}${diff ? " (codes qui disparaîtraient : " + diff + "…)" : ""}.\n\nVérifiez que la liste est dans le même ordre que la première fois. Enregistrer quand même ?`)) return;
+                // Pour chaque code qui disparaît : le nouveau code au même numéro et la ligne correspondante
+                const parNum = {}; names.forEach((n, i) => { const c = codeFromName(n, i + 1, ordre); if (c) parNum[c.split(' ')[1]] = [c, n]; });
+                const lignes = absents.slice(0, 8).map(c => { const x = parNum[c.split(' ')[1]]; return `• n° ${c.split(' ')[1]} : avant ${c}, maintenant ${x ? x[0] + " (" + x[1] + ")" : "personne"}`; }).join("\n");
+                if (!confirm(`Vérification : ${absents.length} élève(s) de la classe ${classe} n'ont plus le même code.\n\n${lignes}\n\nSi c'est bien le bon élève (faute de frappe corrigée, nouvel élève…), appuyez sur OK : ses saisies passées restent sous l'ancien code. Sinon, Annuler et vérifiez la ligne.`)) return;
             }
             if (before.length && JSON.stringify(before) !== JSON.stringify(names)) {
                 const prev = readJson(PRECEDENTES_KEY) || {};
@@ -6432,6 +6461,7 @@
                 try { store.setItem(PRECEDENTES_KEY, JSON.stringify(prev)); } catch (e) { /* rien */ }
             }
             if (names.length) listes[classe] = names; else delete listes[classe];
+            setOrdre(classe, ordre);
             if (!(await writeListes(listes))) { alert("❌ Enregistrement impossible : la mémoire du navigateur est bloquée (navigation privée ?)."); return; }
             try { store.removeItem(BROUILLON_KEY); } catch (e) { /* rien */ }
             listeChargee = names.join("\n");
@@ -6439,8 +6469,8 @@
             document.getElementById('liste-classe-zone').style.display = 'none';
             // En ligne : seulement les codes, pour retrouver la classe sur les autres appareils
             try {
-                await cloudCall({ action: 'enregistrerClasse', classe: classe, codes: localCodes(names), noms: names.length ? await encryptNoms(names) : undefined });
-                if (names.length) cloudClasses[classe] = localCodes(names); else delete cloudClasses[classe];
+                await cloudCall({ action: 'enregistrerClasse', classe: classe, codes: localCodes(names, ordre), noms: names.length ? await encryptNoms(names, ordre) : undefined });
+                if (names.length) cloudClasses[classe] = localCodes(names, ordre); else delete cloudClasses[classe];
             } catch (e) { /* script pas encore à jour ou hors ligne : la liste reste sur cet appareil */ }
             renderSuiviSecu();
         }
@@ -6449,7 +6479,7 @@
         function printCodesClasse() {
             const names = readListes()[suiviClasse] || [];
             if (!suiviClasse || !names.length) { alert("Saisissez d'abord la liste de la classe (bouton « Liste de la classe ») : les codes sont fabriqués à partir d'elle."); return; }
-            const cells = names.map((n, i) => { const c = codeFromName(n, i + 1); return c ? `<div class="c"><div class="n">${escapeHtml(n)}</div><div class="k">${escapeHtml(c)}</div><div class="s">Classe ${escapeHtml(suiviClasse)} · à garder</div></div>` : ""; }).join("");
+            const cells = names.map((n, i) => { const c = codeFromName(n, i + 1, ordreDe(suiviClasse)); return c ? `<div class="c"><div class="n">${escapeHtml(n)}</div><div class="k">${escapeHtml(c)}</div><div class="s">Classe ${escapeHtml(suiviClasse)} · à garder</div></div>` : ""; }).join("");
             const w = window.open("", "_blank");
             if (!w) { alert("La fenêtre d'impression a été bloquée par le navigateur : autorisez les fenêtres pour cette page."); return; }
             w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Codes ${escapeHtml(suiviClasse)}</title><style>body{font-family:Arial,sans-serif;margin:14px}h1{font-size:18px}p{font-size:12px;color:#444}.g{display:grid;grid-template-columns:repeat(4,1fr);gap:0}.c{border:1px dashed #666;padding:8px;text-align:center;break-inside:avoid}.n{font-size:12px}.k{font-size:24px;font-weight:bold;margin:4px 0}.s{font-size:10px;color:#555}</style></head><body><h1>Escalade · mon code personnel · classe ${escapeHtml(suiviClasse)}</h1><p>Ton code = initiale du prénom, initiale du nom, numéro dans la liste. Tu le tapes avec ta classe pour valider les fiches de sécurité et retrouver ton parcours.</p><div class="g">${cells}</div></body></html>`);
@@ -6514,7 +6544,7 @@
                 : securityFiches();
             const ids = {}; items.forEach(r => { ids[r.id] = true; });
             const noms = readListes()[suiviClasse] || [];
-            const nomDe = {}; noms.forEach((n, i) => { const c = codeFromName(n, i + 1); if (c) nomDe[c] = n; });
+            const nomDe = {}; noms.forEach((n, i) => { const c = codeFromName(n, i + 1, ordreDe(suiviClasse)); if (c) nomDe[c] = n; });
             const known = {}; (classCodes()[suiviClasse] || []).forEach(c => { known[c] = true; });
             const st = {}; Object.keys(known).forEach(c => { st[c] = {}; });
             (suiviData || []).filter(v => v.classe === suiviClasse && ids[v.id]).forEach(v => {
