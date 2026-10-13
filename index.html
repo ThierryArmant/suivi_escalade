@@ -833,6 +833,7 @@
             <select id="blocWallSelect" onchange="changeBlocWall()">
                 <option value="">-- Choix du mur de blocs --</option>
             </select>
+            <button id="btn-acces-eleves" onclick="showAccesEleves()" title="Affiche le QR code que les élèves scannent pour retrouver toutes leurs fiches (sécurité, voies, blocs) et leur avancée. Un seul code pour toute la classe." style="background-color: #7c3aed; color: #ffffff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;"><span id="acces-eleves-ico" style="background: #ffffff; border-radius: 4px; padding: 2px; display: inline-flex;"></span>Accès élèves</button>
         </div>
 
         <div class="controls-group actions-group">
@@ -1771,6 +1772,26 @@
             <div id="qrcode-container" style="display: flex; justify-content: center; margin: 25px 0; padding: 20px; background: #f8fafc; border-radius: 12px; border: 3px dashed #cbd5e1;"></div>
             <p id="qr-warning" style="display: none; font-size: 0.85rem; font-weight: bold; color: #991b1b; background: #fee2e2; border: 2px solid #fca5a5; border-radius: 8px; padding: 8px; margin: 0 0 15px 0;"></p>
             <button onclick="document.getElementById('qr-modal').style.display='none'" style="background-color: #475569; color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem;">Fermer</button>
+        </div>
+    </div>
+
+    <!-- ACCÈS ÉLÈVES : un seul QR code pour toutes les fiches -->
+    <div id="acces-eleves-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center; max-width: 560px;">
+            <h2 style="color: #5b21b6; margin-bottom: 4px; font-size: 1.6rem;">📱 Élèves : scannez ici</h2>
+            <p style="font-size: 1.05rem; color: #1e293b; margin: 4px 0 0 0; font-weight: bold;">Toutes tes fiches au même endroit : sécurité, voies et blocs.</p>
+            <div id="acces-eleves-qr" style="display: flex; justify-content: center; margin: 16px 0; padding: 16px; background: #ffffff; border-radius: 12px; border: 3px dashed #c4b5fd;"></div>
+            <ol style="text-align: left; font-size: 0.95rem; color: #1e293b; margin: 0 0 10px 0; padding-left: 22px; line-height: 1.5;">
+                <li>Scanne le code avec l'appareil photo du téléphone.</li>
+                <li>Choisis ta classe, puis ton code : ta liste d'exercices s'affiche (le téléphone s'en souvient pour la fois suivante).</li>
+                <li>Touche l'exercice que tu vas faire : sa fiche s'ouvre. À la fin, note ton passage (et ta dégaine dans les voies).</li>
+            </ol>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0 0 12px 0;">Pour le professeur : laissez cette fenêtre ouverte sur l'ordinateur, ou imprimez-la et affichez-la près du mur. Les élèves ne voient que les thèmes ouverts (« 🚪 Thèmes ouverts aux élèves », dans Suivi des exercices).</p>
+            <p id="acces-eleves-lien" style="font-size: 0.72rem; color: #475569; word-break: break-all; margin: 0 0 12px 0;"></p>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="printAccesEleves()" style="flex: 1; background-color: #7c3aed; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">🖨️ Imprimer l'affiche</button>
+                <button onclick="document.getElementById('acces-eleves-modal').style.display='none'" style="flex: 1; background-color: #475569; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Fermer</button>
+            </div>
         </div>
     </div>
 
@@ -4251,6 +4272,7 @@
         // =========================================
         // Les nouveaux types s'ajoutent toujours À LA FIN : les QR codes déjà imprimés restent lisibles
         // Petit dessin de QR code pour les boutons (l'émoticône « téléphone » ne se reconnaît pas sur tous les écrans)
+        document.addEventListener('DOMContentLoaded', () => { const i = document.getElementById('acces-eleves-ico'); if (i) i.innerHTML = QR_ICON; });
         const QR_ICON = '<svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style="vertical-align: middle; display: inline-block;"><path fill="#0f172a" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z"/><path fill="#ffffff" d="M2.5 2.5h4v4h-4zM14.5 2.5h4v4h-4zM2.5 14.5h4v4h-4z"/><path fill="#0f172a" d="M3.5 3.5h2v2h-2zM15.5 3.5h2v2h-2zM3.5 15.5h2v2h-2zM10 1h2v2h-2zM10 5h2v3h-2zM1 10h3v2H1zM6 10h2v2H6zM10 10h2v2h-2zM14 10h2v2h-2zM18 10h2v2h-2zM10 14h2v2h-2zM13 13h3v3h-3zM18 13h2v2h-2zM10 18h3v2h-3zM14 17h2v3h-2zM17 17h3v3h-3z"/></svg>';
         const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
@@ -6072,7 +6094,11 @@
                 }
                 fill(sk.value); msg(); renderGroupe();
             };
-            sk.onchange = () => { msg(); renderGroupe(); };
+            sk.onchange = () => {
+                msg(); renderGroupe();
+                // Page « Mon avancée » : dès que l'élève a choisi son code, sa liste s'affiche
+                if (suiviTarget && suiviTarget.tout && !suiviTarget.id && sk.value) loadParcours(true);
+            };
             ci.replaceWith(sc); co.replaceWith(sk);
             const startClasse = classes.indexOf(typedClasse) !== -1 ? typedClasse : (classes.indexOf(saved.classe) !== -1 ? saved.classe : "");
             sc.value = startClasse;
@@ -6265,6 +6291,33 @@
             });
             if (!sections.length) html += `<p style="color: #64748b; text-align: center;">Aucun exercice pour l'instant.</p>`;
             list.innerHTML = html;
+        }
+
+        // Bouton du haut « Accès élèves » : un seul QR code pour toutes les fiches et l'avancée
+        function accesElevesUrl() {
+            return window.location.origin + window.location.pathname + "?mode=eleve&avancee=1&eq=" + encodeURIComponent(cloudTeam.equipe);
+        }
+        function showAccesEleves() {
+            if (GUEST) { alert("Avec une équipe, ce bouton affiche en grand le QR code que les élèves scannent pour retrouver toutes leurs fiches (sécurité, voies, blocs) et leur avancée.\n\nIl n'est pas proposé en mode invité, où aucun élève n'est enregistré."); return; }
+            if (!cloudTeam) { alert("Connectez-vous d'abord à votre équipe : les fiches des élèves sont lues dans son espace en ligne."); return; }
+            const url = accesElevesUrl();
+            const box = document.getElementById('acces-eleves-qr');
+            if (typeof QRCode === 'undefined' || !drawQRCode(url, box, 320)) { prompt("Lien à donner aux élèves :", url); return; }
+            document.getElementById('acces-eleves-lien').textContent = url;
+            document.getElementById('acces-eleves-modal').style.display = 'flex';
+        }
+        function printAccesEleves() {
+            const box = document.getElementById('acces-eleves-qr');
+            const canvas = box.querySelector('canvas'), img = box.querySelector('img');
+            const src = canvas ? canvas.toDataURL('image/png') : (img ? img.src : "");
+            const w = window.open("", "_blank");
+            if (!w) { alert("La fenêtre d'impression a été bloquée par le navigateur : autorisez les fenêtres pour cette page."); return; }
+            w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Accès élèves</title><style>body{font-family:Arial,sans-serif;text-align:center;margin:30px}h1{font-size:34px;color:#5b21b6;margin:0}p{font-size:20px}img{width:420px;height:420px;margin:20px 0}ol{display:inline-block;text-align:left;font-size:18px;line-height:1.6}</style></head><body>`
+                + `<h1>📱 Escalade : scanne ici</h1><p><b>Toutes tes fiches au même endroit : sécurité, voies et blocs.</b></p><img src="${src}" alt="QR code">`
+                + `<br><ol><li>Scanne le code avec l'appareil photo du téléphone.</li><li>Choisis ta classe, puis ton code : ta liste d'exercices s'affiche (le téléphone s'en souvient pour la fois suivante).</li><li>Touche l'exercice que tu vas faire. À la fin, note ton passage (et ta dégaine dans les voies).</li></ol></body></html>`);
+            w.document.close();
+            w.focus();
+            setTimeout(() => { try { w.print(); } catch (e) {} }, 400);
         }
 
         // QR code qui mène les élèves à leur parcours (à afficher, imprimer ou envoyer)
