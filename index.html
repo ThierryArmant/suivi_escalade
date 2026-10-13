@@ -5999,7 +5999,7 @@
                 + `<label style="flex: 1 1 110px; font-size: 0.8rem; font-weight: bold;">Ton code<input id="suivi-code" type="text" maxlength="8" placeholder="TA 12" value="${escapeHtml(saved.code || "")}" style="width: 100%; box-sizing: border-box; padding: 8px; border: 2px solid #c4b5fd; border-radius: 8px; font-size: 1rem; text-transform: uppercase;"></label>`
                 + `</div>`
                 + `<div id="suivi-groupe" style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px;"></div>`
-                + `<div style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Ton code = l'initiale de ton prénom, l'initiale de ton nom, puis ton numéro dans la liste de la classe. Exemple : Thomas Arnaud, n° 12 → <b>TA 12</b>. N'écris pas ton nom.</div>`
+                + `<div id="suivi-aide-code" style="font-size: 0.75rem; color: #475569; margin-top: 4px;">Ton code = l'initiale de ton prénom, l'initiale de ton nom, puis ton numéro dans la liste de la classe. Exemple : Thomas Arnaud, n° 12 → <b>TA 12</b>. N'écris pas ton nom.</div>`
                 + (exercice && opts.voie ? `<div id="suivi-degaine" style="margin-top: 8px;"><div style="font-size: 0.85rem; font-weight: bold; color: #1e293b; margin-bottom: 4px;">🪝 Jusqu'où es-tu monté ? Touche la dernière dégaine mousquetonnée</div>`
                     + `<div style="display: flex; gap: 5px;">${[1, 2, 3, 4, 5, 6].map(d => `<button class="deg-chip" data-d="${d}" onclick="pickDegaine(${d})">${d === 6 ? "🔝 TOP" : d}</button>`).join("")}</div></div>` : "")
                 + (exercice ? `<div style="display: flex; gap: 8px; margin-top: 8px;">`
@@ -6017,6 +6017,49 @@
             zone.parentNode.insertBefore(box, zone.nextSibling);
             renderGroupe();
             updateSuiviButton();
+            setupMenusEleve(equipe);
+        }
+
+        // Menus déroulants : l'élève choisit sa classe puis son code dans la liste (pas de faute de frappe, pas de doublon).
+        // Seuls les codes sont lus en ligne, jamais les noms. Sans liste de classe, la saisie libre reste possible.
+        async function setupMenusEleve(equipe) {
+            let data;
+            try { data = await cloudCall({ action: 'classesEleves', equipe: equipe }, false); } catch (e) { return; }
+            const lists = data.classes || {};
+            const classes = Object.keys(lists).filter(c => (lists[c] || []).length).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
+            const ci = document.getElementById('suivi-classe'), co = document.getElementById('suivi-code');
+            if (!classes.length || !ci || !co || ci.tagName === 'SELECT') return;
+            const saved = readEleve();
+            const typedClasse = cleanClasse(ci.value), typedCode = cleanCodeEleve(co.value);
+            const sc = document.createElement('select'), sk = document.createElement('select');
+            sc.id = 'suivi-classe'; sk.id = 'suivi-code';
+            sc.setAttribute('style', ci.getAttribute('style')); sk.setAttribute('style', co.getAttribute('style'));
+            sc.innerHTML = `<option value="">— choisis —</option>` + classes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")
+                + `<option value="__autre">Ma classe n'y est pas</option>`;
+            const num = c => parseInt(String(c).split(' ')[1], 10) || 0;
+            const fill = (wanted) => {
+                const codes = (lists[sc.value] || []).slice().sort((a, b) => num(a) - num(b));
+                sk.innerHTML = `<option value="">${sc.value ? "— ton code —" : "— classe d'abord —"}</option>` + codes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+                sk.value = codes.indexOf(wanted) !== -1 ? wanted : "";
+            };
+            const msg = () => { const m = document.getElementById('suivi-msg'); if (m) m.textContent = ""; };
+            sc.onchange = () => {
+                if (sc.value === '__autre') {   // retour à la saisie libre
+                    sc.replaceWith(ci); sk.replaceWith(co); ci.value = ""; co.value = "";
+                    const a = document.getElementById('suivi-aide-code'); if (a.dataset.libre) a.innerHTML = a.dataset.libre;
+                    renderGroupe(); return;
+                }
+                fill(sk.value); msg(); renderGroupe();
+            };
+            sk.onchange = () => { msg(); renderGroupe(); };
+            ci.replaceWith(sc); co.replaceWith(sk);
+            const startClasse = classes.indexOf(typedClasse) !== -1 ? typedClasse : (classes.indexOf(saved.classe) !== -1 ? saved.classe : "");
+            sc.value = startClasse;
+            fill(typedCode || saved.code || "");
+            const aide = document.getElementById('suivi-aide-code');
+            aide.dataset.libre = aide.innerHTML;
+            aide.innerHTML = "Choisis ta classe, puis ton code dans la liste : l'initiale de ton prénom, l'initiale de ton nom et ton numéro (Thomas Arnaud, n° 12 → <b>TA 12</b>).";
+            renderGroupe();
         }
 
         // Plusieurs élèves sur le même téléphone : leurs codes restent proposés, un appui suffit pour choisir le sien.

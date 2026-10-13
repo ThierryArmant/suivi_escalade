@@ -34,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le', 'noms_chiffres'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 17;
+var VERSION = 18;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -117,6 +117,7 @@ function traiter_(d) {
     if (action === 'ficheBloc') return ficheBloc_(cle_(d.equipe), String(d.id || ''));
     if (action === 'invite') return lireInvite_();
     if (action === 'parcoursSecurite') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve);
+    if (action === 'classesEleves') return classesEleves_(cle_(d.equipe));
     if (action === 'parcoursEleve') return parcoursSecurite_(cle_(d.equipe), d.classe, d.eleve, true);
     if (action === 'validerFiche') {
       var verrouEleve = LockService.getScriptLock();
@@ -953,6 +954,17 @@ function lireClasses_(equipe) {
     if (l[4]) noms[String(l[1])] = String(l[4]);
   });
   return { ok: true, classes: classes, noms: noms };
+}
+
+// Pour les menus déroulants des élèves : les classes de l'équipe et leurs codes (jamais les noms)
+function classesEleves_(equipe) {
+  if (!equipe) return { ok: false, erreur: 'Équipe inconnue.' };
+  var classes = {};
+  lignes_('Classes').forEach(function (l) {
+    if (cle_(l[0]) !== equipe || typeof l[1] === 'number') return;
+    try { classes[String(l[1])] = JSON.parse(String(l[2]) || '[]'); } catch (err) { /* ligne abîmée */ }
+  });
+  return { ok: true, classes: classes };
 }
 
 // Les noms des élèves n'arrivent ici que chiffrés par l'appli avec le mot de passe de l'équipe :
