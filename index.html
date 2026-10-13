@@ -1483,11 +1483,22 @@
                 <select id="suivi-genre" onchange="renderSuiviSecu()" title="Choisir ce que le tableau affiche : les blocs, les voies, ou les deux." style="padding: 6px; border: 2px solid #cbd5e1; border-radius: 6px;"><option value="">Blocs et voies</option><option value="blocs">Blocs seulement</option><option value="voies">Voies seulement</option></select>
                 <button onclick="refreshSuiviSecu()" style="background-color: #2563eb; color: white; border: none; padding: 7px 12px;" title="Recharge les validations envoyées par les élèves.">🔄 Actualiser</button>
                 <button onclick="exportSuivi()" style="background-color: #15803d; color: white; border: none; padding: 7px 12px;" title="Télécharge le tableau de la classe affichée en fichier tableur (s'ouvre dans Excel ou LibreOffice), avec les noms s'ils sont sur cet appareil et le détail de chaque exercice.">📥 Exporter (Excel)</button>
+                <button onclick="openThemesOuverts()" style="background-color: #b45309; color: white; border: none; padding: 7px 12px;" title="Choisir les thèmes que les élèves voient dans « Mon avancée » (par exemple ceux de la séance du jour).">🚪 Thèmes ouverts aux élèves</button>
                 <button onclick="openFusion()" style="background-color: #0369a1; color: white; border: none; padding: 7px 12px;" title="Deux noms pour la même classe (par exemple « 35 » et « 3E5 ») : toutes les saisies passent sous un seul nom.">🔗 Réunir deux classes</button>
                 <button onclick="clearSuiviSecu()" style="background-color: #b91c1c; color: white; border: none; padding: 7px 12px;" title="Efface le suivi de la classe affichée. À faire en fin de cycle.">🗑️ Effacer cette classe</button>
                 <button id="suivi-parcours-btn" onclick="showParcoursQR()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="QR code et lien à donner aux élèves : ils retrouvent toutes les fiches de sécurité et voient où ils en sont, en classe ou à la maison.">📱 QR code du parcours</button>
                 <button onclick="openListeClasse()" style="background-color: #0f766e; color: white; border: none; padding: 7px 12px;" title="Saisir ou coller la liste de la classe : l'appli calcule les codes ; les noms sont gardés chiffrés en ligne et se retrouvent sur vos autres appareils.">📋 Liste de la classe</button>
                 <button onclick="printCodesClasse()" style="background-color: #7c3aed; color: white; border: none; padding: 7px 12px;" title="Imprimer la liste des codes de la classe (un code par élève), à afficher ou à découper pour les distribuer.">🖨️ Codes des élèves</button>
+            </div>
+            <div id="themes-zone" style="display: none; background: #fffbeb; border: 2px solid #fcd34d; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left; font-size: 0.85rem;">
+                <b>🚪 Thèmes ouverts aux élèves</b> — seuls les thèmes cochés apparaissent dans « Mon avancée ». Les QR codes que vous distribuez fonctionnent toujours.
+                <div id="themes-liste" style="margin-top: 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 12px;"></div>
+                <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button onclick="document.querySelectorAll('#themes-liste input').forEach(c => c.checked = true)" style="background-color: #ffffff; color: #92400e; border: 2px solid #f59e0b; padding: 5px 10px;">Tout cocher</button>
+                    <button onclick="document.querySelectorAll('#themes-liste input').forEach(c => c.checked = false)" style="background-color: #ffffff; color: #92400e; border: 2px solid #f59e0b; padding: 5px 10px;">Tout décocher</button>
+                    <button onclick="saveThemesOuverts()" style="background-color: #b45309; color: white; border: none; padding: 6px 12px; font-weight: bold;">Enregistrer</button>
+                    <button onclick="document.getElementById('themes-zone').style.display='none'" style="background-color: #64748b; color: white; border: none; padding: 6px 12px;">Fermer</button>
+                </div>
             </div>
             <div id="fusion-zone" style="display: none; background: #f0f9ff; border: 2px solid #7dd3fc; border-radius: 8px; padding: 10px; margin-bottom: 8px; text-align: left; font-size: 0.85rem;">
                 <b>🔗 Réunir deux classes</b> — toutes les saisies de la première passent dans la seconde ; un élève présent dans les deux garde le meilleur résultat de chaque exercice.
@@ -6191,7 +6202,7 @@
                 return;
             }
             const enc = encodeURIComponent;
-            if (suiviTarget.tout) { renderAvancee(list, data.fiches || [], classe, code); return; }
+            if (suiviTarget.tout) { renderAvancee(list, data.fiches || [], classe, code, data.filtre); return; }
             const fiches = sortByVoie((data.fiches || []).map(f => Object.assign({ name: f.nom }, f)));
             const seen = fiches.filter(f => f.vue).length;
             let html = `<div style="margin: 10px 0 6px 0; font-weight: 800; color: #4c1d95; text-align: center;">${escapeHtml(code)} · ${escapeHtml(classe)} — ${seen} fiche(s) vue(s) sur ${fiches.length}</div>`
@@ -6218,7 +6229,7 @@
         }
 
         // « Mon avancée » : tous les exercices de l'équipe, rangés comme dans l'appli (sécurité, blocs, voies), avec l'état de l'élève
-        function renderAvancee(list, raw, classe, code) {
+        function renderAvancee(list, raw, classe, code, filtre) {
             const fiches = sortByVoie(raw.map(f => Object.assign({ name: f.nom }, f)));
             const isSecu = f => /^s[ée]curit[ée]/i.test((f.theme || "").trim());
             const isVoie = f => /^voies?\s*[·:\-–]/i.test((f.theme || "").trim());
@@ -6231,7 +6242,8 @@
             const count = (rs, secu) => secu ? `${rs.filter(f => f.vue).length}/${rs.length} vues`
                 : `✅ ${rs.filter(f => f.etat === 'reussi').length} · 👍 ${rs.filter(f => f.etat === 'essaye').length} · ${rs.length} au total`;
             let html = `<div style="margin: 10px 0 6px 0; font-weight: 800; color: #4c1d95; text-align: center;">${escapeHtml(code)} · ${escapeHtml(classe)}</div>`
-                + `<div style="font-size: 0.75rem; color: #475569; text-align: center; margin-bottom: 6px;">✅ réussi · 👍 essayé · ⏳ pas encore. Touche un exercice pour ouvrir sa fiche.</div>`;
+                + `<div style="font-size: 0.75rem; color: #475569; text-align: center; margin-bottom: 6px;">✅ réussi · 👍 essayé · ⏳ pas encore. Touche un exercice pour ouvrir sa fiche.</div>`
+                + (filtre ? `<div style="font-size: 0.78rem; color: #92400e; background: #fef3c7; border-radius: 8px; padding: 5px 8px; text-align: center; margin-bottom: 6px;">🚪 Ton professeur a ouvert ces thèmes pour la séance.</div>` : "");
             sections.forEach(([titre, rs, secu]) => {
                 html += `<div style="margin-top: 10px; padding: 6px 8px; border-radius: 8px; background: #ede9fe; color: #4c1d95; font-weight: 800; display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap;"><span>${titre}</span><span style="font-weight: bold; font-size: 0.8rem;">${count(rs, secu)}</span></div>`;
                 groupByTheme(rs).forEach(g => {
@@ -6591,6 +6603,35 @@
             // Le bouton « retour » du navigateur ferme la fenêtre au lieu de quitter la page
             try { if (!history.state || !history.state.suivi) history.pushState({ suivi: 1 }, ""); } catch (e) { /* rien */ }
             await refreshSuiviSecu();
+        }
+
+        // Thèmes ouverts aux élèves dans « Mon avancée »
+        function allThemes() {
+            const isSecu = t => /^s[ée]curit[ée]/i.test(t), isVoie = t => /^voies?\s*[·:\-–]/i.test(t);
+            const list = [];
+            (schoolConfig.customRoutes || []).forEach(r => { const t = (r.theme || "").trim(); if (r.type === 'bloc' && t && list.indexOf(t) === -1) list.push(t); });
+            const rank = t => isSecu(t) ? 0 : (isVoie(t) ? 1 : 2);
+            return list.sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, 'fr'));
+        }
+        async function openThemesOuverts() {
+            if (GUEST) { alert("Avec une équipe, ce bouton permet de choisir les thèmes que les élèves voient dans « Mon avancée » (par exemple ceux de la séance du jour)."); return; }
+            let ouverts = null;
+            try { ouverts = (await cloudCall({ action: 'lireThemesOuverts' })).themes; }
+            catch (e) { alert(/Action inconnue/i.test(e && e.message || "") ? "Cette fonction demande le script Google version 20 : installez-le, puis redéployez (« Nouvelle version »)." : "❌ " + (e && e.message ? e.message : "Erreur")); return; }
+            const themes = allThemes();
+            const isSecu = t => /^s[ée]curit[ée]/i.test(t), isVoie = t => /^voies?\s*[·:\-–]/i.test(t);
+            document.getElementById('themes-liste').innerHTML = themes.map(t => `<label style="display: flex; gap: 6px; align-items: center;"><input type="checkbox" value="${escapeHtml(t)}"${!ouverts || ouverts.indexOf(t) !== -1 ? " checked" : ""}> ${isSecu(t) ? "🛡️" : (isVoie(t) ? "🧗" : "🧱")} ${escapeHtml(t)}</label>`).join("");
+            document.getElementById('themes-zone').style.display = 'block';
+        }
+        async function saveThemesOuverts() {
+            const boxes = Array.from(document.querySelectorAll('#themes-liste input'));
+            const chosen = boxes.filter(c => c.checked).map(c => c.value);
+            const all = chosen.length === boxes.length;
+            if (!chosen.length && !confirm("Aucun thème coché : les élèves ne verront aucun exercice dans « Mon avancée ». Continuer ?")) return;
+            try { await cloudCall({ action: 'ouvrirThemes', themes: all ? null : chosen }); }
+            catch (e) { alert("❌ " + (e && e.message ? e.message : "Erreur")); return; }
+            document.getElementById('themes-zone').style.display = 'none';
+            alert(all ? "✅ Tous les thèmes sont ouverts aux élèves." : `✅ ${chosen.length} thème(s) ouvert(s) aux élèves :\n• ${chosen.join("\n• ")}`);
         }
 
         // Réunir deux classes (deux noms pour la même classe)

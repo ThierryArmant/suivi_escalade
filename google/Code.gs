@@ -34,7 +34,7 @@ var ONGLETS = {
   Classes: ['equipe', 'classe', 'codes', 'modifie_le', 'noms_chiffres'],
   Suivi: ['equipe', 'classe', 'eleve', 'donnees', 'cree_le', 'modifie_le']
 };
-var VERSION = 19;
+var VERSION = 20;
 var ELEVES_MAX_PAR_EQUIPE = 3000;      // garde-fou contre le remplissage abusif de la feuille
 var SAISIES_MAX_PAR_ELEVE = 400;
 var DUREE_SUIVI_JOURS = 183;          // les saisies d'une classe sont effacées 6 mois après la première   // garde-fou contre le remplissage abusif de la feuille
@@ -136,6 +136,7 @@ function traiter_(d) {
     if (action === 'lireBlocsEquipe') return lireBlocsEquipe_(equipe.equipe, cle_(d.cible));
     if (action === 'lireValidations') return lireValidations_(equipe.equipe);
     if (action === 'lireClasses') return lireClasses_(equipe.equipe);
+    if (action === 'lireThemesOuverts') return { ok: true, themes: lireThemesOuverts_(equipe.equipe) };
 
     // Actions qui modifient : une seule à la fois, pour ne pas mélanger deux enregistrements
     var verrou = LockService.getScriptLock();
@@ -144,6 +145,7 @@ function traiter_(d) {
       if (action === 'enregistrerBlocs') return enregistrerBlocs_(equipe.equipe, d.blocs);
       if (action === 'supprimerBloc') return supprimerBloc_(equipe.equipe, String(d.id || ''));
       if (action === 'enregistrerClasse') return enregistrerClasse_(equipe.equipe, d.classe, d.codes, d.noms);
+      if (action === 'ouvrirThemes') return ecrireThemesOuverts_(equipe.equipe, d.themes);
       if (action === 'fusionnerClasses') return fusionnerClasses_(equipe.equipe, d.source, d.cible);
       if (action === 'effacerValidations') return effacerValidations_(equipe.equipe, d.classe, d.genre);
       if (action === 'enregistrerTopo') return enregistrerTopo_(equipe.equipe, d.topo);
@@ -849,12 +851,15 @@ function parcoursSecurite_(equipe, classe, eleve, tout) {
     }
   });
   var fiches = [];
+  var ouverts = tout ? lireThemesOuverts_(equipe) : null;
   lignes_('Blocs').forEach(function (l) {
     if (cle_(l[0]) !== equipe) return;
     try {
       var bloc = JSON.parse(recoller_(l, 3));
       var secu = ficheSuivie_(bloc.route);
       if (!secu && !(tout && bloc.route && bloc.route.type === 'bloc')) return;
+      // « Mon avancée » : seulement les thèmes que le professeur a ouverts (tous si rien n'est choisi)
+      if (tout && ouverts && ouverts.indexOf(String(bloc.route.theme || '').trim()) === -1) return;
       fiches.push({
         id: String(l[1]),
         nom: String(bloc.route.name || ''),
@@ -870,7 +875,31 @@ function parcoursSecurite_(equipe, classe, eleve, tout) {
       });
     } catch (err) { /* ligne abîmée : on l'ignore */ }
   });
-  return { ok: true, fiches: fiches };
+  return { ok: true, fiches: fiches, filtre: !!ouverts };
+}
+
+// Thèmes ouverts aux élèves dans « Mon avancée » : une ligne par équipe dans l'onglet « Reglages »
+// (clé « themes_ouverts:nom-de-l-equipe », valeur = liste des thèmes). Pas de ligne = tous les thèmes ouverts.
+function lireThemesOuverts_(equipe) {
+  var lignes = lignes_('Reglages');
+  for (var i = 0; i < lignes.length; i++) {
+    if (String(lignes[i][0]) === 'themes_ouverts:' + equipe) {
+      try { var t = JSON.parse(String(lignes[i][1]) || 'null'); return Array.isArray(t) ? t.map(String) : null; } catch (err) { return null; }
+    }
+  }
+  return null;
+}
+function ecrireThemesOuverts_(equipe, themes) {
+  var feuille = feuille_('Reglages');
+  var lignes = lignes_('Reglages'), ligne = -1;
+  for (var i = 0; i < lignes.length; i++) if (String(lignes[i][0]) === 'themes_ouverts:' + equipe) { ligne = i + 2; break; }
+  if (!Array.isArray(themes)) {   // tout ouvrir : on retire la ligne
+    if (ligne > 0) feuille.deleteRow(ligne);
+    return { ok: true, themes: null };
+  }
+  var propres = themes.slice(0, 80).map(function (t) { return String(t).trim().slice(0, 120); }).filter(function (t) { return t; });
+  ecrireLigne_(feuille, ligne, ['themes_ouverts:' + equipe, JSON.stringify(propres)]);
+  return { ok: true, themes: propres };
 }
 
 // Les saisies sont rangées par élève (une ligne par élève, onglet « Suivi ») : chaque validation ne relit que
