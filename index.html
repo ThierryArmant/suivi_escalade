@@ -923,6 +923,7 @@
                     
 
                     <button class="tool-btn" id="tool-repere" onclick="setTool('repere')" title="Localisation sans main ni pied imposé">+ Repère libre</button>
+                    <button class="tool-btn btn-full" id="tool-impulsion" onclick="setTool('impulsion')" title="Repérer le contact de pied sur le volume d’entrée : appui qui prépare l’impulsion. Le côté est précisé dans la consigne ou par une pose numérotée PD/PG."><span class="limb-icon foot any"></span>Appui d’impulsion</button>
                     <button class="tool-btn" id="tool-cible" onclick="setTool('cible')" title="Cible de main">Cible main</button>
                     <button class="tool-btn" id="tool-cible1" onclick="setTool('cible1')">Cible 1</button>
                     <button class="tool-btn" id="tool-cible2" onclick="setTool('cible2')">Cible 2</button>
@@ -1141,7 +1142,7 @@
                 </div>
                 </div>
                 <div class="legend-group lg-gestes">
-                <div class="legend-category">🤸 Gestes & Postures</div>
+                <div class="legend-category">🤸 Gestes & Postures</div><div class="legend-banner" onclick="toggleLegendBanner(this)"><div class="legend-header"><span><span class="limb-icon foot any"></span> Appui d’impulsion</span></div><div class="legend-body"><b>Rectangle = contact de pied.</b> Placez-le sur la surface du volume d’entrée utilisée après l’approche. Il indique l’appui qui prépare la poussée vers le volume suivant. Précisez le côté dans la consigne ou par une pose numérotée PD/PG.</div></div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>📌 PME (Repos) — 3 niveaux</span></div>
                     <div class="legend-body"><strong>PME :</strong> Organiser les contacts et le bassin selon le relief pour réduire l’effort et pouvoir repartir. Le triangle relie 1 main (cercle) et 2 pieds (rectangles). La géométrie seule ne prouve pas le moindre effort.<br><b>Niveau 1</b> : la main est entre les deux pieds. <b>Niveau 2</b> : la main est alignée avec un pied. <b>Niveau 3</b> : la main est en dehors des pieds.<br>Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</div>
@@ -2612,6 +2613,7 @@
         ];
 
         function markerHelp(type) {
+            if (type === 'impulsion') return ['Appui de pied d’impulsion', 'Repère le contact de pied sur le volume d’entrée après l’approche. Cet appui prépare la poussée vers le volume suivant ; ce n’est pas la réception. Le pied est au choix sauf si PD ou PG est précisé dans la consigne ou la chronologie.'];
             if (type === 'repere') return ['Repère de localisation', 'Ce repère situe un passage ou une zone. Il ne prescrit ni main, ni pied, ni côté. La consigne et le professeur précisent son usage.'];
             if (/^cible[1-3]?$/.test(type)) return ['Cible de main' + (type.slice(5) ? ' ' + type.slice(5) : ''), 'Cible à toucher avec la main selon la consigne. Le numéro distingue les cibles ; il ne numérote pas les poses de mains et de pieds.'];
             if (isPme(type)) {
@@ -3527,6 +3529,9 @@
                     marker.className = 'marker tech-tag tech-zone';
                     marker.dataset.label = number ? `ZONE ${number}` : 'ZONE';
                     if (ZONE_COLORS[number]) marker.style.setProperty('--tc', ZONE_COLORS[number]);
+                } else if (p.type === 'impulsion') {
+                    marker.className = 'marker limb foot any impulse-foot';
+                    marker.dataset.label = 'IMPULSION';
                 } else if (p.type === 'pied') {
                     // Pied sans côté imposé : rectangle vide orange
                     marker.className = 'marker limb foot any';
@@ -3659,7 +3664,10 @@
             if (String(value).trim() && !text) { alert('Associez numéro ET membre : 2 PD, ou 2 PD/5 PG pour une prise réutilisée.'); return; }
             const roles = text ? text.split('/').map(v => v.split(' ')[1]) : [];
             const hands = roles.some(v => v[0] === 'M'), feet = roles.some(v => v[0] === 'P');
-            if (hands && !feet && new Set(roles).size === 1) activeMarkers[selectedMarkerIndex].type = roles[0].toLowerCase();
+            const impulse = activeMarkers[selectedMarkerIndex].type === 'impulsion';
+            if (impulse && hands) { alert('L’appui d’impulsion est un contact de pied : indiquez PD ou PG. Pour une main, utilisez un cercle distinct.'); return; }
+            if (impulse) { /* conserver le rôle d’impulsion, avec PD/PG dans la chronologie */ }
+            else if (hands && !feet && new Set(roles).size === 1) activeMarkers[selectedMarkerIndex].type = roles[0].toLowerCase();
             else if (feet && !hands && new Set(roles).size === 1) activeMarkers[selectedMarkerIndex].type = roles[0].toLowerCase();
             else if (hands && feet) { alert('Pour un pied-main, placez un cercle et un rectangle sur la même prise, chacun avec sa pose numérotée.'); return; }
             else if (roles.length) activeMarkers[selectedMarkerIndex].type = hands ? 'cm' : 'cp';
@@ -4384,7 +4392,7 @@
         // Petit dessin de QR code pour les boutons (l'émoticône « téléphone » ne se reconnaît pas sur tous les écrans)
         document.addEventListener('DOMContentLoaded', () => { const i = document.getElementById('acces-eleves-ico'); if (i) i.innerHTML = QR_ICON; });
         const QR_ICON = '<svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style="vertical-align: middle; display: inline-block;"><path fill="#0f172a" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z"/><path fill="#ffffff" d="M2.5 2.5h4v4h-4zM14.5 2.5h4v4h-4zM2.5 14.5h4v4h-4z"/><path fill="#0f172a" d="M3.5 3.5h2v2h-2zM15.5 3.5h2v2h-2zM3.5 15.5h2v2h-2zM10 1h2v2h-2zM10 5h2v3h-2zM1 10h3v2H1zM6 10h2v2H6zM10 10h2v2h-2zM14 10h2v2h-2zM18 10h2v2h-2zM10 14h2v2h-2zM13 13h3v3h-3zM18 13h2v2h-2zM10 18h3v2h-3zM14 17h2v3h-2zM17 17h3v3h-3z"/></svg>';
-        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep', 'repere', 'cible', 'cible1', 'cible2', 'cible3'];
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep', 'repere', 'cible', 'cible1', 'cible2', 'cible3', 'impulsion'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
         function escapeHtml(text) {
