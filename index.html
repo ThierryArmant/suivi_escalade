@@ -672,7 +672,7 @@
         .marker.arrow { font-size: 26px;color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .marker.cross { font-size: 24px; color: #dc3545; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px;}
         
-        /* Balises DÉPART, TOP, ZONE, JETÉ, JOKER, CM, CP : cadre vide de couleur (la prise reste visible à l'intérieur),
+        /* Balises ZONE, JETÉ, JOKER, CM, CP : cadre vide de couleur (la prise reste visible à l'intérieur),
            le nom de la balise est écrit dans une petite étiquette sous le cadre */
         .marker.tech-tag { 
             --tc: #0ea5e9;
@@ -891,8 +891,8 @@
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
                     <button class="tool-btn" id="tool-dot-small" onclick="setTool('dot-small')">⚪ P'tit Cercle</button>
 
-                    <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Cercle noir simple : prise de départ du bloc"><span class="ring-icon"></span> Départ bloc</button>
-                    <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Double cercle noir : prise d'arrivée du bloc"><span class="ring-icon double"></span> Arrivée bloc</button>
+                    <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Départ : cercle noir simple. Le même code s’applique à toutes les fiches."><span class="ring-icon"></span> Départ</button>
+                    <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Arrivée : double cercle noir. Le même code s’applique à toutes les fiches."><span class="ring-icon double"></span> Arrivée</button>
                     
                     <div id="arrow-wrap" style="position: relative; display: flex;" onmouseenter="showArrowChoices()" onmouseleave="hideArrowChoices()">
                         <button class="tool-btn" id="tool-arrow" style="flex: 1;" onclick="setTool('arrow'); showArrowChoices()"><span id="arrow-icon" style="display: inline-block;">⬆️</span> Flèche</button>
@@ -1103,11 +1103,11 @@
                     <div class="legend-body"><strong>Prises à utiliser :</strong> avec les mains ou les pieds. Le cercle prend la couleur du niveau du bloc. Le petit cercle sert pour les petites prises, où il faut être précis.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header"><span><span class="ring-icon"></span> Départ bloc</span></div>
+                    <div class="legend-header"><span><span class="ring-icon"></span> Départ</span></div>
                     <div class="legend-body"><strong>Cercle noir simple :</strong> prise de départ du bloc. C'est ici que l'on s'installe avant de commencer.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
-                    <div class="legend-header"><span><span class="ring-icon double"></span> Arrivée bloc</span></div>
+                    <div class="legend-header"><span><span class="ring-icon double"></span> Arrivée</span></div>
                     <div class="legend-body"><strong>Double cercle noir :</strong> dernière prise du bloc. Elle doit être tenue et contrôlée pour réussir le bloc.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
@@ -1369,7 +1369,7 @@
                 <p class="help-text" style="margin-top: 0; font-size: 0.86rem;">Un bloc est un exercice que vous inventez sur une photo de mur de blocs : vous choisissez les prises, puis le niveau et le thème.</p>
                 <ol style="margin: 6px 0; padding-left: 20px; font-size: 0.86rem; color: #334155; line-height: 1.45;">
                     <li><b>Choisissez le mur</b> dans le menu « Choix du mur de blocs », en haut. La photo s'affiche en grand.</li>
-                    <li><b>Choisissez un outil</b> à gauche (par exemple « Cercle ») et <b>cliquez sur chaque prise</b> du bloc. Marquez la prise de départ avec « Départ bloc » (cercle noir simple) et la prise d'arrivée avec « Arrivée bloc » (double cercle noir).</li>
+                    <li><b>Choisissez un outil</b> à gauche (par exemple « Cercle ») et <b>cliquez sur chaque prise</b> du bloc. Marquez la prise de départ avec « Départ » (cercle noir simple) et la prise d'arrivée avec « Arrivée » (double cercle noir).</li>
                     <li><b>Cliquez sur « + Créer un Bloc »</b> : donnez un nom, un niveau (c'est lui qui donne leur couleur aux cercles), un gabarit et un thème, puis « Valider ».</li>
                     <li>Le bloc apparaît dans <b>« Exercices bloc »</b>, rangé par thème. Cliquez sur son nom pour le revoir.</li>
                     <li><b>Pour le modifier</b> : affichez-le, déplacez ou ajoutez des balises, puis cliquez sur « 💾 Enregistrer » en haut.</li>
@@ -1397,7 +1397,7 @@
                     <li><b>Pivoter, agrandir, réduire, supprimer :</b> double-cliquez sur la balise, un petit menu s'ouvre.</li>
                     <li><b>Effacer vite :</b> « 🧼 Gomme Magique », puis cliquez sur les balises à retirer. « 🧹 Tout nettoyer » les retire toutes.</li>
                     <li><b>⭕ Cercle et ⚪ P'tit Cercle :</b> les prises à utiliser, dans la couleur du niveau.</li>
-                    <li><b>Départ bloc et Arrivée bloc :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
+                    <li><b>Départ et Arrivée :</b> un cercle noir simple sur la prise de départ, un double cercle noir sur la prise d'arrivée. Ils restent noirs quel que soit le niveau du bloc.</li>
                     <li><b>🎯 Zone :</b> en passant sur le bouton, choisissez un numéro pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</li>
                     <li><b>⬆️ Flèche :</b>une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
@@ -2581,12 +2581,12 @@
         const MARKER_HELP = {
             'dot':        ["Prise du bloc", "Cercle : prise de main autorisée. Pour les pieds, applique la consigne : appuis imposés ou pieds libres dans la zone autorisée."],
             'dot-small':  ["Petite prise", "Petit cercle : prise de main autorisée ; la taille du repère ne mesure pas celle de la prise réelle."],
-            'bloc-start': ["Départ du bloc", "Commence ici : c'est la prise de départ."],
-            'bloc-end':   ["Arrivée du bloc", "C'est la dernière prise. Tiens-la bien pour réussir le bloc."],
+            'bloc-start': ["Départ : cercle noir simple", "Commence sur la prise marquée DÉPART. La consigne précise les pieds, les mains et les côtés si nécessaire."],
+            'bloc-end':   ["Arrivée : double cercle noir", "Atteins la prise marquée ARRIVÉE et respecte la condition donnée dans la fiche."],
             'arrow':      ["Direction", "Va dans le sens de la flèche : c'est par là que le bloc continue."],
             'cross':      ["Prise interdite", "Ne touche pas cette prise, ni avec les mains ni avec les pieds."],
             'sd':         ["Départ", "Repère de départ. Les cercles et rectangles précisent les mains et les pieds ; les lettres donnent le côté. La fiche indique la position initiale, notamment si le départ est assis."],
-            'top':        ["TOP : l'arrivée", "Prise finale : applique la condition d’arrivée de la fiche. Deux mains pendant trois secondes seulement si cette règle est demandée."],
+            'top':        ["Arrivée : double cercle noir", "Prise finale : applique la condition d’arrivée de la fiche. Deux mains pendant trois secondes seulement si cette règle est demandée."],
             'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
             'mg':         ["Main gauche (cercle noir MG)", "Prends cette prise avec la main gauche. Cercle = main, MG = main gauche ; PG = pied gauche."],
             'md':         ["Main droite (cercle noir MD)", "Prends cette prise avec la main droite. Cercle = main, MD = main droite ; PD = pied droit."],
@@ -3517,9 +3517,9 @@
                 } else if (p.type === 'repere') {
                     marker.className = 'marker repere';
                     marker.textContent = '+';
-                } else if (p.type === 'bloc-start') {
+                } else if ((p.type === 'bloc-start' || p.type === 'sd')) {
                     marker.className = 'marker bloc-start';
-                } else if (p.type === 'bloc-end') {
+                } else if ((p.type === 'bloc-end' || p.type === 'top')) {
                     marker.className = 'marker bloc-end';
                     const label = document.createElement('span');
                     label.className = 'endpoint-label'; label.textContent = 'ARRIVÉE';
@@ -3540,14 +3540,14 @@
                     // Forme vide : la prise reste visible. Cercle = main, rectangle = pied ; lettres G = gauche, D = droite.
                     marker.className = `marker limb ${p.type[0] === 'm' ? 'hand' : 'foot'} ${p.type[1] === 'd' ? 'right' : 'left'}`;
                     marker.dataset.label = p.type.toUpperCase();
-                } else if (['sd', 'top', 'jete', 'joker', 'cm', 'cp'].includes(p.type)) {
+                } else if (['jete', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
-                    marker.dataset.label = p.type === 'sd' ? 'DÉPART' : (p.type === 'jete' ? 'JETÉ' : p.type.toUpperCase());
+                    marker.dataset.label = p.type === 'jete' ? 'JETÉ' : p.type.toUpperCase();
                 } else {
                     marker.className = `marker ${p.type}`;
                 }
 
-                if (['pied','pg','pd'].includes(p.type) && activeMarkers.some(q => q.type === 'bloc-start' && Math.abs(q.x-p.x)<0.25 && Math.abs(q.y-p.y)<0.25)) marker.classList.add('shared-start-foot');
+                if (['pied','pg','pd'].includes(p.type) && activeMarkers.some(q => (q.type === 'bloc-start' || q.type === 'sd') && Math.abs(q.x-p.x)<0.25 && Math.abs(q.y-p.y)<0.25)) marker.classList.add('shared-start-foot');
                 const sequence = normalizeMarkerOrder(p.order);
                 if (sequence) marker.dataset.order = sequence;
                 if (index === selectedMarkerIndex) marker.classList.add('selected');
