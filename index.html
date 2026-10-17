@@ -672,7 +672,7 @@
         .marker.arrow { font-size: 26px;color: #ffcc00; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
         .marker.cross { font-size: 24px; color: #dc3545; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(255,255,255,0.8); border-radius: 50%; width: 24px; height: 24px;}
         
-        /* Balises SD, TOP, ZONE, JETÉ, JOKER, CM, CP : cadre vide de couleur (la prise reste visible à l'intérieur),
+        /* Balises DÉPART, TOP, ZONE, JETÉ, JOKER, CM, CP : cadre vide de couleur (la prise reste visible à l'intérieur),
            le nom de la balise est écrit dans une petite étiquette sous le cadre */
         .marker.tech-tag { 
             --tc: #0ea5e9;
@@ -2570,7 +2570,7 @@
             'bloc-end':   ["Arrivée du bloc", "C'est la dernière prise. Tiens-la bien pour réussir le bloc."],
             'arrow':      ["Direction", "Va dans le sens de la flèche : c'est par là que le bloc continue."],
             'cross':      ["Prise interdite", "Ne touche pas cette prise, ni avec les mains ni avec les pieds."],
-            'sd':         ["Départ", "Position de départ : installe-toi sur ces prises avant de commencer."],
+            'sd':         ["Départ", "Repère de départ. Les cercles et rectangles précisent les mains et les pieds ; les lettres donnent le côté. La fiche indique la position initiale, notamment si le départ est assis."],
             'top':        ["TOP : l'arrivée", "Prise finale. Tiens-la à 2 mains pendant 3 secondes pour valider."],
             'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
             'mg':         ["Main gauche (cercle noir MG)", "Prends cette prise avec la main gauche. Cercle = main, MG = main gauche ; PG = pied gauche."],
@@ -3508,7 +3508,7 @@
                     marker.dataset.label = p.type.toUpperCase();
                 } else if (['sd', 'top', 'jete', 'joker', 'cm', 'cp'].includes(p.type)) {
                     marker.className = `marker tech-tag tech-${p.type}`;
-                    marker.dataset.label = p.type === 'jete' ? 'JETÉ' : p.type.toUpperCase();
+                    marker.dataset.label = p.type === 'sd' ? 'DÉPART' : (p.type === 'jete' ? 'JETÉ' : p.type.toUpperCase());
                 } else {
                     marker.className = `marker ${p.type}`;
                 }
