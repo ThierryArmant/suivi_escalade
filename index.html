@@ -828,6 +828,9 @@
         .marker.bloc-start::after { content:'DÉPART'; }
         .marker.shared-start-foot::after { top:auto; bottom:100%; transform:translate(-50%,-4px); }
 
+        .tool-group-title { grid-column:1 / -1; text-align:left; font-size:0.71rem; font-weight:800; color:#1e3a8a; padding:5px 2px 1px; }
+        .repere-tool-icon { display:inline-block; font:bold 24px/18px Arial; width:18px; height:18px; color:#475569; }
+        .target-tool-icon { display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; width:19px; height:19px; flex-shrink:0; border:2px solid #111827; border-radius:50%; font:bold 10px Arial; color:#111827; }
 </style>
 </head>
 <body>
@@ -888,11 +891,20 @@
                 <h3>Outils & Balises</h3>
                 <div class="tools-grid">
                     <button class="tool-btn btn-full" id="tool-cursor" onclick="setTool('cursor')" title="Souris : cliquer sur le mur ne pose rien">🖱️ Souris (ne rien poser)</button>
+                    <div class="tool-group-title">Repères des fiches</div>
+                    <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Départ : cercle noir simple. Le même code s’applique à toutes les fiches."><span class="ring-icon"></span> Départ</button>
+                    <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Arrivée : double cercle noir. Le même code s’applique à toutes les fiches."><span class="ring-icon double"></span> Arrivée</button>
+
+                    <button class="tool-btn" id="tool-repere" onclick="setTool('repere')" title="Le + REPÈRE des fiches : localiser un passage, sans imposer une main, un pied ou un côté. Cliquez ici puis sur le mur."><span class="repere-tool-icon" aria-hidden="true">+</span> Repère</button>
+                    <button class="tool-btn" id="tool-cible" onclick="setTool('cible')" title="Cible de main"><span class="target-tool-icon" aria-hidden="true"></span> Cible main</button>
+                    <button class="tool-btn" id="tool-cible1" onclick="setTool('cible1')"><span class="target-tool-icon" aria-hidden="true">1</span> Cible 1</button>
+                    <button class="tool-btn" id="tool-cible2" onclick="setTool('cible2')"><span class="target-tool-icon" aria-hidden="true">2</span> Cible 2</button>
+                    <button class="tool-btn" id="tool-cible3" onclick="setTool('cible3')"><span class="target-tool-icon" aria-hidden="true">3</span> Cible 3</button>
+                    <button class="tool-btn" id="tool-impulsion" onclick="setTool('impulsion')" title="Repérer le contact de pied sur le volume d’entrée : appui qui prépare l’impulsion. Le côté est précisé dans la consigne ou par une pose numérotée PD/PG."><span class="limb-icon foot any"></span>Appui d’impulsion</button>
+                    <div class="tool-group-title">Prises et autres outils</div>
                     <button class="tool-btn active-tool" id="tool-dot" onclick="setTool('dot')">⭕ Cercle</button>
                     <button class="tool-btn" id="tool-dot-small" onclick="setTool('dot-small')">⚪ P'tit Cercle</button>
 
-                    <button class="tool-btn" id="tool-bloc-start" onclick="setTool('bloc-start')" title="Départ : cercle noir simple. Le même code s’applique à toutes les fiches."><span class="ring-icon"></span> Départ</button>
-                    <button class="tool-btn" id="tool-bloc-end" onclick="setTool('bloc-end')" title="Arrivée : double cercle noir. Le même code s’applique à toutes les fiches."><span class="ring-icon double"></span> Arrivée</button>
                     
                     <div id="arrow-wrap" style="position: relative; display: flex;" onmouseenter="showArrowChoices()" onmouseleave="hideArrowChoices()">
                         <button class="tool-btn" id="tool-arrow" style="flex: 1;" onclick="setTool('arrow'); showArrowChoices()"><span id="arrow-icon" style="display: inline-block;">⬆️</span> Flèche</button>
@@ -922,12 +934,6 @@
                     </div>
                     
 
-                    <button class="tool-btn" id="tool-repere" onclick="setTool('repere')" title="Localisation sans main ni pied imposé">+ Repère libre</button>
-                    <button class="tool-btn btn-full" id="tool-impulsion" onclick="setTool('impulsion')" title="Repérer le contact de pied sur le volume d’entrée : appui qui prépare l’impulsion. Le côté est précisé dans la consigne ou par une pose numérotée PD/PG."><span class="limb-icon foot any"></span>Appui d’impulsion</button>
-                    <button class="tool-btn" id="tool-cible" onclick="setTool('cible')" title="Cible de main">Cible main</button>
-                    <button class="tool-btn" id="tool-cible1" onclick="setTool('cible1')">Cible 1</button>
-                    <button class="tool-btn" id="tool-cible2" onclick="setTool('cible2')">Cible 2</button>
-                    <button class="tool-btn" id="tool-cible3" onclick="setTool('cible3')">Cible 3</button>
                     <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
                     <button class="tool-btn" id="tool-pmex" onclick="setTool('pmex')" title="Position de repos posée sur trois prises : un clic pose la main (cercle) et les deux pieds (rectangles), puis déplacez chaque point sur sa prise. Le niveau se calcule tout seul.">📐 PME 3 prises</button>
                     <div id="pme-wrap" style="position: relative; display: flex;" onmouseenter="showPmeLevels()" onmouseleave="hidePmeLevels()">
@@ -1097,10 +1103,15 @@
                 <p style="font-size: 0.72rem; color: #166534; margin: 4px 0 2px 0; text-align: center;">Cliquez sur une ligne pour lire son explication.</p>
 
                 <div class="legend-group lg-prises">
+                <div class="legend-category">Repères des fiches</div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)"><div class="legend-header"><span><span class="repere-tool-icon">+</span> Repère</span></div><div class="legend-body"><strong>Le + REPÈRE :</strong> situe un passage ou un endroit à observer. Il n’impose ni main, ni pied, ni côté. Pour le poser : outil Repère puis clic sur le mur.</div></div>
+                <div class="legend-banner" onclick="toggleLegendBanner(this)"><div class="legend-header"><span><span class="target-tool-icon"></span> Cible main · Cibles 1, 2, 3</span></div><div class="legend-body"><strong>Cercle noir :</strong> cible à atteindre avec une main. Les numéros 1, 2 et 3 identifient les cibles ; ils ne remplacent pas une chronologie complète de poses avec MG, MD, PG et PD.</div></div>
+                </div>
+                <div class="legend-group lg-prises">
                 <div class="legend-category">⭕ Les prises du bloc</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>⭕ Cercle et ⚪ P'tit Cercle</span></div>
-                    <div class="legend-body"><strong>Prises à utiliser :</strong> avec les mains ou les pieds. Le cercle prend la couleur du niveau du bloc. Le petit cercle sert pour les petites prises, où il faut être précis.</div>
+                    <div class="legend-body"><strong>Cercle noir = prise de main autorisée.</strong> Le petit cercle désigne également une prise de main. Les pieds suivent la consigne : pieds libres dans l’espace autorisé ou rectangles imposés. La couleur de difficulté reste distincte du code main/pied.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span><span class="ring-icon"></span> Départ</span></div>
