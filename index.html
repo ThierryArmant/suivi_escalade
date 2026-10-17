@@ -820,7 +820,15 @@
         .marker.tech-cm { border-radius:50%; width:34px; height:34px; }
         .marker[data-order]::before { content:attr(data-order); position:absolute; left:-14px; top:-22px; min-width:23px; padding:2px 4px; border:2px solid #111827; border-radius:5px; background:white; color:#111827; font:bold 15px Arial; white-space:nowrap; z-index:4; }
 
-    </style>
+    
+        .marker.repere { width:24px; height:24px; font:32px/24px Arial; color:#475569; text-shadow:1px 1px white,-1px -1px white,1px -1px white,-1px 1px white; }
+        .marker.repere::after { content:'REPÈRE'; position:absolute; top:100%; left:50%; transform:translateX(-50%); font:bold 8px Arial; color:#334155; background:white; padding:1px 3px; border-radius:3px; }
+        .marker.tech-cible { --tc:#111827; border-radius:50%; width:34px; height:34px; }
+        .marker.bloc-start::after, .marker .endpoint-label { position:absolute; top:100%; left:50%; transform:translate(-50%,3px); font:bold 9px Arial; color:white; background:#111827; padding:2px 4px; border:1px solid white; border-radius:3px; white-space:nowrap; }
+        .marker.bloc-start::after { content:'DÉPART'; }
+        .marker.shared-start-foot::after { top:auto; bottom:100%; transform:translate(-50%,-4px); }
+
+</style>
 </head>
 <body>
 
@@ -913,6 +921,12 @@
                         </div>
                     </div>
                     
+
+                    <button class="tool-btn" id="tool-repere" onclick="setTool('repere')" title="Localisation sans main ni pied imposé">+ Repère libre</button>
+                    <button class="tool-btn" id="tool-cible" onclick="setTool('cible')" title="Cible de main">Cible main</button>
+                    <button class="tool-btn" id="tool-cible1" onclick="setTool('cible1')">Cible 1</button>
+                    <button class="tool-btn" id="tool-cible2" onclick="setTool('cible2')">Cible 2</button>
+                    <button class="tool-btn" id="tool-cible3" onclick="setTool('cible3')">Cible 3</button>
                     <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
                     <button class="tool-btn" id="tool-pmex" onclick="setTool('pmex')" title="Position de repos posée sur trois prises : un clic pose la main (cercle) et les deux pieds (rectangles), puis déplacez chaque point sur sa prise. Le niveau se calcule tout seul.">📐 PME 3 prises</button>
                     <div id="pme-wrap" style="position: relative; display: flex;" onmouseenter="showPmeLevels()" onmouseleave="hidePmeLevels()">
@@ -2571,7 +2585,7 @@
             'arrow':      ["Direction", "Va dans le sens de la flèche : c'est par là que le bloc continue."],
             'cross':      ["Prise interdite", "Ne touche pas cette prise, ni avec les mains ni avec les pieds."],
             'sd':         ["Départ", "Repère de départ. Les cercles et rectangles précisent les mains et les pieds ; les lettres donnent le côté. La fiche indique la position initiale, notamment si le départ est assis."],
-            'top':        ["TOP : l'arrivée", "Prise finale. Tiens-la à 2 mains pendant 3 secondes pour valider."],
+            'top':        ["TOP : l'arrivée", "Prise finale : applique la condition d’arrivée de la fiche. Deux mains pendant trois secondes seulement si cette règle est demandée."],
             'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
             'mg':         ["Main gauche (cercle noir MG)", "Prends cette prise avec la main gauche. Cercle = main, MG = main gauche ; PG = pied gauche."],
             'md':         ["Main droite (cercle noir MD)", "Prends cette prise avec la main droite. Cercle = main, MD = main droite ; PD = pied droit."],
@@ -2594,13 +2608,15 @@
             "", 
             "Niveau 1 : ta main est entre tes deux pieds. C'est la position la plus facile.",
             "Niveau 2 : ta main est juste au-dessus d'un de tes pieds.",
-            "Niveau 3 : ta main est en dehors de tes pieds. C'est la position la plus difficile."
+            "Repère géométrique 3 : la main est en dehors des pieds ; la difficulté dépend du support et des actions."
         ];
 
         function markerHelp(type) {
+            if (type === 'repere') return ['Repère de localisation', 'Ce repère situe un passage ou une zone. Il ne prescrit ni main, ni pied, ni côté. La consigne et le professeur précisent son usage.'];
+            if (/^cible[1-3]?$/.test(type)) return ['Cible de main' + (type.slice(5) ? ' ' + type.slice(5) : ''), 'Cible à toucher avec la main selon la consigne. Le numéro distingue les cibles ; il ne numérote pas les poses de mains et de pieds.'];
             if (isPme(type)) {
                 const level = pmeInfo(type).level;
-                return ["PME " + level + " : position de repos", "1 main et 2 pieds, bras tendu, bassin près du mur : relâche-toi. " + PME_HELP[level]];
+                return ["PME " + level + " : position de repos", "Position à vérifier : organiser les contacts pour diminuer l’effort et pouvoir repartir. " + PME_HELP[level]];
             }
             if (isZone(type) && zoneNumber(type)) {
                 const number = zoneNumber(type);
@@ -3493,6 +3509,19 @@
                     marker.innerHTML = pmeSvg(p.type, true);
                 } else if (p.type === 'pmem' || p.type === 'pmep') {
                     marker.className = 'marker pme-pt ' + (p.type === 'pmem' ? 'pme-main' : 'pme-pied');
+                } else if (/^cible[1-3]?$/.test(p.type)) {
+                    marker.className = 'marker tech-tag tech-cible';
+                    marker.dataset.label = 'CIBLE' + (p.type.slice(5) ? ' ' + p.type.slice(5) : '');
+                } else if (p.type === 'repere') {
+                    marker.className = 'marker repere';
+                    marker.textContent = '+';
+                } else if (p.type === 'bloc-start') {
+                    marker.className = 'marker bloc-start';
+                } else if (p.type === 'bloc-end') {
+                    marker.className = 'marker bloc-end';
+                    const label = document.createElement('span');
+                    label.className = 'endpoint-label'; label.textContent = 'ARRIVÉE';
+                    marker.appendChild(label);
                 } else if (isZone(p.type)) {
                     const number = zoneNumber(p.type);
                     marker.className = 'marker tech-tag tech-zone';
@@ -3513,6 +3542,7 @@
                     marker.className = `marker ${p.type}`;
                 }
 
+                if (['pied','pg','pd'].includes(p.type) && activeMarkers.some(q => q.type === 'bloc-start' && Math.abs(q.x-p.x)<0.25 && Math.abs(q.y-p.y)<0.25)) marker.classList.add('shared-start-foot');
                 const sequence = normalizeMarkerOrder(p.order);
                 if (sequence) marker.dataset.order = sequence;
                 if (index === selectedMarkerIndex) marker.classList.add('selected');
@@ -4354,7 +4384,7 @@
         // Petit dessin de QR code pour les boutons (l'émoticône « téléphone » ne se reconnaît pas sur tous les écrans)
         document.addEventListener('DOMContentLoaded', () => { const i = document.getElementById('acces-eleves-ico'); if (i) i.innerHTML = QR_ICON; });
         const QR_ICON = '<svg viewBox="0 0 21 21" width="17" height="17" aria-hidden="true" style="vertical-align: middle; display: inline-block;"><path fill="#0f172a" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1z"/><path fill="#ffffff" d="M2.5 2.5h4v4h-4zM14.5 2.5h4v4h-4zM2.5 14.5h4v4h-4z"/><path fill="#0f172a" d="M3.5 3.5h2v2h-2zM15.5 3.5h2v2h-2zM3.5 15.5h2v2h-2zM10 1h2v2h-2zM10 5h2v3h-2zM1 10h3v2H1zM6 10h2v2H6zM10 10h2v2h-2zM14 10h2v2h-2zM18 10h2v2h-2zM10 14h2v2h-2zM13 13h3v3h-3zM18 13h2v2h-2zM10 18h3v2h-3zM14 17h2v3h-2zM17 17h3v3h-3z"/></svg>';
-        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep'];
+        const QR_TYPES = ['dot', 'dot-small', 'arrow', 'cross', 'sd', 'top', 'zone', 'mg', 'md', 'jete', 'pied', 'joker', 'pme', 'cm', 'cp', 'pme2', 'pme3', 'pme2f', 'pme3f', 'bloc-start', 'bloc-end', 'pg', 'pd', 'zone1', 'zone2', 'zone3', 'zone4', 'pmem', 'pmep', 'repere', 'cible', 'cible1', 'cible2', 'cible3'];
         const DEFAULT_WALL = "voies 1 2 3.jpg";
 
         function escapeHtml(text) {
