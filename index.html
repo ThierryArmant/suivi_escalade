@@ -693,7 +693,7 @@
         .marker.tech-top { --tc: #ca8a04; }
         .marker.tech-zone { --tc: #0ea5e9; }
         /* Mains et pieds : formes vides pour laisser voir la prise.
-           Cercle = main, rectangle = pied ; vert = gauche, rouge = droite. */
+           Cercle = main, rectangle = pied ; lettres G = gauche, D = droite. */
         .marker.limb { 
             width: 34px; height: 34px; background: transparent; 
             border: 4px solid #16a34a; 
@@ -809,6 +809,17 @@
             .palette-bar, .right-sidebar { width: 100%; max-width: 800px; max-height: none; }
             .center-col { width: 100%; order: -1; flex: 0 0 auto; align-items: flex-start; }
         }
+    
+        /* Codage moteur : forme et lettres ; la couleur du niveau reste distincte. */
+        .marker.limb, .marker.limb.right, .marker.limb.any,
+        .limb-icon, .limb-icon.right, .limb-icon.any { border-color:#111827 !important; }
+        .marker.limb::after, .marker.limb.right::after, .marker.limb.any::after { background:#111827 !important; color:white; }
+        .marker.dot, .marker.dot-small, .marker.pme-pt { border-color:#111827 !important; }
+        .marker.pme-pt.pme-pied { border-radius:3px; width:30px; height:20px; }
+        .marker.tech-sd, .marker.tech-top, .marker.tech-cm, .marker.tech-cp { --tc:#111827 !important; }
+        .marker.tech-cm { border-radius:50%; width:34px; height:34px; }
+        .marker[data-order]::before { content:attr(data-order); position:absolute; left:-14px; top:-22px; min-width:23px; padding:2px 4px; border:2px solid #111827; border-radius:5px; background:white; color:#111827; font:bold 15px Arial; white-space:nowrap; z-index:4; }
+
     </style>
 </head>
 <body>
@@ -886,12 +897,12 @@
                     <button class="tool-btn" id="tool-cross" onclick="setTool('cross')">❌ Interdit</button>
                     
 
-                    <button class="tool-btn" id="tool-mg" onclick="setTool('mg')" title="Main gauche : cercle vert"><span class="limb-icon hand"></span>MG</button>
-                    <button class="tool-btn" id="tool-md" onclick="setTool('md')" title="Main droite : cercle rouge"><span class="limb-icon hand right"></span>MD</button>
+                    <button class="tool-btn" id="tool-mg" onclick="setTool('mg')" title="Main gauche : cercle noir MG"><span class="limb-icon hand"></span>MG</button>
+                    <button class="tool-btn" id="tool-md" onclick="setTool('md')" title="Main droite : cercle noir MD"><span class="limb-icon hand right"></span>MD</button>
 
-                    <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche : rectangle vert"><span class="limb-icon foot"></span>PG</button>
-                    <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit : rectangle rouge"><span class="limb-icon foot right"></span>PD</button>
-                    <button class="tool-btn btn-full" id="tool-pied" onclick="setTool('pied')" title="Prise de pied, gauche ou droit : rectangle orange"><span class="limb-icon foot any"></span>Pied (gauche ou droit)</button>
+                    <button class="tool-btn" id="tool-pg" onclick="setTool('pg')" title="Pied gauche : rectangle noir PG"><span class="limb-icon foot"></span>PG</button>
+                    <button class="tool-btn" id="tool-pd" onclick="setTool('pd')" title="Pied droit : rectangle noir PD"><span class="limb-icon foot right"></span>PD</button>
+                    <button class="tool-btn btn-full" id="tool-pied" onclick="setTool('pied')" title="Prise de pied, gauche ou droit : rectangle noir"><span class="limb-icon foot any"></span>Pied (gauche ou droit)</button>
                     
                     <div id="zone-wrap" style="position: relative; display: flex;" onmouseenter="showZoneChoices()" onmouseleave="hideZoneChoices()">
                         <button class="tool-btn" id="tool-zone" style="flex: 1;" onclick="setTool(isZone(currentTool) ? currentTool : 'zone'); showZoneChoices()">🎯 Zone</button>
@@ -903,7 +914,7 @@
                     </div>
                     
                     <button class="tool-btn" id="tool-joker" onclick="setTool('joker')">🎁 Joker</button>
-                    <button class="tool-btn" id="tool-pmex" onclick="setTool('pmex')" title="Position de repos posée sur trois prises : un clic pose la main (orange) et les deux pieds (bleus), puis déplacez chaque point sur sa prise. Le niveau se calcule tout seul.">📐 PME 3 prises</button>
+                    <button class="tool-btn" id="tool-pmex" onclick="setTool('pmex')" title="Position de repos posée sur trois prises : un clic pose la main (cercle) et les deux pieds (rectangles), puis déplacez chaque point sur sa prise. Le niveau se calcule tout seul.">📐 PME 3 prises</button>
                     <div id="pme-wrap" style="position: relative; display: flex;" onmouseenter="showPmeLevels()" onmouseleave="hidePmeLevels()">
                         <button class="tool-btn" id="tool-pme" style="flex: 1;" onclick="setTool(currentTool.indexOf('pme') === 0 ? currentTool : 'pme'); showPmeLevels(true)">📌 PME</button>
                         <div id="pme-levels" style="display: none; position: absolute; right: 0; top: 100%; z-index: 60; width: 218px; background: #ffffff; border: 3px solid #2b6cb0; border-radius: 10px; padding: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.4); text-align: left;">
@@ -988,6 +999,8 @@
                         <button onclick="scaleSelected(1.25)" title="Agrandir">🔍+</button>
                         <button onclick="scaleSelected(0.8)" title="Réduire">🔍-</button>
                     </div>
+                    <div class="control-row"><label style="font-size:.8rem">Ordre des poses (bloc fermé)
+                        <input id="marker-order" type="text" maxlength="79" placeholder="2 PD / 5 PG" onchange="setSelectedOrder(this.value)" style="width:135px" title="Chaque pose associe numéro ET membre : 2 PD/5 PG. Vide = sans ordre imposé."></label></div>
                     <div id="zone-row" style="display: none; border-top: 2px solid #bae6fd; margin-top: 5px; padding-top: 5px;">
                         <div style="font-size: 0.7rem; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 3px;">Changer la couleur : choisissez le numéro<br><span style="font-weight: normal; color: #475569;">1 verte · 2 bleue · 3 rouge · 4 noire</span></div>
                         <div class="control-row" style="flex-wrap: wrap;">
@@ -1019,7 +1032,7 @@
             
             <!-- Bleu Pastel -->
             <div class="institutional-zone">
-                <h3>⚖️ Zone Institutionnelle</h3>
+                <h3>⚖️ Zone Institutionnelle</h3><details style="margin:8px 0"><summary><b>Lire la solution motrice</b></summary><p>Six familles : développé, croisé, derviche, désescalade, traversée, ramené. Préciser face, profil ou vissage ; ligne dominante homolatérale, contralatérale ou indifférenciée ; dynamique statée, conduite ou jetée lorsque pertinente.</p><p>La ligne associe la main maintenue et le ou les pieds propulseurs : MD–PG est contralatérale. Le support et les ressources déterminent la solution.</p><p>Cercle = main ; rectangle = pied ; MG/MD/PG/PD précisent le côté. Balisage fermé = chronologie ET latéralisation : chaque pose indique numéro et membre. 2 PD/5 PG indique deux utilisations de la même prise. Départ et retour sont précisés dans la fiche.</p><p>Mains imposées, pieds libres : choisir les appuis dans l’espace autorisé. Pieds imposés, mains libres : choisir les préhensions autorisées. La fiche précise toujours les contraintes.</p></details>
                 <div class="inst-item">
                     <b>Textes & Références :</b>
                     <ul class="inst-list">
@@ -1092,18 +1105,18 @@
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🎁 Prise facilitante (Joker)</span></div>
-                    <div class="legend-body"><strong>Joker :</strong> prise bonus ou intermédiaire. Un élève expert devra l'ignorer pour complexifier le bloc.</div>
+                    <div class="legend-body"><strong>Joker :</strong> prise bonus ou intermédiaire. Son usage dépend de l’objectif et des ressources ; vérifier qu’elle conserve le problème travaillé.</div>
                 </div>
                 </div>
                 <div class="legend-group lg-membres">
                 <div class="legend-category">✋ Mains et pieds imposés</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span><span class="limb-icon hand"></span>MG &nbsp; <span class="limb-icon hand right"></span>MD — les mains</span></div>
-                    <div class="legend-body"><strong>Cercle vide = main.</strong> Vert : main gauche (MG). Rouge : main droite (MD). La prise reste visible dans le cercle. Sert aussi à imposer la position des mains au départ.</div>
+                    <div class="legend-body"><strong>Cercle vide = main.</strong> Noir, avec MG pour main gauche et MD pour main droite. La prise reste visible dans le cercle. Sert aussi à imposer la position des mains au départ.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span><span class="limb-icon foot"></span>PG &nbsp; <span class="limb-icon foot right"></span>PD &nbsp; <span class="limb-icon foot any"></span>Pied — les pieds</span></div>
-                    <div class="legend-body"><strong>Rectangle vide = pied.</strong> Vert : pied gauche (PG). Rouge : pied droit (PD). Orange : pied au choix, gauche ou droit. Force le travail des appuis.</div>
+                    <div class="legend-body"><strong>Rectangle vide = pied.</strong> Noir, avec PG pour pied gauche et PD pour pied droit. Sans côté indiqué : pied au choix selon la consigne.</div>
                 </div>
                 </div>
                 <div class="legend-group lg-validation">
@@ -1117,7 +1130,7 @@
                 <div class="legend-category">🤸 Gestes & Postures</div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>📌 PME (Repos) — 3 niveaux</span></div>
-                    <div class="legend-body"><strong>PME :</strong> Bassin collé à la paroi, bras tendus, genoux fléchis pour se relâcher. Le triangle relie les 3 appuis : 1 main (point orange) et 2 pieds.<br><b>Niveau 1</b> : la main est entre les deux pieds. <b>Niveau 2</b> : la main est alignée avec un pied. <b>Niveau 3</b> : la main est en dehors des pieds.<br>Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</div>
+                    <div class="legend-body"><strong>PME :</strong> Organiser les contacts et le bassin selon le relief pour réduire l’effort et pouvoir repartir. Le triangle relie 1 main (cercle) et 2 pieds (rectangles). La géométrie seule ne prouve pas le moindre effort.<br><b>Niveau 1</b> : la main est entre les deux pieds. <b>Niveau 2</b> : la main est alignée avec un pied. <b>Niveau 3</b> : la main est en dehors des pieds.<br>Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🔄 Chang. de Main (CM)</span></div>
@@ -1125,7 +1138,7 @@
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>👟 Chang. de Pied (CP)</span></div>
-                    <div class="legend-body"><strong>CP :</strong> Substitution ou pivot des pieds sur la même prise.</div>
+                    <div class="legend-body"><strong>CP :</strong> Remplacement d’un pied par l’autre sur une même prise. Un pivot seul n’est pas un changement de pied.</div>
                 </div>
                 <div class="legend-banner" onclick="toggleLegendBanner(this)">
                     <div class="legend-header"><span>🚀 Le Jeté</span></div>
@@ -1373,7 +1386,7 @@
                     <li><b>🎯 Zone :</b> en passant sur le bouton, choisissez un numéro pour marquer des niveaux à atteindre, avec les couleurs des pistes de ski : Zone 1 verte, Zone 2 bleue, Zone 3 rouge, Zone 4 noire.</li>
                     <li><b>⬆️ Flèche :</b>une direction de déplacement. En passant sur le bouton, choisissez le sens : vers la droite, vers la gauche, en diagonale… <b>❌ Interdit :</b> une prise à ne pas toucher.</li>
                     <li><b>📌 PME :</b> un triangle qui relie les 3 appuis de la position de repos (la main en orange, les 2 pieds en bleu). En passant sur le bouton, choisissez le niveau d'habileté : <b>1</b> la main est entre les pieds, <b>2</b> elle est alignée avec un pied, <b>3</b> elle est en dehors des pieds. Double-cliquez sur le triangle pour le pivoter, l'agrandir, l'inverser ou changer de niveau.</li>
-                    <li><b>🎯 Zone, MG, MD (main gauche, main droite : cercles vides), PG, PD (pied gauche, pied droit : rectangles vides) — vert = gauche, rouge = droite, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
+                    <li><b>🎯 Zone, MG, MD (main gauche, main droite : cercles vides), PG, PD (pied gauche, pied droit : rectangles vides) — lettres G = gauche, D = droite, 🎁 Joker, 🔄 CM, 👟 CP, 🚀 Jeté :</b>les consignes techniques.Leur sens est rappelé dans la colonne de droite, « Zone technique & pédagogique ».</li>
                 </ul>
                 <p class="help-text" style="font-size: 0.82rem;">N'oubliez pas d'enregistrer : « + Créer un Bloc » pour un nouveau bloc, « 💾 Enregistrer » pour une voie ou un bloc déjà créé.</p>
             </div>
@@ -2551,8 +2564,8 @@
 
         // --- Explications des balises, écrites pour les élèves ---
         const MARKER_HELP = {
-            'dot':        ["Prise du bloc", "Tu peux utiliser cette prise, avec les mains ou avec les pieds."],
-            'dot-small':  ["Petite prise", "Prise à utiliser, souvent plus petite : sois précis dans ton appui."],
+            'dot':        ["Prise du bloc", "Cercle : prise de main autorisée. Pour les pieds, applique la consigne : appuis imposés ou pieds libres dans la zone autorisée."],
+            'dot-small':  ["Petite prise", "Petit cercle : prise de main autorisée ; la taille du repère ne mesure pas celle de la prise réelle."],
             'bloc-start': ["Départ du bloc", "Commence ici : c'est la prise de départ."],
             'bloc-end':   ["Arrivée du bloc", "C'est la dernière prise. Tiens-la bien pour réussir le bloc."],
             'arrow':      ["Direction", "Va dans le sens de la flèche : c'est par là que le bloc continue."],
@@ -2560,14 +2573,14 @@
             'sd':         ["Départ", "Position de départ : installe-toi sur ces prises avant de commencer."],
             'top':        ["TOP : l'arrivée", "Prise finale. Tiens-la à 2 mains pendant 3 secondes pour valider."],
             'zone':       ["Zone", "Prise intermédiaire : si tu l'atteins, tu marques des points bonus."],
-            'mg':         ["Main gauche (cercle vert)", "Prends cette prise avec la main gauche. Cercle = main, vert = gauche."],
-            'md':         ["Main droite (cercle rouge)", "Prends cette prise avec la main droite. Cercle = main, rouge = droite."],
-            'pg':         ["Pied gauche (rectangle vert)", "Pose le pied gauche sur cette prise. Rectangle = pied, vert = gauche."],
-            'pd':         ["Pied droit (rectangle rouge)", "Pose le pied droit sur cette prise. Rectangle = pied, rouge = droite."],
-            'pied':       ["Prise de pied (rectangle orange)", "Pose un pied sur cette prise, le gauche ou le droit. Rectangle = pied, cercle = main."],
-            'pmem':       ["PME : la main", "Position de repos. Tiens cette prise bras tendu, le bassin près du mur, et relâche-toi."],
-            'pmep':       ["PME : un pied", "Position de repos. Pose un pied sur cette prise : tes deux pieds portent ton poids."],
-            'pmex':       ["PME sur 3 prises", "Un clic pose la main (orange) et les deux pieds (bleus). Déplacez ensuite chaque point sur sa prise : le niveau se calcule tout seul."],
+            'mg':         ["Main gauche (cercle noir MG)", "Prends cette prise avec la main gauche. Cercle = main, MG = main gauche ; PG = pied gauche."],
+            'md':         ["Main droite (cercle noir MD)", "Prends cette prise avec la main droite. Cercle = main, MD = main droite ; PD = pied droit."],
+            'pg':         ["Pied gauche (rectangle noir PG)", "Pose le pied gauche sur cette prise. Rectangle = pied, MG = main gauche ; PG = pied gauche."],
+            'pd':         ["Pied droit (rectangle noir PD)", "Pose le pied droit sur cette prise. Rectangle = pied, MD = main droite ; PD = pied droit."],
+            'pied':       ["Prise de pied (rectangle noir)", "Pose un pied sur cette prise, le gauche ou le droit. Rectangle = pied, cercle = main."],
+            'pmem':       ["PME : la main", "Position de moindre effort à construire : organise tes contacts et le bassin pour diminuer l’effort et pouvoir repartir. Le placement dépend des prises et du relief."],
+            'pmep':       ["PME : un pied", "Appui de pied de la position de moindre effort. Vérifie son rôle avec les autres contacts ; les deux pieds ne portent pas nécessairement la même charge."],
+            'pmex':       ["PME sur 3 prises", "Un clic pose la main (cercle) et les deux pieds (rectangles). Déplacez ensuite chaque point sur sa prise : le niveau se calcule tout seul."],
             'joker':      ["Joker", "Prise d'aide. Si tu es à l'aise, essaie de réussir sans elle."],
             'cm':         ["Changement de main", "Sur cette prise, remplace une main par l'autre."],
             'cp':         ["Changement de pied", "Sur cette prise, remplace un pied par l'autre."],
@@ -2773,9 +2786,9 @@
             return '<svg viewBox="' + (withLabel ? '0 0 72 64' : '-4 -6 112 76') + '" aria-label="PME niveau ' + info.level + '">'
                 + `<polygon points="${points}" fill="rgba(43,108,176,0.22)" stroke="#ffffff" stroke-width="7" stroke-linejoin="round"/>`
                 + `<polygon points="${points}" fill="none" stroke="#2b6cb0" stroke-width="4" stroke-linejoin="round"/>`
-                + `<circle cx="${handX}" cy="4" r="6" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>`
-                + '<circle cx="68" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
-                + '<circle cx="4" cy="60" r="5" fill="#2b6cb0" stroke="#ffffff" stroke-width="2"/>'
+                + `<circle cx="${handX}" cy="4" r="6" fill="none" stroke="#111827" stroke-width="2"/>`
+                + '<rect x="62" y="56" width="12" height="8" rx="1" fill="none" stroke="#111827" stroke-width="2"/>'
+                + '<rect x="-2" y="56" width="12" height="8" rx="1" fill="none" stroke="#111827" stroke-width="2"/>'
                 + (withLabel ? `<text x="36" y="52" text-anchor="middle" font-size="12" font-weight="bold" font-family="Arial, sans-serif" fill="#ffffff" stroke="#1e3a8a" stroke-width="3" paint-order="stroke">PME ${info.level}</text>` : '')
                 + '</svg>';
         }
@@ -2898,7 +2911,7 @@
         const DRAFT_KEY = 'eps_draft';
 
         function markersCopy() {
-            return activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale }));
+            return activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, color: m.color, rotation: m.rotation, scale: m.scale, order: m.order }));
         }
 
         function readDraft() {
@@ -3115,7 +3128,7 @@
             if (activeMarkers.length > 0) {
                 // Les cercles prennent la couleur de difficulté choisie
                 const pointsToSave = activeMarkers.map(m => ({ 
-                    x: m.x, y: m.y, type: m.type, color: routeColor, rotation: m.rotation, scale: m.scale 
+                    x: m.x, y: m.y, type: m.type, color: routeColor, rotation: m.rotation, scale: m.scale, order: m.order 
                 }));
                 writeRouteMarkers(routeId, pointsToSave);
             }
@@ -3490,7 +3503,7 @@
                     marker.className = 'marker limb foot any';
                     marker.dataset.label = 'PIED';
                 } else if (['mg', 'md', 'pg', 'pd'].includes(p.type)) {
-                    // Forme vide : la prise reste visible. Cercle = main, rectangle = pied ; vert = gauche, rouge = droite.
+                    // Forme vide : la prise reste visible. Cercle = main, rectangle = pied ; lettres G = gauche, D = droite.
                     marker.className = `marker limb ${p.type[0] === 'm' ? 'hand' : 'foot'} ${p.type[1] === 'd' ? 'right' : 'left'}`;
                     marker.dataset.label = p.type.toUpperCase();
                 } else if (['sd', 'top', 'jete', 'joker', 'cm', 'cp'].includes(p.type)) {
@@ -3500,6 +3513,8 @@
                     marker.className = `marker ${p.type}`;
                 }
 
+                const sequence = normalizeMarkerOrder(p.order);
+                if (sequence) marker.dataset.order = sequence;
                 if (index === selectedMarkerIndex) marker.classList.add('selected');
 
                 marker.style.left = p.x + '%'; 
@@ -3604,8 +3619,29 @@
             container.querySelectorAll('.marker').forEach(el => el.remove()); 
         }
 
+        function normalizeMarkerOrder(value) {
+            const text = String(value == null ? '' : value).trim().toUpperCase().replace(/\s*\/\s*/g, '/');
+            return /^(?:[1-9][0-9]? (?:MD|MG|PD|PG))(?:\/(?:[1-9][0-9]? (?:MD|MG|PD|PG))){0,9}$/.test(text) ? text : '';
+        }
+        function setSelectedOrder(value) {
+            if (selectedMarkerIndex === null) return;
+            const text = normalizeMarkerOrder(value);
+            if (String(value).trim() && !text) { alert('Associez numéro ET membre : 2 PD, ou 2 PD/5 PG pour une prise réutilisée.'); return; }
+            const roles = text ? text.split('/').map(v => v.split(' ')[1]) : [];
+            const hands = roles.some(v => v[0] === 'M'), feet = roles.some(v => v[0] === 'P');
+            if (hands && !feet && new Set(roles).size === 1) activeMarkers[selectedMarkerIndex].type = roles[0].toLowerCase();
+            else if (feet && !hands && new Set(roles).size === 1) activeMarkers[selectedMarkerIndex].type = roles[0].toLowerCase();
+            else if (hands && feet) { alert('Pour un pied-main, placez un cercle et un rectangle sur la même prise, chacun avec sa pose numérotée.'); return; }
+            else if (roles.length) activeMarkers[selectedMarkerIndex].type = hands ? 'cm' : 'cp';
+            if (text) activeMarkers[selectedMarkerIndex].order = text;
+            else delete activeMarkers[selectedMarkerIndex].order;
+            hasUnsavedChanges = true;
+            renderMarkers();
+        }
         function selectMarker(index) {
             selectedMarkerIndex = index;
+            const orderInput = document.getElementById("marker-order");
+            if (orderInput) orderInput.value = normalizeMarkerOrder(activeMarkers[index] && activeMarkers[index].order);
             document.querySelectorAll('.marker').forEach((el, idx) => {
                 if (idx === index) el.classList.add('selected'); 
                 else el.classList.remove('selected');
@@ -4122,7 +4158,7 @@
                     type: p.type || 'dot', 
                     color: forcedColor || p.color || currentRouteColor, 
                     rotation: p.rotation || 0, 
-                    scale: p.scale || 1 
+                    scale: p.scale || 1, order: p.order 
                 }));
             }
             
@@ -4142,7 +4178,7 @@
                 type: m.type, 
                 color: m.color, 
                 rotation: m.rotation, 
-                scale: m.scale 
+                scale: m.scale, order: m.order 
             }));
             
             writeRouteMarkers(currentRouteId, pointsToSave);
@@ -4358,10 +4394,11 @@
                 let scl = Math.round((m.scale || 1) * 10);
                 return toB36(ti, 1) + toB36(m.x * 10, 2) + toB36(m.y * 10, 2) + toB36(ci, 1) + toB36(rot, 1) + toB36(scl, 1);
             }).join('');
-            return { r: body, c: palette.join('.') };
+            return { r: body, c: palette.join('.'), seq: markers.some(m => normalizeMarkerOrder(m.order)) ? markers.map(m => normalizeMarkerOrder(m.order)).join('.') : '' };
         }
 
-        function decodeMarkers(body, colors) {
+        function decodeMarkers(body, colors, sequence) {
+            const orders = (sequence || "").split(".");
             const palette = (colors || "").split('.').filter(c => /^[0-9a-f]{3,8}$/i.test(c));
             const list = [];
             for (let i = 0; i + 8 <= body.length; i += 8) {
@@ -4376,7 +4413,8 @@
                 list.push({ 
                     x: Math.min(100, x), 
                     y: Math.min(100, y), 
-                    type: QR_TYPES[ti] || 'dot', 
+                    type: QR_TYPES[ti] || 'dot',
+                    order: normalizeMarkerOrder(orders[i / 8]), 
                     color: palette[ci] ? '#' + palette[ci] : '#FFD700', 
                     rotation: rot, 
                     scale: Math.max(0.5, Math.min(3, scl || 1)) 
@@ -4446,7 +4484,7 @@
                 + "?mode=eleve&bg=" + (imageName ? enc(imageName) : "default") 
                 + (teamForQR ? "&eq=" + enc(teamForQR) : "")
                 + (GUEST ? "&invite=1" : "")
-                + "&v=2&c=" + packed.c + "&r=" + packed.r 
+                + "&v=2&c=" + packed.c + "&r=" + packed.r + (packed.seq ? "&seq=" + encodeURIComponent(packed.seq) : "") 
                 + "&n=" + enc(targetName) + "&g=" + enc(qGrade.split(' ')[0]) + "&h=" + enc(qHeight) + "&t=" + enc(qTheme);
 
             // La consigne voyage dans le QR code si elle tient (sinon le code serait trop dense à scanner)
@@ -4651,7 +4689,7 @@
             try {
                 if (params.get('r') !== null) {
                     // Nouveau format compact
-                    activeMarkers = decodeMarkers(params.get('r'), params.get('c'));
+                    activeMarkers = decodeMarkers(params.get('r'), params.get('c'), params.get('seq'));
                     banner.innerHTML = `<b>${escapeHtml(params.get('n') || 'Tracé')}</b>` + infoLine(params.get('g'), params.get('h'), params.get('t'));
                     document.getElementById('student-fiche').innerHTML = studentFicheHtml({ consigne: params.get('k') || "" });
                     // Fiche de sécurité sans rien à montrer sur le mur (seulement la pastille de départ) : on n'affiche pas la photo
@@ -5985,7 +6023,7 @@
         function copyRoute(route, silent) {
             const list = readRouteMarkers(route.id) || [];
             if (list.length === 0) { alert("Cet exercice n'a aucune balise à copier."); return; }
-            const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
+            const clip = { markers: list.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1, order: m.order })) };
             ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (route[key]) clip[key] = route[key]; });
             try { store.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
@@ -5997,7 +6035,7 @@
             if (activeMarkers.length === 0) { alert("Rien à copier : affichez d'abord un bloc ou une voie qui a des balises."); return; }
             const inPreview = !currentRouteId && activeBanner.innerHTML.indexOf('Aperçu seulement') !== -1;
             const source = currentRouteId ? ((schoolConfig.customRoutes || []).find(r => r.id === currentRouteId) || null) : (inPreview ? previewRoute : null);
-            const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1 })) };
+            const clip = { markers: activeMarkers.map(m => ({ x: m.x, y: m.y, type: m.type, rotation: m.rotation || 0, scale: m.scale || 1, order: m.order })) };
             if (source) ['name', 'grade', 'height', 'theme', 'consigne', 'attendus', 'competences', 'fiche', 'source', 'video'].forEach(key => { if (source[key]) clip[key] = source[key]; });
             try { store.setItem(CLIP_KEY, JSON.stringify(clip)); } catch (e) { alert("❌ Copie impossible : la mémoire du navigateur est pleine ou bloquée."); return; }
             updatePasteButton();
@@ -6011,7 +6049,7 @@
             if (!wallShown) { alert("Choisissez d'abord le mur où coller : menu « Choix du mur de blocs », en haut."); return; }
             if (activeMarkers.length > 0 && !confirm(`Ce mur a déjà ${activeMarkers.length} balise(s).\n\nOK = ajouter les ${clip.markers.length} balises copiées\nAnnuler = ne rien coller`)) return;
             const color = currentRouteColor || "#FFD700";
-            clip.markers.forEach(m => activeMarkers.push({ x: m.x, y: m.y, type: m.type || 'dot', color: color, rotation: m.rotation || 0, scale: m.scale || 1 }));
+            clip.markers.forEach(m => activeMarkers.push({ x: m.x, y: m.y, type: m.type || 'dot', color: color, rotation: m.rotation || 0, scale: m.scale || 1, order: m.order }));
             pasteInfo = currentRouteId ? null : clip;
             hasUnsavedChanges = true;
             setTool('cursor');
@@ -6280,7 +6318,7 @@
             fiches.forEach(f => {
                 const packed = encodeMarkers((f.markers || []).map(m => Object.assign({}, m, { color: f.couleur || m.color })));
                 const url = window.location.origin + window.location.pathname + "?mode=eleve&bg=" + enc(f.image || "default") + "&eq=" + enc(suiviTarget.equipe)
-                    + "&v=2&c=" + packed.c + "&r=" + packed.r + "&n=" + enc(f.nom) + "&g=" + enc(String(f.niveau || "").split(' ')[0]) + "&h=" + enc(f.gabarit || "") + "&t=" + enc(f.theme || "")
+                    + "&v=2&c=" + packed.c + "&r=" + packed.r + (packed.seq ? "&seq=" + encodeURIComponent(packed.seq) : "") + "&n=" + enc(f.nom) + "&g=" + enc(String(f.niveau || "").split(' ')[0]) + "&h=" + enc(f.gabarit || "") + "&t=" + enc(f.theme || "")
                     + "&b=" + enc(String(f.id).replace(/^custom_/, ''));
                 const current = f.id === suiviTarget.id;
                 html += `<a class="parcours-item${f.vue ? ' vue' : ''}${current ? ' ici' : ''}" href="${escapeHtml(url)}"><span class="parcours-etat">${f.vue ? "✅" : "⏳"}</span><span class="parcours-nom">${escapeHtml(f.nom)}</span><span class="parcours-go">${current ? "tu es ici" : (f.vue ? "revoir" : "à voir ›")}</span></a>`;
@@ -6294,7 +6332,7 @@
             const enc = encodeURIComponent;
             const packed = encodeMarkers((f.markers || []).map(m => Object.assign({}, m, { color: f.couleur || m.color })));
             return window.location.origin + window.location.pathname + "?mode=eleve&bg=" + enc(f.image || "default") + "&eq=" + enc(suiviTarget.equipe)
-                + "&v=2&c=" + packed.c + "&r=" + packed.r + "&n=" + enc(f.nom) + "&g=" + enc(String(f.niveau || "").split(' ')[0]) + "&h=" + enc(f.gabarit || "") + "&t=" + enc(f.theme || "")
+                + "&v=2&c=" + packed.c + "&r=" + packed.r + (packed.seq ? "&seq=" + encodeURIComponent(packed.seq) : "") + "&n=" + enc(f.nom) + "&g=" + enc(String(f.niveau || "").split(' ')[0]) + "&h=" + enc(f.gabarit || "") + "&t=" + enc(f.theme || "")
                 + "&b=" + enc(String(f.id).replace(/^custom_/, ''));
         }
 
@@ -7440,7 +7478,7 @@
                 previewRoute = route;
                 setTimeout(() => syncFichePanel(true), 50);
                 activeMarkers = (bloc.markers || []).map(m => ({
-                    x: m.x, y: m.y, type: m.type || 'dot', color: route.color || m.color || currentRouteColor, rotation: m.rotation || 0, scale: m.scale || 1
+                    x: m.x, y: m.y, type: m.type || 'dot', color: route.color || m.color || currentRouteColor, rotation: m.rotation || 0, scale: m.scale || 1, order: m.order
                 }));
                 hasUnsavedChanges = false;
                 renderMarkers();
